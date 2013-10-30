@@ -6,11 +6,15 @@
     <ClInclude Include="portable.h" />
     <ClInclude Include="event.h" />
     <ClInclude Include="poller.h" />
+    <ClInclude Include="netpack.h" />
+    <ClInclude Include="connection.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="buffer.cpp" />
     <ClCompile Include="socket.cpp" />
     <ClCompile Include="event.cpp" />
     <ClCompile Include="poller.cpp" />
+    <ClCompile Include="netpack.cpp" />
+    <ClCompile Include="connection.cpp" />
   </ItemGroup>
 </Project>

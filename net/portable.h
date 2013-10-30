@@ -28,9 +28,9 @@ typedef unsigned __int64 uint64;
 typedef int socklen_t;
 #pragma comment(lib,"winmm")
 #pragma comment(lib,"wldap32")
-
+#define snprintf _snprintf
 inline uint32 GetMiniSecond(){return timeGetTime();}
-int snprintf(char* buf,size_t bufsize,const char* format,...);
+//int snprintf(char* buf,size_t bufsize,const char* format,...);
 #define atoll(str) _atoi64(str)
 
 #else

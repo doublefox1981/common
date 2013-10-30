@@ -2,6 +2,7 @@
 #define _POLLER_H
 #include "socket.h"
 #include "buffer.h"
+#include "../base/list.h"
 
 namespace net
 {
@@ -19,21 +20,14 @@ public:
 class ezFd
 {
 public:
-	virtual void onEvent(ezEventLoop* looper,int fd,int event)=0;
+	virtual void onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid)=0;
 	virtual ~ezFd(){}
-};
-
-class ezHander
-{
-public:
-	virtual void onOpen(ezPoller* poller,ezFd* fd)=0;
-	virtual void onClose(ezPoller* poller,ezFd* fd)=0;
 };
 
 class ezListenerFd:public ezFd
 {
 public:
-	virtual void onEvent(ezEventLoop* looper,int fd,int event);
+	virtual void onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid);
 };
 
 class ezClientFd:public ezFd
@@ -41,10 +35,11 @@ class ezClientFd:public ezFd
 public:
 	ezClientFd();
 	virtual ~ezClientFd();
-	virtual void onEvent(ezEventLoop* looper,int fd,int event);
+	virtual void onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid);
 private:
 	ezBuffer* inbuf_;
 	ezBuffer* outbuf_;
+	list_head sendqueue_;
 };
 
 class ezSelectPoller:public ezPoller

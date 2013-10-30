@@ -3,6 +3,7 @@
   <ItemGroup>
     <ClInclude Include="thread.h" />
     <ClInclude Include="list.h" />
+    <ClInclude Include="singleton.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="thread.cpp" />

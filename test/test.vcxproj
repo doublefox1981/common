@@ -56,7 +56,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OutputFile>../bin/test.exe</OutputFile>
-      <AdditionalDependencies>luaexportd.lib;lualibd.lib;CrossEngine.lib;libmysqlpp.lib;libweb.lib;libprotobufd.lib;../Debug/base.lib;../Debug/net.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>../Debug/base.lib;../Debug/net.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>../bin;../crossengine/liblua;../crossengine/libprotobuf;../crossengine/libtcmalloc</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>

@@ -2,7 +2,7 @@
 #include "event.h"
 #include "socket.h"
 
-void net::ezListenerFd::onEvent(ezEventLoop* looper,int fd,int mask)
+void net::ezListenerFd::onEvent(ezEventLoop* looper,int fd,int mask,uint64_t uuid)
 {
 	if(mask&ezNetRead)
 	{
@@ -10,10 +10,10 @@ void net::ezListenerFd::onEvent(ezEventLoop* looper,int fd,int mask)
 		SOCKET s=net::Accept(fd,&si);
 		if(s==INVALID_SOCKET)
 			return;
-		looper->add(s,new ezClientFd,ezNetRead);
+		uint64_t uuid=looper->add(s,new ezClientFd,ezNetRead);
+		looper->postNewFd(s,uuid);
 	}
 }
-
 
 void net::ezSelectPoller::addFd(int fd,int mask)
 {
@@ -69,7 +69,7 @@ net::ezSelectPoller::ezSelectPoller( ezEventLoop* loop ) :loop_(loop)
 	FD_ZERO(&uwfds_);
 }
 
-void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event)
+void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid)
 {
 	if(event&ezNetRead)
 	{
@@ -78,10 +78,8 @@ void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event)
 		int retval=Read(fd,pbuf,s);
 		if((retval==0)||(retval<0&&errno!=EAGAIN))
 		{
-			ezCrossEventData* fireD=new ezCrossEventData;
-			fireD->event_=ezCrossClose;
-			fireD->fd_=fd;
-			looper->pushFired(fireD);
+			looper->postCloseFd(fd,uuid);
+			looper->del(fd);
 		}
 		else
 		{
