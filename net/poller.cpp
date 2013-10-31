@@ -1,6 +1,8 @@
 #include "poller.h"
 #include "event.h"
 #include "socket.h"
+#include "netpack.h"
+#include "connection.h"
 
 void net::ezListenerFd::onEvent(ezEventLoop* looper,int fd,int mask,uint64_t uuid)
 {
@@ -83,15 +85,19 @@ void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid
 		}
 		else
 		{
+			ezHander* hander=looper->getHander();
 			inbuf_->addWritePos(retval);
-
-			// hander->onmessage();
-			// test ...
-			char* pr=NULL;
-			size_t s=inbuf_->getReadable(pr);
-			pr[s]=0;
-			printf("%s\n",pr);
-			inbuf_->reset();
+			char* rbuf=NULL;
+			size_t rs=inbuf_->getReadable(rbuf);
+			int rets=hander->decode(looper,rbuf,rs);
+			assert(rets<=inbuf_->readableSize());
+			if(rets>0)
+				inbuf_->addReadPos(rets);
+			else if(rets<0)
+			{
+				looper->postError(fd,uuid);
+				looper->del(fd);
+			}
 		}
 	}
 	if(event&ezNetWrite)
@@ -112,4 +118,10 @@ net::ezClientFd::~ezClientFd()
 		delete inbuf_;
 	if(outbuf_)
 		delete outbuf_;
+	list_head *iter,*next;
+	list_for_each_safe(iter,next,&sendqueue_)
+	{
+		net::ezSendBlock* blk=list_entry(iter,net::ezSendBlock,lst_);
+		delete blk;
+	}
 }

@@ -10,8 +10,6 @@ int net::ezEventLoop::init(ezPoller* poller,ezHander* hander)
 {
 	poller_=poller;
 	hander_=hander;
-	maxfd_=-1;
-	INIT_LIST_HEAD(&crossEv_);
 	return 0;
 }
 
@@ -58,6 +56,7 @@ int net::ezEventLoop::del(int fd)
 	delete events_[fd];
 	events_[fd] = NULL;
 	poller_->delFd(fd,event);
+	CloseSocket(fd);
 	return 0;
 }
 
@@ -99,13 +98,29 @@ void net::ezEventLoop::netEventLoop()
 		delete ezD;
 	}
 	fired_.clear();
+	
+	LIST_HEAD(tmplst);
+	{
+		base::Locker lock(&mutexO2NCrossEv_);
+		list_splice_init(&crossO2NEv_,&tmplst);
+	}
+	list_head *iter,*next;
+	list_for_each_safe(iter,next,&tmplst)
+	{
+		ezCrossEventData* ev=list_entry(iter,ezCrossEventData,evlst_);
+		if(ev->event_==ezCrossClose)
+		{
+			postCloseFd(ev->fd_,ev->uuid_);
+			del(ev->fd_);
+		}
+		delete ev;
+	}
 }
 
 void net::ezEventLoop::crossEventLoop()
 {
 	LIST_HEAD(tmplst);
 	{
-		// 复制，只需少数指针赋值
 		base::Locker lock(&mutexCrossEv_);
 		list_splice_init(&crossEv_,&tmplst);
 	}
@@ -116,14 +131,13 @@ void net::ezEventLoop::crossEventLoop()
 		switch(evd->event_)
 		{
 		case ezCrossOpen:
-			{
-				hander_->onOpen(this,evd->fd_,evd->uuid_);
-			}
+			hander_->onOpen(this,evd->fd_,evd->uuid_);
 			break;
 		case ezCrossClose:
-			{
-				hander_->onClose(this,evd->fd_,evd->uuid_);
-			}
+			hander_->onClose(this,evd->fd_,evd->uuid_);
+			break;
+		case ezCrossError:
+			hander_->onError(this,evd->fd_,evd->uuid_);
 			break;
 		case ezCrossData:
 			{
@@ -131,6 +145,7 @@ void net::ezEventLoop::crossEventLoop()
 				hander_->onData(this,evd->fd_,evd->uuid_,evd->msg_);
 			}
 			break;
+		default: break;
 		}
 		delete evd;
 	}
@@ -160,17 +175,38 @@ void net::ezEventLoop::postNewFd(int fd,uint64_t uuid)
 	postCrossEvent(data);
 }
 
+void net::ezEventLoop::postError(int fd,uint64_t uuid)
+{
+	ezCrossEventData* data=new ezCrossEventData;
+	data->fd_=fd;
+	data->event_=ezCrossError;
+	data->uuid_=uuid;
+	postCrossEvent(data);
+}
+
 net::ezEventLoop::ezEventLoop()
 {
 	poller_=NULL;
 	hander_=NULL;
 	maxfd_=-1;
+	INIT_LIST_HEAD(&crossEv_);
+	INIT_LIST_HEAD(&crossO2NEv_);
 }
 
 net::ezEventLoop::~ezEventLoop()
 {
 	if(poller_) delete poller_;
 	if(hander_) delete hander_;
+}
+
+void net::ezEventLoop::postActiveCloseFd(int fd,uint64_t uuid)
+{
+	ezCrossEventData* ev=new ezCrossEventData;
+	ev->fd_=fd;
+	ev->uuid_=uuid;
+	ev->event_=ezCrossClose;
+	base::Locker lock(&mutexO2NCrossEv_);
+	list_add_tail(&ev->evlst_,&crossO2NEv_);
 }
 
 net::ezNetEventData::~ezNetEventData()

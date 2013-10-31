@@ -264,9 +264,9 @@ int Write(SOCKET sockfd, const void *buf, size_t count)
 	return ::send(sockfd,static_cast<const char*>(buf),count,0);
 }
 
-void Close(SOCKET sockfd)
+void CloseSocket(SOCKET sockfd)
 {
-#ifdef _WIN32
+#ifndef __linux__
 	::closesocket(sockfd);
 #else
 	::close(sockfd);

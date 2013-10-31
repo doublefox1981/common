@@ -21,6 +21,7 @@ enum ezCrossEventType
 	ezCrossNone=0,
 	ezCrossOpen=1,
 	ezCrossClose=2,
+	ezCrossError=3,
 	ezCrossData=4,
 };
 
@@ -72,7 +73,9 @@ public:
 	void postCrossEvent(ezCrossEventData* ev);
 	void postCloseFd(int fd,uint64_t uuid);
 	void postNewFd(int fd,uint64_t uuid);
-	void postActiveCloseFd(int fd);
+	void postError(int fd,uint64_t uuid);
+	void postActiveCloseFd(int fd,uint64_t uuid);
+	ezHander* getHander() {return hander_;}
 private:
 	ezPoller* poller_;
 	ezHander* hander_;
@@ -81,10 +84,13 @@ private:
 	std::vector<ezNetEventData*> fired_;
 	int maxfd_;
 	
-
+	// net->other
 	base::Mutex mutexCrossEv_;
 	list_head crossEv_;
 
+	// other->net
+	base::Mutex mutexO2NCrossEv_;
+	list_head crossO2NEv_;
 };
 }
 #endif
