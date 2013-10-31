@@ -22,6 +22,7 @@ int main()
 	ezEventLoop* ev=new ezEventLoop;
 	ev->init(new ezSelectPoller(ev),new ezCrossHander((numeric_limits<uint16_t>::max)()));
 	ev->serveOnPort(10010);
+	ev->getConnectionMgr()->connectTo(ev,"127.0.0.1",16315);
 	while(true)
 	{
 		ev->netEventLoop();

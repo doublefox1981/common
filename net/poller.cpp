@@ -12,7 +12,7 @@ void net::ezListenerFd::onEvent(ezEventLoop* looper,int fd,int mask,uint64_t uui
 		SOCKET s=net::Accept(fd,&si);
 		if(s==INVALID_SOCKET)
 			return;
-		uint64_t uuid=looper->add(s,new ezClientFd,ezNetRead);
+		uint64_t uuid=looper->add(s,looper->uuid(),new ezClientFd,ezNetRead);
 		looper->postNewFd(s,uuid);
 	}
 }

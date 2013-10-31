@@ -18,11 +18,11 @@ namespace base
 	public:
 		AtomicNumber(){mValue=0;}
 		long Get(){return mValue;}
-		void Set(int n){InterlockedExchange(&mValue,n);}
-		void Inc(){InterlockedIncrement(&mValue);}
-		void Dec(){InterlockedDecrement(&mValue);}
-		void Add(int n){InterlockedExchangeAdd(&mValue,n);}
-		void Sub(int n){InterlockedExchangeAdd(&mValue,-n);}
+		long Set(int n){return InterlockedExchange(&mValue,n);}
+		long Inc(){return InterlockedIncrement(&mValue);}
+		long Dec(){return InterlockedDecrement(&mValue);}
+		long Add(int n){return InterlockedExchangeAdd(&mValue,n);}
+		long Sub(int n){return InterlockedExchangeAdd(&mValue,-n);}
 	private:
 		volatile long mValue;
 	};
@@ -80,11 +80,11 @@ namespace base
 	public:
 		AtomicNumber(){mValue=0;}
 		long Get(){return mValue;}
-		void Set(int n){__sync_lock_test_and_set(&mValue,n);}
-		void Inc(){__sync_add_and_fetch(&mValue,1);}
-		void Dec(){__sync_sub_and_fetch(&mValue,1);}
-		void Add(int n){__sync_add_and_fetch(&mValue,n);}
-		void Sub(int n){__sync_sub_and_fetch(&mValue,n);}
+		long Set(int n){return __sync_lock_test_and_set(&mValue,n);}
+		long Inc(){return __sync_add_and_fetch(&mValue,1);}
+		long Dec(){return __sync_sub_and_fetch(&mValue,1);}
+		long Add(int n){return __sync_add_and_fetch(&mValue,n);}
+		long Sub(int n){return __sync_sub_and_fetch(&mValue,n);}
 	private:
 		volatile long mValue;
 	};

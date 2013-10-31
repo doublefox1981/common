@@ -338,4 +338,30 @@ bool IsSelfConnect(SOCKET sockfd)
 		&& localaddr.sin_addr.s_addr == peeraddr.sin_addr.s_addr;
 }
 
+int ConnectNoBlock(const char* ip,int port)
+{
+	SOCKET s=CreateNonBlockSocket();
+	if(s==INVALID_SOCKET)
+		return INVALID_SOCKET;
+	struct sockaddr_in sa;
+	unsigned long inAddress;
+
+	sa.sin_family = AF_INET;
+	sa.sin_port = htons((u_short)port);
+	inAddress = inet_addr(ip);
+	sa.sin_addr.s_addr = inAddress;
+
+	if(connect(s,(struct sockaddr*)&sa,sizeof(sa))==-1) 
+	{
+#ifndef __linux__
+		DWORD e=WSAGetLastError();
+#endif
+		if (errno==EINPROGRESS)
+			return s;
+		CloseSocket(s);
+		return INVALID_SOCKET;
+	}
+	return s;
+}
+
 }

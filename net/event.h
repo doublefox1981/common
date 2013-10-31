@@ -23,11 +23,13 @@ enum ezCrossEventType
 	ezCrossClose=2,
 	ezCrossError=3,
 	ezCrossData=4,
+	ezConnectTo=5,
 };
 
 class ezHander;
 class ezPoller;
 class ezFd;
+class ezConnectionMgr;
 
 // ÍøÂçioÊÂ¼þ
 struct ezNetEventData
@@ -54,14 +56,13 @@ struct ezCrossEventData
 
 class ezEventLoop
 {
-	static uint64_t suuid_;
 public:
 	ezEventLoop();
 	~ezEventLoop();
 	int init(ezPoller* poller,ezHander* hander);
 	int serveOnPort(int port);
 	int shutdown();
-	uint64_t add(int fd, ezFd *ezfd,int event);
+	uint64_t add(int fd,uint64_t uuid,ezFd *ezfd,int event);
 	int del(int fd);
 	int modr(int fd, bool set);
 	int modw(int fd, bool set);
@@ -70,15 +71,24 @@ public:
 	void pushFired(ezNetEventData* ezD){fired_.push_back(ezD);}
 	void netEventLoop();
 	void crossEventLoop();
+
 	void postCrossEvent(ezCrossEventData* ev);
 	void postCloseFd(int fd,uint64_t uuid);
 	void postNewFd(int fd,uint64_t uuid);
 	void postError(int fd,uint64_t uuid);
+
 	void postActiveCloseFd(int fd,uint64_t uuid);
+	void postConnectTo(uint64_t uuid,const char* toip,int toport);
+
+	ezConnectionMgr* getConnectionMgr() {return conMgr_;}
 	ezHander* getHander() {return hander_;}
+	uint64_t uuid();
 private:
+	base::AtomicNumber suuid_;
+
 	ezPoller* poller_;
 	ezHander* hander_;
+	ezConnectionMgr* conMgr_;
 
 	std::vector<ezNetEventData*> events_;
 	std::vector<ezNetEventData*> fired_;
