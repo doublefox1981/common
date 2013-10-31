@@ -56,7 +56,7 @@ int net::ezEventLoop::del(int fd)
 	delete events_[fd];
 	events_[fd] = NULL;
 	poller_->delFd(fd,event);
-	CloseSocket(fd);
+	net::CloseSocket(fd);
 	return 0;
 }
 

@@ -20,8 +20,8 @@ namespace net
 	SOCKET Accept(SOCKET sockfd, struct sockaddr_in* addr);
 	int Read(SOCKET sockfd, void *buf, size_t count);
 	int Write(SOCKET sockfd, const void *buf, size_t count);
-	void CloseSocket(int SOCKET);
-	void ShutdownWrite(int SOCKET);
+	void CloseSocket(SOCKET s);
+	void ShutdownWrite(SOCKET s);
 
 	void ToIpPort(char* buf, size_t size,const struct sockaddr_in& addr);
 	void ToIp(char* buf, size_t size,const struct sockaddr_in& addr);
