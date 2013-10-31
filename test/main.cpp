@@ -1,7 +1,9 @@
 #include "../net/event.h"
 #include "../net/poller.h"
 #include "../net/connection.h"
+#include <limits>
 using namespace net;
+using namespace std;
 
 static bool initNetwork(int major_version = 2) 
 {
@@ -18,7 +20,7 @@ int main()
 {
 	initNetwork();
 	ezEventLoop* ev=new ezEventLoop;
-	ev->init(new ezSelectPoller(ev),new ezCrossHander);
+	ev->init(new ezSelectPoller(ev),new ezCrossHander((numeric_limits<uint16_t>::max)()));
 	ev->serveOnPort(10010);
 	while(true)
 	{

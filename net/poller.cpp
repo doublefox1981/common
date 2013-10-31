@@ -89,7 +89,7 @@ void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid
 			inbuf_->addWritePos(retval);
 			char* rbuf=NULL;
 			size_t rs=inbuf_->getReadable(rbuf);
-			int rets=hander->decode(looper,rbuf,rs);
+			int rets=hander->decode(looper,fd,uuid,rbuf,rs);
 			assert(rets<=inbuf_->readableSize());
 			if(rets>0)
 				inbuf_->addReadPos(rets);
@@ -110,6 +110,7 @@ net::ezClientFd::ezClientFd()
 {
 	inbuf_=new ezBuffer();
 	outbuf_=new ezBuffer();
+	INIT_LIST_HEAD(&sendqueue_);
 }
 
 net::ezClientFd::~ezClientFd()

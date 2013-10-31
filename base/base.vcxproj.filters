@@ -4,6 +4,7 @@
     <ClInclude Include="thread.h" />
     <ClInclude Include="list.h" />
     <ClInclude Include="singleton.h" />
+    <ClInclude Include="memorystream.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="thread.cpp" />
