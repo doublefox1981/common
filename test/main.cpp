@@ -22,10 +22,10 @@ static bool initNetwork(int major_version = 2)
 int main()
 {
 	initNetwork();
- 	ezEventLoop* ev1=new ezEventLoop;
- 	ev1->init(new ezSelectPoller(ev1),new ezServerHander((numeric_limits<uint16_t>::max)()));
- 	ev1->serveOnPort(10010);
- 	Sleep(1000);
+	ezEventLoop* ev1=new ezEventLoop;
+	ev1->init(new ezSelectPoller(ev1),new ezServerHander((numeric_limits<uint16_t>::max)()));
+	ev1->serveOnPort(10010);
+	Sleep(1000);
 
 	ezEventLoop* ev=new ezEventLoop;
 	ev->init(new ezSelectPoller(ev),new ezClientHander((numeric_limits<uint16_t>::max)()));

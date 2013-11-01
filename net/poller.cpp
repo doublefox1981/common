@@ -60,13 +60,13 @@ void net::ezSelectPoller::poll()
 		for(int j=0;j<=loop_->maxFd();++j)
 		{
 			int mask=0;
-			ezNetEventData* d=loop_->ezNetEventDatai(j);
+			ezFdData* d=loop_->ezFdDatai(j);
 			if(!d||d->event_==ezNetNone) continue;
 			if(d->event_&ezNetRead&&FD_ISSET(d->fd_,&urfds_))
 				mask|=ezNetRead;
 			if(d->event_&ezNetWrite&&FD_ISSET(d->fd_,&uwfds_))
 				mask|=ezNetWrite;
-			ezNetEventData* fireD=new ezNetEventData;
+			ezFdData* fireD=new ezFdData;
 			fireD->event_=mask;
 			fireD->fd_=d->fd_;
 			fireD->uuid_=d->uuid_;

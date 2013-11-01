@@ -32,7 +32,7 @@ int net::ezEventLoop::serveOnPort(int port)
 
 uint64_t net::ezEventLoop::add(int fd,uint64_t uuid,ezFd *ezfd,int event)
 {
-	ezNetEventData* data = new ezNetEventData();
+	ezFdData* data = new ezFdData();
 	data->uuid_=uuid;
 	data->fd_=fd;
 	data->ezfd_=ezfd;
@@ -151,7 +151,7 @@ void net::ezEventLoop::processMsg()
 		ezSendBlock* blk=list_entry(iter,ezSendBlock,lst_);
 		if(blk->fd_<(int)events_.size()&&blk->fd_>0)
 		{
-			ezNetEventData* evd=events_[blk->fd_];
+			ezFdData* evd=events_[blk->fd_];
 			if(evd&&evd->ezfd_)
 			{
 				evd->ezfd_->sendMsg(blk);
@@ -163,7 +163,7 @@ void net::ezEventLoop::processMsg()
 	// 暂时采用遍历
 	for(size_t s=0;s<events_.size();++s)
 	{
-		ezNetEventData* evd=events_[s];
+		ezFdData* evd=events_[s];
 		if(evd&&evd->ezfd_)
 		{
 			if(evd->ezfd_->formatMsg()>0)
@@ -177,7 +177,7 @@ void net::ezEventLoop::netEventLoop()
 	poller_->poll();
 	for(size_t s=0;s<fired_.size();++s)
 	{
-		ezNetEventData* ezD=fired_[s];
+		ezFdData* ezD=fired_[s];
 		events_[ezD->fd_]->ezfd_->onEvent(this,ezD->fd_,ezD->event_,ezD->uuid_);
 		delete ezD;
 	}
@@ -315,13 +315,13 @@ void net::ezEventLoop::sendMsg(int fd,ezNetPack* msg)
 	list_add_tail(&blk->lst_,&sendMsgQueue_);
 }
 
-net::ezNetEventData::~ezNetEventData()
+net::ezFdData::~ezFdData()
 {
 	if(ezfd_)
 		delete ezfd_;
 }
 
-net::ezNetEventData::ezNetEventData():fd_(-1),event_(ezNetNone),ezfd_(NULL),uuid_(0)
+net::ezFdData::ezFdData():fd_(-1),event_(ezNetNone),ezfd_(NULL),uuid_(0)
 {
 
 }

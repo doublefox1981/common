@@ -31,14 +31,14 @@ class ezFd;
 class ezConnectionMgr;
 
 // 网络io事件
-struct ezNetEventData
+struct ezFdData
 {
 	int fd_;
 	uint64_t uuid_;
 	int event_;
 	ezFd* ezfd_;
-	ezNetEventData();
-	~ezNetEventData();
+	ezFdData();
+	~ezFdData();
 };
 
 // 跨线程事件通知
@@ -66,8 +66,8 @@ public:
 	int modr(int fd, bool set);
 	int modw(int fd, bool set);
 	int maxFd() {return maxfd_;}
-	ezNetEventData* ezNetEventDatai(int i) {return events_[i];}
-	void pushFired(ezNetEventData* ezD){fired_.push_back(ezD);}
+	ezFdData* ezFdDatai(int i) {return events_[i];}
+	void pushFired(ezFdData* ezD){fired_.push_back(ezD);}
 	void netEventLoop();
 	void crossEventLoop();
 
@@ -97,8 +97,8 @@ private:
 	ezHander* hander_;
 	ezConnectionMgr* conMgr_;
 
-	std::vector<ezNetEventData*> events_;
-	std::vector<ezNetEventData*> fired_;
+	std::vector<ezFdData*> events_;
+	std::vector<ezFdData*> fired_;
 	int maxfd_;
 	
 	// net->other
