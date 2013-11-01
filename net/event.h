@@ -23,7 +23,6 @@ enum ezCrossEventType
 	ezCrossClose=2,
 	ezCrossError=3,
 	ezCrossData=4,
-	ezConnectTo=5,
 };
 
 class ezHander;
@@ -72,18 +71,26 @@ public:
 	void netEventLoop();
 	void crossEventLoop();
 
-	void postCrossEvent(ezCrossEventData* ev);
-	void postCloseFd(int fd,uint64_t uuid);
-	void postNewFd(int fd,uint64_t uuid);
-	void postError(int fd,uint64_t uuid);
+	// net->other
+	void n2oCrossEvent(ezCrossEventData* ev);
+	void n2oCloseFd(int fd,uint64_t uuid);
+	void n2oNewFd(int fd,uint64_t uuid);
+	void n2oError(int fd,uint64_t uuid);
 
-	void postActiveCloseFd(int fd,uint64_t uuid);
-	void postConnectTo(uint64_t uuid,const char* toip,int toport);
+	// other->net
+	void o2nCloseFd(int fd,uint64_t uuid);
+	void o2nConnectTo(uint64_t uuid,const char* toip,int toport);
+
+	void sendMsg(int fd,ezNetPack* msg);
 
 	ezConnectionMgr* getConnectionMgr() {return conMgr_;}
 	ezHander* getHander() {return hander_;}
+	ezPoller* getPoller() {return poller_;}
 	uint64_t uuid();
 private:
+	void processEv();
+	void processMsg();
+
 	base::AtomicNumber suuid_;
 
 	ezPoller* poller_;
@@ -101,6 +108,9 @@ private:
 	// other->net
 	base::Mutex mutexO2NCrossEv_;
 	list_head crossO2NEv_;
+
+	base::Mutex mutexSendQueue_;
+	list_head sendMsgQueue_;
 };
 }
 #endif

@@ -3,6 +3,7 @@
 #include "socket.h"
 #include "netpack.h"
 #include "connection.h"
+#include "../base/memorystream.h"
 
 void net::ezListenerFd::onEvent(ezEventLoop* looper,int fd,int mask,uint64_t uuid)
 {
@@ -13,8 +14,18 @@ void net::ezListenerFd::onEvent(ezEventLoop* looper,int fd,int mask,uint64_t uui
 		if(s==INVALID_SOCKET)
 			return;
 		uint64_t uuid=looper->add(s,looper->uuid(),new ezClientFd,ezNetRead);
-		looper->postNewFd(s,uuid);
+		looper->n2oNewFd(s,uuid);
 	}
+}
+
+void net::ezListenerFd::sendMsg( ezSendBlock* blk )
+{
+	assert(false);
+}
+
+size_t net::ezListenerFd::formatMsg()
+{
+	return 0;
 }
 
 void net::ezSelectPoller::addFd(int fd,int mask)
@@ -58,6 +69,7 @@ void net::ezSelectPoller::poll()
 			ezNetEventData* fireD=new ezNetEventData;
 			fireD->event_=mask;
 			fireD->fd_=d->fd_;
+			fireD->uuid_=d->uuid_;
 			loop_->pushFired(fireD);
 		}
 	}
@@ -80,7 +92,7 @@ void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid
 		int retval=Read(fd,pbuf,s);
 		if((retval==0)||(retval<0&&errno!=EAGAIN))
 		{
-			looper->postCloseFd(fd,uuid);
+			looper->n2oCloseFd(fd,uuid);
 			looper->del(fd);
 		}
 		else
@@ -90,19 +102,48 @@ void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid
 			char* rbuf=NULL;
 			size_t rs=inbuf_->getReadable(rbuf);
 			int rets=hander->decode(looper,fd,uuid,rbuf,rs);
-			assert(rets<=inbuf_->readableSize());
+			assert(rets<=(int)inbuf_->readableSize());
 			if(rets>0)
 				inbuf_->addReadPos(rets);
 			else if(rets<0)
 			{
-				looper->postError(fd,uuid);
+				looper->n2oError(fd,uuid);
 				looper->del(fd);
 			}
 		}
 	}
 	if(event&ezNetWrite)
 	{
-
+		if(outbuf_->readableSize()<=0&&list_empty(&sendqueue_))
+		{
+			looper->getPoller()->delFd(fd,ezNetWrite);
+			return;
+		}
+		char* pbuf=NULL;
+		size_t s=outbuf_->getReadable(pbuf);
+		if(s>0&&pbuf)
+		{
+			int sendlen=0;
+			while(sendlen<(int)s)
+			{
+				int retval=Write(fd,pbuf,s);
+				if(retval<0)
+				{
+					if(errno==EWOULDBLOCK||errno==EAGAIN)
+						break;
+					else
+					{
+						looper->n2oError(fd,uuid);
+						looper->del(fd);
+						return;
+					}
+				}
+				else
+					sendlen+=retval;
+			}
+			outbuf_->addReadPos(sendlen);
+		}
+		looper->getPoller()->delFd(fd,ezNetWrite);
 	}
 }
 
@@ -125,4 +166,41 @@ net::ezClientFd::~ezClientFd()
 		net::ezSendBlock* blk=list_entry(iter,net::ezSendBlock,lst_);
 		delete blk;
 	}
+}
+
+void net::ezClientFd::sendMsg( ezSendBlock* blk )
+{
+	list_add_tail(&blk->lst_,&sendqueue_);
+}
+
+size_t net::ezClientFd::formatMsg()
+{
+	if(list_empty(&sendqueue_))
+		return 0;
+	char* pbuf=NULL;
+	size_t s=outbuf_->getWritable(pbuf);
+	if(s<=0)
+		return 0;
+	base::ezBufferWriter writer(pbuf,s);
+	LIST_HEAD(tmplist);
+	list_splice_init(&sendqueue_,&tmplist);
+	list_head *iter,*next;
+	list_for_each_safe(iter,next,&tmplist)
+	{
+		ezSendBlock* blk=list_entry(iter,ezSendBlock,lst_);
+		assert(blk->pack_);
+		if(writer.CanIncreaseSize(sizeof(uint16_t)+blk->pack_->size_))
+		{
+			writer.Write(blk->pack_->size_);
+			writer.WriteBuffer(blk->pack_->data_,blk->pack_->size_);
+			delete blk;
+		}
+		else
+		{
+			list_add_tail(&blk->lst_,&sendqueue_);
+			break;
+		}
+	}
+	outbuf_->addWritePos(writer.GetUsedSize());
+	return outbuf_->readableSize();
 }

@@ -33,5 +33,6 @@ namespace net
 	struct sockaddr_in GetPeerAddr(SOCKET sockfd);
 	bool IsSelfConnect(SOCKET sockfd);
 	int ConnectNoBlock(const char* ip,int port);
+	int ConnectTo(const char* ip,int port);
 }
 #endif

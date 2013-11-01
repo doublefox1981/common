@@ -261,7 +261,12 @@ int Read(SOCKET sockfd, void *buf, size_t count)
 
 int Write(SOCKET sockfd, const void *buf, size_t count)
 {
-	return ::send(sockfd,static_cast<const char*>(buf),count,0);
+	int retval=::send(sockfd,static_cast<const char*>(buf),count,0);
+#ifndef __linux__
+	if(retval<0)
+		errno=WSAGetLastError();
+#endif
+	return retval;
 }
 
 void CloseSocket(SOCKET sockfd)
@@ -364,4 +369,31 @@ int ConnectNoBlock(const char* ip,int port)
 	return s;
 }
 
+int ConnectTo(const char* ip,int port)
+{
+	SOCKET s=::socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
+	if(s==INVALID_SOCKET)
+		return INVALID_SOCKET;
+	char on=1;
+	if (setsockopt(s,SOL_SOCKET,SO_REUSEADDR, &on, sizeof(on))==-1) 
+	{
+		ezSocketError("setsockopt SO_REUSEADDR");
+		CloseSocket(s);
+		return INVALID_SOCKET;
+	}
+	struct sockaddr_in sa;
+	unsigned long inAddress;
+
+	sa.sin_family = AF_INET;
+	sa.sin_port = htons((u_short)port);
+	inAddress = inet_addr(ip);
+	sa.sin_addr.s_addr = inAddress;
+	if(Connect(s,sa)==0)
+		return s;
+	else
+	{
+		CloseSocket(s);
+		return INVALID_SOCKET;
+	}
+}
 }

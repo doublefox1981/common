@@ -3,6 +3,7 @@
 #include "poller.h"
 #include "connection.h"
 #include "../base/memorystream.h"
+#include "../base/thread.h"
 #include <assert.h>
 
 int net::ezEventLoop::init(ezPoller* poller,ezHander* hander)
@@ -65,11 +66,16 @@ int net::ezEventLoop::modr(int fd, bool set)
 	assert(fd <= maxfd_);
 	assert(events_[fd]);
 
-	if (set)
+	if(set)
+	{
 		events_[fd]->event_ |= ezNetRead;
+		poller_->addFd(fd,ezNetRead);
+	}
 	else
+	{
 		events_[fd]->event_ &= ~ezNetRead;
-	poller_->modFd(fd,ezNetNone);
+		poller_->delFd(fd,ezNetRead);
+	}
 	return 0;
 }
 
@@ -79,12 +85,91 @@ int net::ezEventLoop::modw(int fd, bool set)
 	assert(fd <= maxfd_);
 	assert(events_[fd]);
 
-	if (set)
+	if(set)
+	{
 		events_[fd]->event_ |= ezNetWrite;
+		poller_->addFd(fd,ezNetWrite);
+	}
 	else
+	{
 		events_[fd]->event_ &= ~ezNetWrite;
-	poller_->modFd(fd,ezNetNone);
+		poller_->delFd(fd,ezNetWrite);
+	}
 	return 0;
+}
+
+void net::ezEventLoop::processEv()
+{
+	LIST_HEAD(tmplst);
+	{
+		base::Locker lock(&mutexO2NCrossEv_);
+		list_splice_init(&crossO2NEv_,&tmplst);
+	}
+	list_head *iter,*next;
+	list_for_each_safe(iter,next,&tmplst)
+	{
+		ezCrossEventData* ev=list_entry(iter,ezCrossEventData,evlst_);
+		if(ev->event_==ezCrossClose)
+		{
+			n2oCloseFd(ev->fd_,ev->uuid_);
+			del(ev->fd_);
+		}
+		else if(ev->event_==ezCrossOpen)
+		{
+			int port=0;
+			base::ezBufferReader reader(ev->msg_->data_,ev->msg_->size_);
+			reader.Read(port);
+			uint16_t iplen=0;
+			reader.Read(iplen);
+			std::string ip;
+			reader.ReadString(ip,iplen);
+			int sock=ConnectTo(ip.c_str(),port);
+			if(sock>0)
+			{
+				add(sock,ev->uuid_,new ezClientFd,ezNetRead);
+			}
+			ezCrossEventData* sendEv=new ezCrossEventData;
+			sendEv->fd_=sock;
+			sendEv->uuid_=ev->uuid_;
+			sendEv->event_=ezCrossOpen;
+			n2oCrossEvent(sendEv);
+		}
+		delete ev;
+	}
+}
+
+void net::ezEventLoop::processMsg()
+{
+	LIST_HEAD(tmplst);
+	{
+		base::Locker lock(&mutexSendQueue_);
+		list_splice_init(&sendMsgQueue_,&tmplst);
+	}
+	list_head *iter,*next;
+	list_for_each_safe(iter,next,&tmplst)
+	{
+		ezSendBlock* blk=list_entry(iter,ezSendBlock,lst_);
+		if(blk->fd_<(int)events_.size()&&blk->fd_>0)
+		{
+			ezNetEventData* evd=events_[blk->fd_];
+			if(evd&&evd->ezfd_)
+			{
+				evd->ezfd_->sendMsg(blk);
+				blk=NULL;
+			}
+		}
+		if(blk) delete blk;
+	}
+	// 暂时采用遍历
+	for(size_t s=0;s<events_.size();++s)
+	{
+		ezNetEventData* evd=events_[s];
+		if(evd&&evd->ezfd_)
+		{
+			if(evd->ezfd_->formatMsg()>0)
+				modw(evd->fd_,true);
+		}
+	}
 }
 
 void net::ezEventLoop::netEventLoop()
@@ -97,43 +182,8 @@ void net::ezEventLoop::netEventLoop()
 		delete ezD;
 	}
 	fired_.clear();
-	
-	LIST_HEAD(tmplst);
-	{
-		base::Locker lock(&mutexO2NCrossEv_);
-		list_splice_init(&crossO2NEv_,&tmplst);
-	}
-	list_head *iter,*next;
-	list_for_each_safe(iter,next,&tmplst)
-	{
-		ezCrossEventData* ev=list_entry(iter,ezCrossEventData,evlst_);
-		if(ev->event_==ezCrossClose)
-		{
-			postCloseFd(ev->fd_,ev->uuid_);
-			del(ev->fd_);
-		}
-		else if(ev->event_==ezConnectTo)
-		{
-			int port=0;
-			base::ezBufferReader reader(ev->msg_->data_,ev->msg_->size_);
-			reader.Read(port);
-			uint16_t iplen=0;
-			reader.Read(iplen);
-			std::string ip;
-			reader.ReadString(ip,iplen);
-			int sock=ConnectNoBlock(ip.c_str(),port);
-			if(sock>0)
-			{
-				add(sock,ev->uuid_,new ezClientFd,ezNetRead);
-			}
-			ezCrossEventData* sendEv=new ezCrossEventData;
-			sendEv->fd_=sock;
-			sendEv->uuid_=ev->uuid_;
-			sendEv->event_=ezConnectTo;
-			postCrossEvent(sendEv);
-		}
-		delete ev;
-	}
+	processEv();
+	processMsg();
 }
 
 void net::ezEventLoop::crossEventLoop()
@@ -164,46 +214,43 @@ void net::ezEventLoop::crossEventLoop()
 				hander_->onData(this,evd->fd_,evd->uuid_,evd->msg_);
 			}
 			break;
-		case ezConnectTo:
-			hander_->onConnectTo(this,evd->fd_,evd->uuid_);
-			break;
 		default: break;
 		}
 		delete evd;
 	}
 }
 
-void net::ezEventLoop::postCrossEvent(ezCrossEventData* ev)
+void net::ezEventLoop::n2oCrossEvent(ezCrossEventData* ev)
 {
 	base::Locker lock(&mutexCrossEv_);
 	list_add_tail(&ev->evlst_,&crossEv_);
 }
 
-void net::ezEventLoop::postCloseFd(int fd,uint64_t uuid)
+void net::ezEventLoop::n2oCloseFd(int fd,uint64_t uuid)
 {
 	ezCrossEventData* data=new ezCrossEventData;
 	data->fd_=fd;
 	data->event_=ezCrossClose;
 	data->uuid_=uuid;
-	postCrossEvent(data);
+	n2oCrossEvent(data);
 }
 
-void net::ezEventLoop::postNewFd(int fd,uint64_t uuid)
+void net::ezEventLoop::n2oNewFd(int fd,uint64_t uuid)
 {
 	ezCrossEventData* data=new ezCrossEventData;
 	data->fd_=fd;
 	data->event_=ezCrossOpen;
 	data->uuid_=uuid;
-	postCrossEvent(data);
+	n2oCrossEvent(data);
 }
 
-void net::ezEventLoop::postError(int fd,uint64_t uuid)
+void net::ezEventLoop::n2oError(int fd,uint64_t uuid)
 {
 	ezCrossEventData* data=new ezCrossEventData;
 	data->fd_=fd;
 	data->event_=ezCrossError;
 	data->uuid_=uuid;
-	postCrossEvent(data);
+	n2oCrossEvent(data);
 }
 
 net::ezEventLoop::ezEventLoop()
@@ -215,6 +262,7 @@ net::ezEventLoop::ezEventLoop()
 	suuid_.Set(1);
 	INIT_LIST_HEAD(&crossEv_);
 	INIT_LIST_HEAD(&crossO2NEv_);
+	INIT_LIST_HEAD(&sendMsgQueue_);
 }
 
 net::ezEventLoop::~ezEventLoop()
@@ -229,7 +277,7 @@ uint64_t net::ezEventLoop::uuid()
 	return suuid_.Add(1);
 }
 
-void net::ezEventLoop::postActiveCloseFd(int fd,uint64_t uuid)
+void net::ezEventLoop::o2nCloseFd(int fd,uint64_t uuid)
 {
 	ezCrossEventData* ev=new ezCrossEventData;
 	ev->fd_=fd;
@@ -240,11 +288,11 @@ void net::ezEventLoop::postActiveCloseFd(int fd,uint64_t uuid)
 	list_add_tail(&ev->evlst_,&crossO2NEv_);
 }
 
-void net::ezEventLoop::postConnectTo(uint64_t uuid,const char* toip,int toport)
+void net::ezEventLoop::o2nConnectTo(uint64_t uuid,const char* toip,int toport)
 {
 	ezCrossEventData* ev=new ezCrossEventData;
 	ev->uuid_=uuid;
-	ev->event_=ezConnectTo;
+	ev->event_=ezCrossOpen;
 	ezNetPack* msg=new ezNetPack(128);
 	ev->msg_=msg;
 	base::ezBufferWriter writer(msg->data_,msg->capacity_);
@@ -255,6 +303,16 @@ void net::ezEventLoop::postConnectTo(uint64_t uuid,const char* toip,int toport)
 
 	base::Locker lock(&mutexO2NCrossEv_);
 	list_add_tail(&ev->evlst_,&crossO2NEv_);
+}
+
+void net::ezEventLoop::sendMsg(int fd,ezNetPack* msg)
+{
+	ezSendBlock* blk=new ezSendBlock;
+	blk->fd_=fd;
+	blk->pack_=msg;
+
+	base::Locker lock(&mutexSendQueue_);
+	list_add_tail(&blk->lst_,&sendMsgQueue_);
 }
 
 net::ezNetEventData::~ezNetEventData()
