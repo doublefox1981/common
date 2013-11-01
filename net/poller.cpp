@@ -114,11 +114,6 @@ void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid
 	}
 	if(event&ezNetWrite)
 	{
-		if(outbuf_->readableSize()<=0&&list_empty(&sendqueue_))
-		{
-			looper->getPoller()->delFd(fd,ezNetWrite);
-			return;
-		}
 		char* pbuf=NULL;
 		size_t s=outbuf_->getReadable(pbuf);
 		if(s>0&&pbuf)
@@ -143,7 +138,11 @@ void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid
 			}
 			outbuf_->addReadPos(sendlen);
 		}
-		looper->getPoller()->delFd(fd,ezNetWrite);
+		if(outbuf_->readableSize()<=0&&list_empty(&sendqueue_))
+		{
+			looper->getPoller()->delFd(fd,ezNetWrite);
+			return;
+		}
 	}
 }
 
