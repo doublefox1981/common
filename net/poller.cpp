@@ -44,12 +44,12 @@ void net::ezSelectPoller::delFd(int fd,int mask)
 		FD_CLR(fd,&wfds_);
 }
 
-void net::ezSelectPoller::modFd(int fd,int mask)
+void net::ezSelectPoller::modFd(int fd,int mask,bool set)
 {
-	if(mask&ezNetRead)
-		FD_CLR(fd,&rfds_);
-	if(mask&ezNetWrite)
-		FD_CLR(fd,&wfds_);
+	if(!set)
+		delFd(fd,mask);
+	else
+		addFd(fd,mask);
 }
 
 void net::ezSelectPoller::poll()

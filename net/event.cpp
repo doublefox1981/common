@@ -67,15 +67,10 @@ int net::ezEventLoop::mod(int fd,int event,bool set)
 	assert(events_[fd]);
 	assert(events_[fd]->event_!=ezNetNone);
 	if(set)
-	{
-		events_[fd]->event_ |= event;
-		poller_->modFd(fd,event);
-	}
+		events_[fd]->event_|=event;
 	else
-	{
-		events_[fd]->event_ &= ~event;
-		poller_->modFd(fd,event);
-	}
+		events_[fd]->event_&=~event;
+	poller_->modFd(fd,event,set);
 	return 0;
 }
 
