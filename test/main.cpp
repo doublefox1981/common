@@ -30,7 +30,11 @@ int main()
 		ev->netEventLoop();
 		ev1->crossEventLoop();
 		ev->crossEventLoop();
+#ifdef __linux__
+		usleep(10*1000);
+#else
 		Sleep(10);
+#endif
 	}
 	delete ev;
 	return 1;

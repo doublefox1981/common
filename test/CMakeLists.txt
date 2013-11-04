@@ -1,0 +1,8 @@
+project(test)
+cmake_minimum_required(VERSION 2.6)
+set(CMAKE_CXX_COMPILER g++)
+set(CMAKE_CXX_FLAGS "-std=c++11")
+link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../lib)
+set(SRC_LIST main.cpp)
+add_executable(test ${SRC_LIST}  )
+target_link_libraries(test evbase evnet)
