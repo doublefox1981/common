@@ -60,40 +60,21 @@ int net::ezEventLoop::del(int fd)
 	return 0;
 }
 
-int net::ezEventLoop::modr(int fd, bool set)
+int net::ezEventLoop::mod(int fd,int event,bool set)
 {
-	assert(fd >= 0);
-	assert(fd <= maxfd_);
+	assert(fd>=0);
+	assert(fd<=maxfd_);
 	assert(events_[fd]);
-
+	assert(events_[fd]->event_!=ezNetNone);
 	if(set)
 	{
-		events_[fd]->event_ |= ezNetRead;
-		poller_->addFd(fd,ezNetRead);
+		events_[fd]->event_ |= event;
+		poller_->modFd(fd,event);
 	}
 	else
 	{
-		events_[fd]->event_ &= ~ezNetRead;
-		poller_->delFd(fd,ezNetRead);
-	}
-	return 0;
-}
-
-int net::ezEventLoop::modw(int fd, bool set)
-{
-	assert(fd >= 0);
-	assert(fd <= maxfd_);
-	assert(events_[fd]);
-
-	if(set)
-	{
-		events_[fd]->event_ |= ezNetWrite;
-		poller_->addFd(fd,ezNetWrite);
-	}
-	else
-	{
-		events_[fd]->event_ &= ~ezNetWrite;
-		poller_->delFd(fd,ezNetWrite);
+		events_[fd]->event_ &= ~event;
+		poller_->modFd(fd,event);
 	}
 	return 0;
 }
@@ -160,14 +141,13 @@ void net::ezEventLoop::processMsg()
 		}
 		if(blk) delete blk;
 	}
-	// 暂时采用遍历
 	for(size_t s=0;s<events_.size();++s)
 	{
 		ezFdData* evd=events_[s];
 		if(evd&&evd->ezfd_)
 		{
 			if(evd->ezfd_->formatMsg()>0)
-				modw(evd->fd_,true);
+				mod(evd->fd_,ezNetWrite,true);
 		}
 	}
 }

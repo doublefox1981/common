@@ -46,7 +46,10 @@ void net::ezSelectPoller::delFd(int fd,int mask)
 
 void net::ezSelectPoller::modFd(int fd,int mask)
 {
-
+	if(mask&ezNetRead)
+		FD_CLR(fd,&rfds_);
+	if(mask&ezNetWrite)
+		FD_CLR(fd,&wfds_);
 }
 
 void net::ezSelectPoller::poll()
@@ -54,13 +57,13 @@ void net::ezSelectPoller::poll()
 	struct timeval tm = {0,0};
 	memcpy(&urfds_,&rfds_,sizeof(fd_set));
 	memcpy(&uwfds_,&wfds_,sizeof(fd_set));
-	int retval=select(loop_->maxFd(),&urfds_,&uwfds_,NULL,&tm);
+	int retval=select(getEventLooper()->maxFd(),&urfds_,&uwfds_,NULL,&tm);
 	if(retval>0)
 	{
-		for(int j=0;j<=loop_->maxFd();++j)
+		for(int j=0;j<=getEventLooper()->maxFd();++j)
 		{
 			int mask=0;
-			ezFdData* d=loop_->ezFdDatai(j);
+			ezFdData* d=getEventLooper()->ezFdDatai(j);
 			if(!d||d->event_==ezNetNone) continue;
 			if(d->event_&ezNetRead&&FD_ISSET(d->fd_,&urfds_))
 				mask|=ezNetRead;
@@ -70,12 +73,12 @@ void net::ezSelectPoller::poll()
 			fireD->event_=mask;
 			fireD->fd_=d->fd_;
 			fireD->uuid_=d->uuid_;
-			loop_->pushFired(fireD);
+			getEventLooper()->pushFired(fireD);
 		}
 	}
 }
 
-net::ezSelectPoller::ezSelectPoller( ezEventLoop* loop ) :loop_(loop)
+net::ezSelectPoller::ezSelectPoller(ezEventLoop* loop):ezPoller(loop)
 {
 	FD_ZERO(&rfds_);
 	FD_ZERO(&wfds_);
@@ -144,6 +147,11 @@ void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid
 			return;
 		}
 	}
+	if(event&ezNetErr)
+	{
+		looper->n2oError(fd,uuid);
+		looper->del(fd);
+	}
 }
 
 net::ezClientFd::ezClientFd()
@@ -203,3 +211,78 @@ size_t net::ezClientFd::formatMsg()
 	outbuf_->addWritePos(writer.GetUsedSize());
 	return outbuf_->readableSize();
 }
+
+#ifdef __linux__
+
+net::ezEpollPoller::ezEpollPoller(ezEventLoop* loop):ezPoller(loop)
+{
+	epollFd_=epoll_create1();
+}
+
+net::ezEpollPoller::~ezEpollPoller()
+{
+	close(epollFd_);
+}
+
+void net::ezEpollPoller::addFd(int fd,int mask)
+{
+	struct epoll_event ee;
+    ee.events = 0;
+    if(mask&ezNetRead) ee.events |= EPOLLIN;
+    if(mask&ezNetWrite) ee.events |= EPOLLOUT;
+    ee.data.u64 = 0;
+    ee.data.fd = fd;
+    if(epoll_ctl(state->epfd,EPOLL_CTL_ADD,fd,&ee)==-1) 
+		printf("EPOLL_CTL_ADD fail\n");
+}
+
+void net::ezEpollPoller::delFd(int fd,int mask)
+{
+	struct epoll_event ee;
+	ee.events = 0;
+	if(mask&ezNetRead) ee.events |= EPOLLIN;
+	if(mask&ezNetWrite) ee.events |= EPOLLOUT;
+	ee.data.u64 = 0;
+	ee.data.fd = fd;
+	if(epoll_ctl(state->epfd,EPOLL_CTL_DEL,fd,&ee)==-1) 
+		printf("EPOLL_CTL_DEL fail\n");
+}
+
+void net::ezEpollPoller::modFd(int fd,int mask)
+{
+	struct epoll_event ee;
+	ee.events = 0;
+	if(mask&ezNetRead) ee.events |= EPOLLIN;
+	if(mask&ezNetWrite) ee.events |= EPOLLOUT;
+	ee.data.u64 = 0;
+	ee.data.fd = fd;
+	if(epoll_ctl(state->epfd,EPOLL_CTL_MOD,fd,&ee)==-1) 
+		printf("EPOLL_CTL_MOD fail\n");
+}
+
+void net::ezEpollPoller::poll()
+{
+	int retval, numevents = 0;
+	retval = epoll_wait(epollFd_,epollEvents_,sizeof(epollEvents_)/sizeof(struct epoll_event),5);
+	for (int j=0;j<retval;j++) 
+	{
+		struct epoll_event *e = epollEvents_[j];
+		ezFdData* fdData=getEventLooper()->ezFdDatai(e->data.fd);
+		assert(fdData);
+
+		int mask = 0;
+		if (e->events&EPOLLIN)  mask|=ezNetRead;
+		if (e->events&EPOLLOUT) mask|=ezNetWrite;
+		if (e->events&EPOLLERR) mask|=ezNetErr;
+		if (e->events&EPOLLHUP) mask| ezNetErr;
+
+		ezFdData* fireD=new ezFdData;
+		fireD->event_=mask;
+		fireD->fd_=e->data.fd;
+		fireD->uuid_=fdData->uuid_;
+		loop_->pushFired(fireD);
+	}
+	return numevents;
+}
+
+#endif

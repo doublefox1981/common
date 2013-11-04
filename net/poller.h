@@ -11,11 +11,15 @@ class ezEventLoop;
 class ezPoller
 {
 public:
+	ezPoller(ezEventLoop* loop):loop_(loop){}
+	virtual ~ezPoller(){}
 	virtual void addFd(int fd,int event)=0;
 	virtual void delFd(int fd,int event)=0;
 	virtual void modFd(int fd,int event)=0;
 	virtual void poll()=0;
-	~ezPoller(){}
+	ezEventLoop* getEventLooper(){return loop_;}
+private:
+	ezEventLoop* loop_;
 };
 
 class ezFd
@@ -62,7 +66,24 @@ private:
 	fd_set rfds_;
 	fd_set uwfds_;
 	fd_set urfds_;
-	ezEventLoop* loop_;
 };
+
+#ifdef __linux__
+#include <sys/epoll.h>
+#include <unistd.h>
+class ezEpollPoller:public ezPoller
+{
+public:
+	ezEpollPoller(ezEventLoop* loop);
+	virtual ~ezEpollPoller();
+	virtual void addFd(int fd,int mask);
+	virtual void delFd(int fd,int mask);
+	virtual void modFd(int fd,int mask);
+	virtual void poll();
+private:
+	int epollFd_;
+	struct epoll_event epollEvents_[1024];
+};
+#endif
 }
 #endif

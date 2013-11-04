@@ -13,6 +13,7 @@ enum ezNetEventType
 	ezNetNone=0,
 	ezNetRead=1,
 	ezNetWrite=2,
+	ezNetErr=4,
 	ezNetAll=ezNetRead|ezNetWrite,
 };
 
@@ -63,8 +64,7 @@ public:
 	int shutdown();
 	uint64_t add(int fd,uint64_t uuid,ezFd *ezfd,int event);
 	int del(int fd);
-	int modr(int fd, bool set);
-	int modw(int fd, bool set);
+	int mod(int fd,int event,bool set);
 	int maxFd() {return maxfd_;}
 	ezFdData* ezFdDatai(int i) {return events_[i];}
 	void pushFired(ezFdData* ezD){fired_.push_back(ezD);}
