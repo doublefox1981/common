@@ -2,7 +2,9 @@
 #define _CONNECTION_H
 #include "portable.h"
 #include "../base/singleton.h"
-#include <hash_map>
+#include <unordered_map>
+#include <string>
+#include <vector>
 
 namespace net
 {
@@ -111,7 +113,7 @@ public:
 	uint64_t connectTo(ezEventLoop* looper,const char* ip,int port);
 	void reconnectAll(ezEventLoop* looper);
 private:
-	std::hash_map<uint64_t,ezConnection*> mapConns_;
+	std::unordered_map<uint64_t,ezConnection*> mapConns_;
 	std::vector<ezConnectToInfo> vecConnectTo_;
 };
 }

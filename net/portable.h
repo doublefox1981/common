@@ -10,6 +10,7 @@ typedef unsigned short uint16;
 typedef unsigned int   uint32;
 typedef unsigned char byte;
 #include <stdint.h>
+#include <cstddef>
 #ifndef __linux__
 #ifndef FD_SETSIZE
 #define FD_SETSIZE 16000
@@ -36,6 +37,9 @@ inline uint32 GetMiniSecond(){return timeGetTime();}
 #else
 
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 #define LONGLONG(n) n##LL
 #define ULONGLONG(n) n##ULL

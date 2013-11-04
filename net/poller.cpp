@@ -216,7 +216,7 @@ size_t net::ezClientFd::formatMsg()
 
 net::ezEpollPoller::ezEpollPoller(ezEventLoop* loop):ezPoller(loop)
 {
-	epollFd_=epoll_create1();
+	epollFd_=epoll_create1(0);
 }
 
 net::ezEpollPoller::~ezEpollPoller()
@@ -232,7 +232,7 @@ void net::ezEpollPoller::addFd(int fd,int mask)
     if(mask&ezNetWrite) ee.events |= EPOLLOUT;
     ee.data.u64 = 0;
     ee.data.fd = fd;
-    if(epoll_ctl(state->epfd,EPOLL_CTL_ADD,fd,&ee)==-1) 
+    if(epoll_ctl(epollFd_,EPOLL_CTL_ADD,fd,&ee)==-1) 
 		printf("EPOLL_CTL_ADD fail\n");
 }
 
@@ -244,7 +244,7 @@ void net::ezEpollPoller::delFd(int fd,int mask)
 	if(mask&ezNetWrite) ee.events |= EPOLLOUT;
 	ee.data.u64 = 0;
 	ee.data.fd = fd;
-	if(epoll_ctl(state->epfd,EPOLL_CTL_DEL,fd,&ee)==-1) 
+	if(epoll_ctl(epollFd_,EPOLL_CTL_DEL,fd,&ee)==-1) 
 		printf("EPOLL_CTL_DEL fail\n");
 }
 
@@ -256,17 +256,17 @@ void net::ezEpollPoller::modFd(int fd,int mask)
 	if(mask&ezNetWrite) ee.events |= EPOLLOUT;
 	ee.data.u64 = 0;
 	ee.data.fd = fd;
-	if(epoll_ctl(state->epfd,EPOLL_CTL_MOD,fd,&ee)==-1) 
+	if(epoll_ctl(epollFd_,EPOLL_CTL_MOD,fd,&ee)==-1) 
 		printf("EPOLL_CTL_MOD fail\n");
 }
 
 void net::ezEpollPoller::poll()
 {
-	int retval, numevents = 0;
+	int retval=0;
 	retval = epoll_wait(epollFd_,epollEvents_,sizeof(epollEvents_)/sizeof(struct epoll_event),5);
 	for (int j=0;j<retval;j++) 
 	{
-		struct epoll_event *e = epollEvents_[j];
+		struct epoll_event *e = &epollEvents_[j];
 		ezFdData* fdData=getEventLooper()->ezFdDatai(e->data.fd);
 		assert(fdData);
 
@@ -280,9 +280,8 @@ void net::ezEpollPoller::poll()
 		fireD->event_=mask;
 		fireD->fd_=e->data.fd;
 		fireD->uuid_=fdData->uuid_;
-		loop_->pushFired(fireD);
+		getEventLooper()->pushFired(fireD);
 	}
-	return numevents;
 }
 
 #endif

@@ -1,8 +1,10 @@
-#include "connection.h"
 #include "socket.h"
+#include "connection.h"
 #include "netpack.h"
 #include "event.h"
 #include "../base/memorystream.h"
+
+using namespace net;
 
 net::ezConnection::ezConnection(ezEventLoop* looper)
 	:evLooper_(looper),
@@ -138,7 +140,7 @@ void net::ezServerHander::onOpen(ezEventLoop* looper,int fd,uint64_t uuid)
 	if(conn)
 	{
 		char ipport[128];
-		net::ToIpPort(ipport,sizeof(ipport),GetPeerAddr(fd));
+		net::ToIpPort(ipport,sizeof(ipport),net::GetPeerAddr(fd));
 		conn->setIpAddr(ipport);
 		printf("new connector from %s\n",ipport);
 	}
