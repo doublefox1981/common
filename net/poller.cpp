@@ -248,7 +248,7 @@ void net::ezEpollPoller::delFd(int fd,int mask)
 		printf("EPOLL_CTL_DEL fail\n");
 }
 
-void net::ezEpollPoller::modFd(int fd,int mask)
+void net::ezEpollPoller::modFd(int fd,int mask,bool set)
 {
 	struct epoll_event ee;
 	ee.events = 0;
