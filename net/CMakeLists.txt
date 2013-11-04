@@ -1,7 +1,7 @@
 project(eznet)
 cmake_minimum_required(VERSION 2.6)
 set(CMAKE_CXX_COMPILER g++)
-set(CMAKE_CXX_FLAGS "-std=c++11")
+set(CMAKE_CXX_FLAGS "-g -std=c++11")
 SET(LIBRARY_OUTPUT_PATH ../lib)
 set(SRC_LIST buffer.cpp connection.cpp event.cpp netpack.cpp poller.cpp socket.cpp)
 add_library(eznet ${SRC_LIST})

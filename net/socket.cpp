@@ -187,8 +187,8 @@ SOCKET CreateNonBlockSocket()
 	SOCKET s=::socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
 	if(s==INVALID_SOCKET)
 		return INVALID_SOCKET;
-	char on=1;
-	if (setsockopt(s,SOL_SOCKET,SO_REUSEADDR, &on, sizeof(on))==-1) 
+	int on=1;
+	if (setsockopt(s,SOL_SOCKET,SO_REUSEADDR, (char*)&on, sizeof(on))==-1) 
 		ezSocketError("setsockopt SO_REUSEADDR");
 	NonBlock(s);
 	return s;
@@ -374,8 +374,8 @@ int ConnectTo(const char* ip,int port)
 	SOCKET s=::socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
 	if(s==INVALID_SOCKET)
 		return INVALID_SOCKET;
-	char on=1;
-	if (setsockopt(s,SOL_SOCKET,SO_REUSEADDR, &on, sizeof(on))==-1) 
+	int on=1;
+	if (setsockopt(s,SOL_SOCKET,SO_REUSEADDR, (char*)&on, sizeof(on))==-1) 
 	{
 		ezSocketError("setsockopt SO_REUSEADDR");
 		CloseSocket(s);

@@ -1,7 +1,7 @@
 project(ezbase)
 cmake_minimum_required(VERSION 2.6)
 set(CMAKE_CXX_COMPILER g++)
-set(CMAKE_CXX_FLAGS "-std=c++11")
+set(CMAKE_CXX_FLAGS "-g -std=c++11")
 SET(LIBRARY_OUTPUT_PATH ../lib)
 set(SRC_LIST listdebug.cpp thread.cpp)
 add_library(ezbase ${SRC_LIST})
