@@ -1,0 +1,6 @@
+project(evbase)
+cmake_minimum_required(VERSION 2.6)
+set(CMAKE_CXX_COMPILER g++)
+set(CMAKE_CXX_FLAGS "-std=c++11")
+set(SRC_LIST listdebug.cpp thread.cpp)
+add_library(evbase ${SRC_LIST})
