@@ -2,10 +2,10 @@
  
 namespace base
 {
-// #ifdef __linux__
-// pthread_mutexattr_t Mutex::attr;
-// int Mutex::attr_refcount = 0;
-// #endif
+#ifdef __linux__
+	pthread_mutexattr_t Mutex::attr;
+	int Mutex::attr_refcount = 0;
+#endif
 // 
 // 
 // void Threads::setCurrentPriority( ThreadPriority priority ) {

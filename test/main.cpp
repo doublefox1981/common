@@ -15,12 +15,10 @@ int main()
 	ezEventLoop* ev1=new ezEventLoop;
 	ev1->init(new ezSelectPoller(ev1),new ezServerHander((numeric_limits<uint16_t>::max)()));
 	ev1->serveOnPort(10010);
-	Sleep(1000);
 
 	ezEventLoop* ev=new ezEventLoop;
 	ev->init(new ezSelectPoller(ev),new ezClientHander((numeric_limits<uint16_t>::max)()));
 	ev->getConnectionMgr()->connectTo(ev,"127.0.0.1",10010);
-	Sleep(1000);
 
 	base::ScopeGuard guard([&](){delete ev1; delete ev;});
 
