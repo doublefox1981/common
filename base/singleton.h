@@ -20,6 +20,6 @@ protected:
 };
 
 template<typename T>
-T* ezSingleTon<T>::pInstance = NULL;
+T* ezSingleTon<T>::pInstance = nullptr;
 }
 #endif

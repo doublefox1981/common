@@ -57,7 +57,7 @@ void net::ezSelectPoller::poll()
 	struct timeval tm = {0,0};
 	memcpy(&urfds_,&rfds_,sizeof(fd_set));
 	memcpy(&uwfds_,&wfds_,sizeof(fd_set));
-	int retval=select(getEventLooper()->maxFd(),&urfds_,&uwfds_,NULL,&tm);
+	int retval=select(getEventLooper()->maxFd(),&urfds_,&uwfds_,nullptr,&tm);
 	if(retval>0)
 	{
 		for(int j=0;j<=getEventLooper()->maxFd();++j)
@@ -90,7 +90,7 @@ void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid
 {
 	if(event&ezNetRead)
 	{
-		char* pbuf=NULL;
+		char* pbuf=nullptr;
 		size_t s=inbuf_->getWritable(pbuf);
 		int retval=Read(fd,pbuf,s);
 		if((retval==0)||(retval<0&&errno!=EAGAIN))
@@ -102,7 +102,7 @@ void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid
 		{
 			ezHander* hander=looper->getHander();
 			inbuf_->addWritePos(retval);
-			char* rbuf=NULL;
+			char* rbuf=nullptr;
 			size_t rs=inbuf_->getReadable(rbuf);
 			int rets=hander->decode(looper,fd,uuid,rbuf,rs);
 			assert(rets<=(int)inbuf_->readableSize());
@@ -117,7 +117,7 @@ void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid
 	}
 	if(event&ezNetWrite)
 	{
-		char* pbuf=NULL;
+		char* pbuf=nullptr;
 		size_t s=outbuf_->getReadable(pbuf);
 		if(s>0&&pbuf)
 		{
@@ -184,7 +184,7 @@ size_t net::ezClientFd::formatMsg()
 {
 	if(list_empty(&sendqueue_))
 		return 0;
-	char* pbuf=NULL;
+	char* pbuf=nullptr;
 	size_t s=outbuf_->getWritable(pbuf);
 	if(s<=0)
 		return 0;

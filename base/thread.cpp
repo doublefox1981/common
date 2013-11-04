@@ -65,7 +65,7 @@ namespace base
 //   return GetTickCount() - mStartTick;
 // #else
 //   timeval tv;
-//   gettimeofday(&tv,NULL);
+//   gettimeofday(&tv,nullptr);
 //   return (tv.tv_sec*1000 + tv.tv_usec/1000) - mStartTick;
 // #endif
 // }
@@ -74,11 +74,11 @@ namespace base
 // void Threads::Start()
 // {
 // #ifdef _WIN32
-//   mthread = CreateThread( NULL, 0, (LPTHREAD_START_ROUTINE)thread_func, (void*)this, 0, 0 ) ;
+//   mthread = CreateThread( nullptr, 0, (LPTHREAD_START_ROUTINE)thread_func, (void*)this, 0, 0 ) ;
 //   mStartTick = GetTickCount();
 // #else
 //   timeval tv;
-//   gettimeofday(&tv,NULL);
+//   gettimeofday(&tv,nullptr);
 //   mStartTick = tv.tv_sec*1000 + tv.tv_usec/1000;
 //   pthread_t thread;
 //   pthread_attr_t threadattributes;

@@ -20,7 +20,7 @@ int net::ezEventLoop::shutdown()
 
 int net::ezEventLoop::serveOnPort(int port)
 {
-	SOCKET s=CreateTcpServer(port,NULL);
+	SOCKET s=CreateTcpServer(port,nullptr);
 	if(s!=INVALID_SOCKET)
 	{
 		add(s,uuid(),new ezListenerFd,ezNetRead);
@@ -54,7 +54,7 @@ int net::ezEventLoop::del(int fd)
 	assert(events_[fd]);
 	int event=events_[fd]->event_;
 	delete events_[fd];
-	events_[fd] = NULL;
+	events_[fd] = nullptr;
 	poller_->delFd(fd,event);
 	net::CloseSocket(fd);
 	return 0;
@@ -136,7 +136,7 @@ void net::ezEventLoop::processMsg()
 			if(evd&&evd->ezfd_)
 			{
 				evd->ezfd_->sendMsg(blk);
-				blk=NULL;
+				blk=nullptr;
 			}
 		}
 		if(blk) delete blk;
@@ -235,8 +235,8 @@ void net::ezEventLoop::n2oError(int fd,uint64_t uuid)
 
 net::ezEventLoop::ezEventLoop()
 {
-	poller_=NULL;
-	hander_=NULL;
+	poller_=nullptr;
+	hander_=nullptr;
 	conMgr_=new ezConnectionMgr;
 	maxfd_=-1;
 	suuid_.Set(1);
@@ -301,12 +301,12 @@ net::ezFdData::~ezFdData()
 		delete ezfd_;
 }
 
-net::ezFdData::ezFdData():fd_(-1),event_(ezNetNone),ezfd_(NULL),uuid_(0)
+net::ezFdData::ezFdData():fd_(-1),event_(ezNetNone),ezfd_(nullptr),uuid_(0)
 {
 
 }
 
-net::ezCrossEventData::ezCrossEventData():fd_(-1),uuid_(0),event_(ezCrossNone),msg_(NULL)
+net::ezCrossEventData::ezCrossEventData():fd_(-1),uuid_(0),event_(ezCrossNone),msg_(nullptr)
 {
 
 }

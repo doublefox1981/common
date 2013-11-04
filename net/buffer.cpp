@@ -1,7 +1,8 @@
 #include "buffer.h"
 #include "socket.h"
+#include <string.h>
 
-net::ezBuffer::ezBuffer( size_t initSize/*=ezInitSize*/ )
+net::ezBuffer::ezBuffer(size_t initSize/*=ezInitSize*/)
 {
 	buffer_=new char[initSize];
 	capacity_=initSize;

@@ -111,7 +111,7 @@ static const char *
 
 	if (size < INET_ADDRSTRLEN) {
 		errno = ENOSPC;
-		return NULL;
+		return nullptr;
 	}
 	for (i = 0; i < 4; ++i) {
 		int n = (a >> (24 - i * 8)) & 0xFF;
@@ -140,7 +140,7 @@ static const char *
 */
 static const char *inet_ntop_v6 (const u_char *src, char *dst, size_t size)
 {
-	return NULL;
+	return nullptr;
 }
 
 const char* inet_ntop(int af, const void *src, char *dst, size_t size)
@@ -152,7 +152,7 @@ const char* inet_ntop(int af, const void *src, char *dst, size_t size)
 		return inet_ntop_v6 ((const u_char*)src, dst, size);
 	default :
 		errno = EAFNOSUPPORT;
-		return NULL;
+		return nullptr;
 	}
 }
 #endif

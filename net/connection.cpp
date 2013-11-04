@@ -8,7 +8,7 @@ net::ezConnection::ezConnection(ezEventLoop* looper)
 	:evLooper_(looper),
 	fd_(0),
 	uuid_(0),
-	gameObj_(NULL)
+	gameObj_(nullptr)
 {
 }
 
@@ -16,7 +16,7 @@ net::ezConnection::ezConnection(ezEventLoop* looper,int fd,uint64_t uuid)
 	:evLooper_(looper),
 	fd_(fd),
 	uuid_(uuid),
-	gameObj_(NULL)
+	gameObj_(nullptr)
 {
 }
 
@@ -35,8 +35,8 @@ void net::ezConnection::attachGameObject(ezGameObject* obj)
 void net::ezConnection::detachGameObject()
 {
 	if(gameObj_)
-		gameObj_->setConnection(NULL);
-	gameObj_=NULL;
+		gameObj_->setConnection(nullptr);
+	gameObj_=nullptr;
 }
 
 void net::ezConnection::onRecvNetPack(ezNetPack* pack)
@@ -87,7 +87,7 @@ net::ezConnection* net::ezConnectionMgr::findConnection(uint64_t uuid)
 	if(iter!=mapConns_.end())
 		return iter->second;
 	else
-		return NULL;
+		return nullptr;
 }
 
 net::ezConnectToInfo* net::ezConnectionMgr::findConnectToInfo(uint64_t uuid)
@@ -98,7 +98,7 @@ net::ezConnectToInfo* net::ezConnectionMgr::findConnectToInfo(uint64_t uuid)
 		if(info.uuid_==uuid)
 			return &info;
 	}
-	return NULL;
+	return nullptr;
 }
 
 void net::ezConnectionMgr::delConnectToInfo(uint64_t uuid)
@@ -149,7 +149,7 @@ void net::ezServerHander::onClose(ezEventLoop* looper,int fd,uint64_t uuid)
 	ezConnection* conn=looper->getConnectionMgr()->findConnection(uuid);
 	std::string ip=conn->getIpAddr();
 	printf("disconnect %s\n",ip.c_str());
-	conn=NULL;
+	conn=nullptr;
 	looper->getConnectionMgr()->delConnection(uuid);
 }
 
@@ -195,7 +195,7 @@ void net::ezServerHander::onError(ezEventLoop* looper,int fd,uint64_t uuid)
 	ezConnection* conn=looper->getConnectionMgr()->findConnection(uuid);
 	std::string ip=conn->getIpAddr();
 	printf("disconnect %s\n",ip.c_str());
-	conn=NULL;
+	conn=nullptr;
 	looper->getConnectionMgr()->delConnection(uuid);
 }
 
@@ -265,7 +265,7 @@ void net::ezClientHander::onClose(ezEventLoop* looper,int fd,uint64_t uuid)
 		return;
 	std::string ip=conn->getIpAddr();
 	printf("disconnect %s\n",ip.c_str());
-	conn=NULL;
+	conn=nullptr;
 	looper->getConnectionMgr()->delConnection(uuid);
 }
 
@@ -276,7 +276,7 @@ void net::ezClientHander::onError(ezEventLoop* looper,int fd,uint64_t uuid)
 		return;
 	std::string ip=conn->getIpAddr();
 	printf("disconnect %s\n",ip.c_str());
-	conn=NULL;
+	conn=nullptr;
 	looper->getConnectionMgr()->delConnection(uuid);
 }
 

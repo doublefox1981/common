@@ -55,7 +55,7 @@ namespace base
 	public:
 		Semaphore()
 		{
-			mSema=CreateSemaphore(NULL,0,MAXWORD,NULL);
+			mSema=CreateSemaphore(nullptr,0,MAXWORD,nullptr);
 		}
 		~Semaphore()
 		{
@@ -63,7 +63,7 @@ namespace base
 		}
 		void PostSignal()
 		{
-			ReleaseSemaphore(mSema,1,NULL);
+			ReleaseSemaphore(mSema,1,nullptr);
 		}
 		void WaitSignal()
 		{
@@ -223,7 +223,7 @@ namespace base
 // 		{
 // 			mbExit = true;
 // #ifndef _WIN32
-// 			pthread_join(mthread,NULL);
+// 			pthread_join(mthread,nullptr);
 // #else
 // 			WaitForSingleObject(mthread,INFINITE);
 // #endif

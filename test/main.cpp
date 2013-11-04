@@ -12,7 +12,6 @@ using namespace std;
 int main()
 {
 	InitNetwork();
-
 	ezEventLoop* ev1=new ezEventLoop;
 	ev1->init(new ezSelectPoller(ev1),new ezServerHander((numeric_limits<uint16_t>::max)()));
 	ev1->serveOnPort(10010);

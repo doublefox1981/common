@@ -7,8 +7,8 @@
 //#include <linux/prefetch.h>
 //#include <asm/system.h>
 
-#ifndef NULL
-#define NULL 0
+#ifndef nullptr
+#define nullptr 0
 #endif
 
 #define LIST_POISON1  ((void *) 0x00100100)
@@ -482,14 +482,14 @@ struct hlist_node {
 	struct hlist_node *next, **pprev;
 };
 
-//#define HLIST_HEAD_INIT { .first = NULL }
-//#define HLIST_HEAD(name) struct hlist_head name = {  .first = NULL }
-#define HLIST_HEAD(name) struct hlist_head name = { NULL }
-#define INIT_HLIST_HEAD(ptr) ((ptr)->first = NULL)
+//#define HLIST_HEAD_INIT { .first = nullptr }
+//#define HLIST_HEAD(name) struct hlist_head name = {  .first = nullptr }
+#define HLIST_HEAD(name) struct hlist_head name = { nullptr }
+#define INIT_HLIST_HEAD(ptr) ((ptr)->first = nullptr)
 static inline void INIT_HLIST_NODE(struct hlist_node *h)
 {
-	h->next = NULL;
-	h->pprev = NULL;
+	h->next = nullptr;
+	h->pprev = nullptr;
 }
 
 static inline int hlist_unhashed(const struct hlist_node *h)
@@ -536,7 +536,7 @@ static inline void hlist_add_head(struct hlist_node *n, struct hlist_head *h)
 	n->pprev = &h->first;
 }
 
-/* next must be != NULL */
+/* next must be != nullptr */
 static inline void hlist_add_before(struct hlist_node *n,
 					struct hlist_node *next)
 {
@@ -567,7 +567,7 @@ static inline void hlist_move_list(struct hlist_head *old,
 	new_->first = old->first;
 	if (new_->first)
 		new_->first->pprev = &new_->first;
-	old->first = NULL;
+	old->first = nullptr;
 }
 
 #define hlist_entry(ptr, type, member) container_of(ptr,type,member)

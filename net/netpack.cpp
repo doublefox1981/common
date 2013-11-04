@@ -14,7 +14,7 @@ net::ezNetPack::~ezNetPack()
 }
 
 
-net::ezSendBlock::ezSendBlock():fd_(-1),pack_(NULL)
+net::ezSendBlock::ezSendBlock():fd_(-1),pack_(nullptr)
 {
 }
 
