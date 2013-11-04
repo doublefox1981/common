@@ -7,6 +7,7 @@ namespace net
 #ifdef __linux__
 	typedef int SOCKET;
 	#define INVALID_SOCKET (SOCKET)(~0)
+	#define SOCKET_ERROR (SOCKET)(~0)
 #else
 	int inet_aton(register const char *cp, struct in_addr *addr);
 	int inet_pton(int af, register const char *cp, struct in_addr *addr);

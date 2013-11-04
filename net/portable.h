@@ -40,6 +40,9 @@ inline uint32 GetMiniSecond(){return timeGetTime();}
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #define LONGLONG(n) n##LL
 #define ULONGLONG(n) n##ULL
