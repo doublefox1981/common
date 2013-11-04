@@ -122,6 +122,16 @@ uint64_t net::ezConnectionMgr::connectTo(ezEventLoop* looper,const char* ip,int 
 	return uuid;
 }
 
+void net::ezConnectionMgr::reconnectAll(ezEventLoop* looper)
+{
+	for(size_t s=0;s<vecConnectTo_.size();++s)
+	{
+		ezConnectToInfo& info=vecConnectTo_[s];
+		if(!info.connectOK_)
+			looper->o2nConnectTo(info.uuid_,info.ip_.c_str(),info.port_);
+	}
+}
+
 void net::ezServerHander::onOpen(ezEventLoop* looper,int fd,uint64_t uuid)
 {
 	ezConnection* conn=looper->getConnectionMgr()->addConnection(looper,fd,uuid);

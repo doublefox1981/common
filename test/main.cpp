@@ -8,20 +8,9 @@
 using namespace net;
 using namespace std;
 
-static bool initNetwork(int major_version = 2) 
-{
-	WSADATA wsa_data;
-	int minor_version = 0;
-	if(major_version == 1) minor_version = 1;
-	if(WSAStartup(MAKEWORD(major_version, minor_version), &wsa_data) != 0)
-		return false;
-	else
-		return true;
-}
-
 int main()
 {
-	initNetwork();
+	InitNetwork();
 	ezEventLoop* ev1=new ezEventLoop;
 	ev1->init(new ezSelectPoller(ev1),new ezServerHander((numeric_limits<uint16_t>::max)()));
 	ev1->serveOnPort(10010);

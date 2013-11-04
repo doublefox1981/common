@@ -396,4 +396,19 @@ int ConnectTo(const char* ip,int port)
 		return INVALID_SOCKET;
 	}
 }
+
+bool InitNetwork(int version) 
+{
+#ifndef __linux__
+	WSADATA wsa_data;
+	int minor_version = 0;
+	if(version == 1) minor_version = 1;
+	if(WSAStartup(MAKEWORD(version, minor_version), &wsa_data) != 0)
+		return false;
+	else
+		return true;
+#else
+	return true;
+#endif
+}
 }

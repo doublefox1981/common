@@ -109,7 +109,7 @@ public:
 	ezConnectToInfo* findConnectToInfo(uint64_t uuid);
 	void delConnectToInfo(uint64_t uuid);
 	uint64_t connectTo(ezEventLoop* looper,const char* ip,int port);
-	// reconnectAll()
+	void reconnectAll(ezEventLoop* looper);
 private:
 	std::hash_map<uint64_t,ezConnection*> mapConns_;
 	std::vector<ezConnectToInfo> vecConnectTo_;

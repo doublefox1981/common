@@ -11,6 +11,7 @@ namespace net
 	int inet_aton(register const char *cp, struct in_addr *addr);
 	int inet_pton(int af, register const char *cp, struct in_addr *addr);
 #endif
+	bool InitNetwork(int version=2);
 	void NonBlock(SOCKET s);
 	SOCKET CreateNonBlockSocket();
 	SOCKET CreateTcpServer(int port,char* bindaddr);
