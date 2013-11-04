@@ -13,6 +13,7 @@
   <ItemGroup>
     <ClInclude Include="list.h" />
     <ClInclude Include="memorystream.h" />
+    <ClInclude Include="scopeguard.h" />
     <ClInclude Include="singleton.h" />
     <ClInclude Include="thread.h" />
   </ItemGroup>
