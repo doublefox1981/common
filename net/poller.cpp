@@ -54,10 +54,10 @@ void net::ezSelectPoller::modFd(int fd,int mask,bool set)
 
 void net::ezSelectPoller::poll()
 {
-	struct timeval tm = {0,0};
+	struct timeval tm = {0,1000};
 	memcpy(&urfds_,&rfds_,sizeof(fd_set));
 	memcpy(&uwfds_,&wfds_,sizeof(fd_set));
-	int retval=select(getEventLooper()->maxFd(),&urfds_,&uwfds_,nullptr,&tm);
+	int retval=select(getEventLooper()->maxFd()+1,&urfds_,&uwfds_,nullptr,&tm);
 	if(retval>0)
 	{
 		for(int j=0;j<=getEventLooper()->maxFd();++j)
