@@ -97,6 +97,7 @@ void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid
 		{
 			looper->n2oCloseFd(fd,uuid);
 			looper->del(fd);
+			return;
 		}
 		else
 		{
@@ -112,6 +113,7 @@ void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid
 			{
 				looper->n2oError(fd,uuid);
 				looper->del(fd);
+				return;
 			}
 		}
 	}

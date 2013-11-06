@@ -124,13 +124,13 @@ uint64_t net::ezConnectionMgr::connectTo(ezEventLoop* looper,const char* ip,int 
 	return uuid;
 }
 
-void net::ezConnectionMgr::reconnectAll(ezEventLoop* looper)
+void net::ezConnectionMgr::reconnectAll()
 {
 	for(size_t s=0;s<vecConnectTo_.size();++s)
 	{
 		ezConnectToInfo& info=vecConnectTo_[s];
 		if(!info.connectOK_)
-			looper->o2nConnectTo(info.uuid_,info.ip_.c_str(),info.port_);
+			looper_->o2nConnectTo(info.uuid_,info.ip_.c_str(),info.port_);
 	}
 }
 
@@ -317,4 +317,9 @@ int net::ezClientHander::decode(ezEventLoop* looper,int fd,uint64_t uuid,char* b
 		retlen+=(sizeof(uint16_t)+msglen);
 	}
 	return retlen;
+}
+
+void net::ezReconnectTimerTask::run()
+{
+	mgr_->reconnectAll();
 }

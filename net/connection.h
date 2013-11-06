@@ -2,6 +2,7 @@
 #define _CONNECTION_H
 #include "portable.h"
 #include "../base/singleton.h"
+#include "../base/eztimer.h"
 #include <unordered_map>
 #include <string>
 #include <vector>
@@ -67,7 +68,6 @@ public:
 	virtual void Close();
 };
 
-
 class ezConnection
 {
 public:
@@ -111,10 +111,21 @@ public:
 	ezConnectToInfo* findConnectToInfo(uint64_t uuid);
 	void delConnectToInfo(uint64_t uuid);
 	uint64_t connectTo(ezEventLoop* looper,const char* ip,int port);
-	void reconnectAll(ezEventLoop* looper);
+	void reconnectAll();
+	friend class ezEventLoop;
 private:
 	std::unordered_map<uint64_t,ezConnection*> mapConns_;
 	std::vector<ezConnectToInfo> vecConnectTo_;
+	ezEventLoop* looper_;
+};
+
+class ezReconnectTimerTask:public base::ezTimerTask
+{
+public:
+	explicit ezReconnectTimerTask(ezConnectionMgr* mgr):mgr_(mgr){}
+	virtual void run();
+private:
+	ezConnectionMgr* mgr_;
 };
 }
 #endif

@@ -42,6 +42,11 @@ uint64_t net::ezEventLoop::add(int fd,uint64_t uuid,ezFd *ezfd,int event)
 		events_.resize(fd+1);
 		maxfd_ = fd;
 	}
+	if(events_[fd])
+	{
+		delete events_[fd];
+		events_[fd]=nullptr;
+	}
 	events_[fd] = data;
 	poller_->addFd(fd,event);
 	return data->uuid_;
@@ -51,10 +56,11 @@ int net::ezEventLoop::del(int fd)
 {
 	assert(fd<=maxfd_);
 	assert(fd>=0);
-	assert(events_[fd]);
+	if(!events_[fd])
+		return -1;
 	int event=events_[fd]->event_;
 	delete events_[fd];
-	events_[fd] = nullptr;
+	events_[fd]=nullptr;
 	poller_->delFd(fd,event);
 	net::CloseSocket(fd);
 	return 0;
@@ -233,6 +239,7 @@ net::ezEventLoop::ezEventLoop()
 	poller_=nullptr;
 	hander_=nullptr;
 	conMgr_=new ezConnectionMgr;
+	conMgr_->looper_=this;
 	maxfd_=-1;
 	suuid_.Set(1);
 	INIT_LIST_HEAD(&crossEv_);

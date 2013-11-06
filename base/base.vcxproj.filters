@@ -6,9 +6,13 @@
     <ClInclude Include="singleton.h" />
     <ClInclude Include="memorystream.h" />
     <ClInclude Include="scopeguard.h" />
+    <ClInclude Include="eztime.h" />
+    <ClInclude Include="eztimer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="thread.cpp" />
     <ClCompile Include="listdebug.cpp" />
+    <ClCompile Include="eztime.cpp" />
+    <ClCompile Include="eztimer.cpp" />
   </ItemGroup>
 </Project>
