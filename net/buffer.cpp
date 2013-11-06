@@ -37,6 +37,13 @@ size_t net::ezBuffer::getReadable(char*& buff)
 
 size_t net::ezBuffer::getWritable(char*& buff)
 {
+	assert(capacity_>=writePos_);
+	if((capacity_==writePos_)&&readPos_>0)
+	{
+		memmove(buffer_,buffer_+readPos_,writePos_-readPos_);
+		readPos_=0;
+		writePos_-=readPos_;
+	}
 	buff=buffer_+writePos_;
 	return capacity_-writePos_;
 }

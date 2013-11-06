@@ -86,34 +86,38 @@ net::ezSelectPoller::ezSelectPoller(ezEventLoop* loop):ezPoller(loop)
 	FD_ZERO(&uwfds_);
 }
 
+// 暂时不支持epoll边缘触发的方式，因为有可能读事件未完全读数据
 void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid)
 {
 	if(event&ezNetRead)
 	{
 		char* pbuf=nullptr;
 		size_t s=inbuf_->getWritable(pbuf);
-		int retval=Read(fd,pbuf,s);
-		if((retval==0)||(retval<0&&errno!=EAGAIN))
+		if(s>0&&pbuf)
 		{
-			looper->n2oCloseFd(fd,uuid);
-			looper->del(fd);
-			return;
-		}
-		else
-		{
-			ezHander* hander=looper->getHander();
-			inbuf_->addWritePos(retval);
-			char* rbuf=nullptr;
-			size_t rs=inbuf_->getReadable(rbuf);
-			int rets=hander->decode(looper,fd,uuid,rbuf,rs);
-			assert(rets<=(int)inbuf_->readableSize());
-			if(rets>0)
-				inbuf_->addReadPos(rets);
-			else if(rets<0)
+			int retval=Read(fd,pbuf,s);
+			if((retval==0)||(retval<0&&errno!=EAGAIN))
 			{
-				looper->n2oError(fd,uuid);
+				looper->n2oCloseFd(fd,uuid);
 				looper->del(fd);
 				return;
+			}
+			else
+			{
+				ezHander* hander=looper->getHander();
+				inbuf_->addWritePos(retval);
+				char* rbuf=nullptr;
+				size_t rs=inbuf_->getReadable(rbuf);
+				int rets=hander->decode(looper,fd,uuid,rbuf,rs);
+				assert(rets<=(int)inbuf_->readableSize());
+				if(rets>0)
+					inbuf_->addReadPos(rets);
+				else if(rets<0)
+				{
+					looper->n2oError(fd,uuid);
+					looper->del(fd);
+					return;
+				}
 			}
 		}
 	}

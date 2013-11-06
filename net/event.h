@@ -59,7 +59,7 @@ class ezEventLoop
 public:
 	ezEventLoop();
 	~ezEventLoop();
-	int init(ezPoller* poller,ezHander* hander);
+	int init(ezPoller* poller,ezHander* hander,ezConnectionMgr* mgr);
 	int serveOnPort(int port);
 	int shutdown();
 	uint64_t add(int fd,uint64_t uuid,ezFd *ezfd,int event);

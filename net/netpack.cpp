@@ -1,7 +1,9 @@
 #include "netpack.h"
+#include "buffer.h"
 
 net::ezNetPack::ezNetPack(uint16_t s)
 {
+	assert(s<(ezBuffer::ezInitSize-2));
 	capacity_=s;
 	size_=0;
 	data_=new char[s];

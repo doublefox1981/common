@@ -10,7 +10,8 @@ net::ezConnection::ezConnection(ezEventLoop* looper)
 	:evLooper_(looper),
 	fd_(0),
 	uuid_(0),
-	gameObj_(nullptr)
+	gameObj_(nullptr),
+	netpackHander_(nullptr)
 {
 }
 
@@ -18,7 +19,8 @@ net::ezConnection::ezConnection(ezEventLoop* looper,int fd,uint64_t uuid)
 	:evLooper_(looper),
 	fd_(fd),
 	uuid_(uuid),
-	gameObj_(nullptr)
+	gameObj_(nullptr),
+	netpackHander_(nullptr)
 {
 }
 
@@ -43,21 +45,14 @@ void net::ezConnection::detachGameObject()
 
 void net::ezConnection::onRecvNetPack(ezNetPack* pack)
 {
-	if(gameObj_)
-		gameObj_->onRecvNetPack(pack);
-	pack->data_[pack->size_-1]=0;
-	printf("%s\n",pack->data_);
-	//test func
-	ezNetPack* msg=new ezNetPack(128);
-	base::ezBufferWriter writer(msg->data_,msg->capacity_);
-	writer.WriteString("asdfsdfsdfdasf");
-	msg->size_=writer.GetUsedSize();
-	sendNetPack(msg);
+	if(netpackHander_)
+		netpackHander_->process(this,pack);
 }
 
 void net::ezConnection::sendNetPack(ezNetPack* pack)
 {
 	assert(pack);
+	assert(pack->size_>0);
 	evLooper_->sendMsg(fd_,pack);
 }
 
@@ -66,10 +61,17 @@ void net::ezConnection::Close()
 	evLooper_->o2nCloseFd(fd_,uuid_);
 }
 
+void net::ezConnection::setHander(ezNetPackHander* hander)
+{
+	netpackHander_=hander;
+}
+
 net::ezConnection* net::ezConnectionMgr::addConnection(ezEventLoop* looper,int fd,uint64_t uuid)
 {
+	assert(defaultHander_);
 	ezConnection* conn=new ezConnection(looper,fd,uuid);
 	mapConns_[uuid]=conn;
+	conn->setHander(defaultHander_);
 	return conn;
 }
 
@@ -245,13 +247,6 @@ void net::ezClientHander::onOpen(ezEventLoop* looper,int fd,uint64_t uuid)
 		net::ToIpPort(ipport,sizeof(ipport),GetPeerAddr(fd));
 		conn->setIpAddr(ipport);
 		printf("connect to %s ok\n",ipport);
-
-		// test func
-		ezNetPack* msg=new ezNetPack(128);
-		base::ezBufferWriter writer(msg->data_,msg->capacity_);
-		writer.WriteString("asdfsdfsdfdasf");
-		msg->size_=writer.GetUsedSize();
-		conn->sendNetPack(msg);
 	}
 	else
 	{

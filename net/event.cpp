@@ -6,10 +6,12 @@
 #include "../base/thread.h"
 #include <assert.h>
 
-int net::ezEventLoop::init(ezPoller* poller,ezHander* hander)
+int net::ezEventLoop::init(ezPoller* poller,ezHander* hander,ezConnectionMgr* mgr)
 {
 	poller_=poller;
 	hander_=hander;
+	conMgr_=mgr;
+	conMgr_->looper_=this;
 	return 0;
 }
 
@@ -238,8 +240,7 @@ net::ezEventLoop::ezEventLoop()
 {
 	poller_=nullptr;
 	hander_=nullptr;
-	conMgr_=new ezConnectionMgr;
-	conMgr_->looper_=this;
+	conMgr_=nullptr;
 	maxfd_=-1;
 	suuid_.Set(1);
 	INIT_LIST_HEAD(&crossEv_);
