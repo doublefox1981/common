@@ -44,7 +44,7 @@ void net::ezSelectPoller::delFd(int fd,int mask)
 		FD_CLR(fd,&wfds_);
 }
 
-void net::ezSelectPoller::modFd(int fd,int mask,bool set)
+void net::ezSelectPoller::modFd(int fd,int mask,int srcmask,bool set)
 {
 	if(!set)
 		delFd(fd,mask);
@@ -145,7 +145,7 @@ void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid
 		}
 		if(outbuf_->readableSize()<=0&&list_empty(&sendqueue_))
 		{
-			looper->getPoller()->delFd(fd,ezNetWrite);
+			looper->getPoller()->modFd(fd,ezNetWrite,ezNetWrite|ezNetRead,false);
 			return;
 		}
 	}
@@ -229,11 +229,12 @@ net::ezEpollPoller::~ezEpollPoller()
 void net::ezEpollPoller::addFd(int fd,int mask)
 {
 	struct epoll_event ee;
-    ee.events = 0;
-    if(mask&ezNetRead) ee.events |= EPOLLIN;
-    if(mask&ezNetWrite) ee.events |= EPOLLOUT;
-    ee.data.u64 = 0;
-    ee.data.fd = fd;
+    ee.events|=EPOLLERR;
+	ee.events|=EPOLLHUP;
+    if(mask&ezNetRead) ee.events|=EPOLLIN;
+    if(mask&ezNetWrite) ee.events|=EPOLLOUT;
+    ee.data.u64=0;
+    ee.data.fd=fd;
     if(epoll_ctl(epollFd_,EPOLL_CTL_ADD,fd,&ee)==-1) 
 		printf("EPOLL_CTL_ADD fail\n");
 }
@@ -241,21 +242,26 @@ void net::ezEpollPoller::addFd(int fd,int mask)
 void net::ezEpollPoller::delFd(int fd,int mask)
 {
 	struct epoll_event ee;
-	ee.events = 0;
-	if(mask&ezNetRead) ee.events |= EPOLLIN;
-	if(mask&ezNetWrite) ee.events |= EPOLLOUT;
-	ee.data.u64 = 0;
-	ee.data.fd = fd;
+	ee.events=0;
+	if(mask&ezNetRead) ee.events|=EPOLLIN;
+	if(mask&ezNetWrite) ee.events|=EPOLLOUT;
+	ee.data.u64=0;
+	ee.data.fd=fd;
 	if(epoll_ctl(epollFd_,EPOLL_CTL_DEL,fd,&ee)==-1) 
 		printf("EPOLL_CTL_DEL fail\n");
 }
 
-void net::ezEpollPoller::modFd(int fd,int mask,bool set)
+void net::ezEpollPoller::modFd(int fd,int mask,int srcmask,bool set)
 {
+	int dstmask=mask|srcmask;
+	if(!set)
+		dstmask&=(~mask);
 	struct epoll_event ee;
-	ee.events = 0;
-	if(mask&ezNetRead) ee.events |= EPOLLIN;
-	if(mask&ezNetWrite) ee.events |= EPOLLOUT;
+	ee.events=0;
+	ee.events|=EPOLLERR;
+	ee.events|=EPOLLHUP;
+	if(dstmask&ezNetRead) ee.events|=EPOLLIN;
+	if(dstmask&ezNetWrite) ee.events|=EPOLLOUT;
 	ee.data.u64 = 0;
 	ee.data.fd = fd;
 	if(epoll_ctl(epollFd_,EPOLL_CTL_MOD,fd,&ee)==-1) 

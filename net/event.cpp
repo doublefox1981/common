@@ -72,11 +72,11 @@ int net::ezEventLoop::mod(int fd,int event,bool set)
 	assert(fd<=maxfd_);
 	assert(events_[fd]);
 	assert(events_[fd]->event_!=ezNetNone);
+	poller_->modFd(fd,event,events_[fd]->event_,set);
 	if(set)
 		events_[fd]->event_|=event;
 	else
 		events_[fd]->event_&=~event;
-	poller_->modFd(fd,event,set);
 	return 0;
 }
 

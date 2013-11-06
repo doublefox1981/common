@@ -15,7 +15,7 @@ public:
 	virtual ~ezPoller(){}
 	virtual void addFd(int fd,int event)=0;
 	virtual void delFd(int fd,int event)=0;
-	virtual void modFd(int fd,int event,bool set)=0;
+	virtual void modFd(int fd,int event,int srcevent,bool set)=0;
 	virtual void poll()=0;
 	ezEventLoop* getEventLooper(){return loop_;}
 private:
@@ -59,7 +59,7 @@ public:
 	ezSelectPoller(ezEventLoop* loop);
 	virtual void addFd(int fd,int mask);
 	virtual void delFd(int fd,int mask);
-	virtual void modFd(int fd,int mask,bool set);
+	virtual void modFd(int fd,int mask,int srcmask,bool set);
 	virtual void poll();
 private:
 	fd_set wfds_;
@@ -78,7 +78,7 @@ public:
 	virtual ~ezEpollPoller();
 	virtual void addFd(int fd,int mask);
 	virtual void delFd(int fd,int mask);
-	virtual void modFd(int fd,int mask,bool set);
+	virtual void modFd(int fd,int mask,int srcmask,bool set);
 	virtual void poll();
 private:
 	int epollFd_;

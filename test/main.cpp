@@ -9,6 +9,7 @@
 #include <limits>
 #include <algorithm>
 #include <queue>
+#include <array>
 using namespace net;
 using namespace std;
 
@@ -16,7 +17,13 @@ int main()
 {
 	InitNetwork();
 	ezEventLoop* ev1=new ezEventLoop;
-	ev1->init(new ezSelectPoller(ev1),new ezServerHander((numeric_limits<uint16_t>::max)()));
+	ezPoller* poller=NULL;
+#ifdef __linux__
+	poller=new ezEpollPoller(ev1);
+#else
+	poller=new ezSelectPoller(ev1);
+#endif
+	ev1->init(poller,new ezServerHander((numeric_limits<uint16_t>::max)()));
 	ev1->serveOnPort(10010);
 	
 	ezEventLoop* ev=new ezEventLoop;
