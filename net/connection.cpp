@@ -196,11 +196,7 @@ int net::ezServerHander::decode(ezEventLoop* looper,int fd,uint64_t uuid,char* b
 
 void net::ezServerHander::onError(ezEventLoop* looper,int fd,uint64_t uuid)
 {
-	ezConnection* conn=looper->getConnectionMgr()->findConnection(uuid);
-	std::string ip=conn->getIpAddr();
-	printf("disconnect %s\n",ip.c_str());
-	conn=nullptr;
-	looper->getConnectionMgr()->delConnection(uuid);
+	onClose(looper,fd,uuid);
 }
 
 net::ezServerHander::ezServerHander(uint16_t maxMsgSize):maxMsgSize_(maxMsgSize)
@@ -263,18 +259,15 @@ void net::ezClientHander::onClose(ezEventLoop* looper,int fd,uint64_t uuid)
 	std::string ip=conn->getIpAddr();
 	printf("disconnect %s\n",ip.c_str());
 	conn=nullptr;
+	ezConnectToInfo* info=looper->getConnectionMgr()->findConnectToInfo(uuid);
+	if(info)
+		info->connectOK_=false;
 	looper->getConnectionMgr()->delConnection(uuid);
 }
 
 void net::ezClientHander::onError(ezEventLoop* looper,int fd,uint64_t uuid)
 {
-	ezConnection* conn=looper->getConnectionMgr()->findConnection(uuid);
-	if(!conn)
-		return;
-	std::string ip=conn->getIpAddr();
-	printf("disconnect %s\n",ip.c_str());
-	conn=nullptr;
-	looper->getConnectionMgr()->delConnection(uuid);
+	onClose(looper,fd,uuid);
 }
 
 void net::ezClientHander::onData(ezEventLoop* looper,int fd,uint64_t uuid,ezNetPack* msg)
@@ -296,7 +289,7 @@ int net::ezClientHander::decode(ezEventLoop* looper,int fd,uint64_t uuid,char* b
 		reader.Read<uint16_t>(msglen);
 		if(reader.Fail())
 			break;
-		if(msglen>maxMsgSize_)
+		if(msglen<=0||msglen>maxMsgSize_)
 			return -1;
 		if(!reader.CanIncreaseSize(msglen))
 			break;

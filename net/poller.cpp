@@ -210,10 +210,7 @@ size_t net::ezClientFd::formatMsg()
 			delete blk;
 		}
 		else
-		{
 			list_add_tail(&blk->lst_,&sendqueue_);
-			break;
-		}
 	}
 	outbuf_->addWritePos(writer.GetUsedSize());
 	return outbuf_->readableSize();

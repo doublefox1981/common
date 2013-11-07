@@ -142,7 +142,8 @@ void net::ezEventLoop::processMsg()
 				blk=nullptr;
 			}
 		}
-		if(blk) delete blk;
+		if(blk) 
+			delete blk;
 	}
 	for(size_t s=0;s<events_.size();++s)
 	{
