@@ -16,7 +16,7 @@ namespace net
 	class ezBuffer
 	{
 	public:
-		static const size_t ezInitSize=16*1024;
+		static const size_t ezInitSize=128*1024;
 		ezBuffer(size_t initSize=ezInitSize);
 		~ezBuffer();
 		void reset();
