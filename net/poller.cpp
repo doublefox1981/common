@@ -103,21 +103,22 @@ void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid
 				return;
 			}
 			else
-			{
-				ezHander* hander=looper->getHander();
 				inbuf_->addWritePos(retval);
-				char* rbuf=nullptr;
-				size_t rs=inbuf_->getReadable(rbuf);
-				int rets=hander->decode(looper,fd,uuid,rbuf,rs);
-				assert(rets<=(int)inbuf_->readableSize());
-				if(rets>0)
-					inbuf_->addReadPos(rets);
-				else if(rets<0)
-				{
-					looper->n2oError(fd,uuid);
-					looper->del(fd);
-					return;
-				}
+		}
+		ezHander* hander=looper->getHander();
+		char* rbuf=nullptr;
+		size_t rs=inbuf_->getReadable(rbuf);
+		if(rs>0)
+		{
+			int rets=hander->decode(looper,fd,uuid,rbuf,rs);
+			assert(rets<=(int)inbuf_->readableSize());
+			if(rets>0)
+				inbuf_->addReadPos(rets);
+			else if(rets<0)
+			{
+				looper->n2oError(fd,uuid);
+				looper->del(fd);
+				return;
 			}
 		}
 	}

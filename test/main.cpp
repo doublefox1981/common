@@ -27,7 +27,7 @@ public:
 		}
 	}
 };
-
+ezConnection* gConn=NULL;
 class TestClientHander:public ezClientHander
 {
 public:
@@ -39,6 +39,7 @@ public:
 		ezConnection* conn=looper->getConnectionMgr()->findConnection(uuid);
 		if(conn)
 		{
+			gConn=conn;
 			int s=rand()%15000+1;
 			ezNetPack* msg=new ezNetPack(s);
 			msg->size_=s;
@@ -79,6 +80,14 @@ int main()
 		ev->crossEventLoop();
 		timer.tick(t);
 		base::ezSleep(10);
+
+		if(gConn)
+		{
+			int ss=rand()%15000+1;
+			ezNetPack* msg=new ezNetPack(ss);
+			msg->size_=ss;
+			gConn->sendNetPack(msg);
+		}
 	}
 	delete ev;
 	return 1;
