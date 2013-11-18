@@ -1,5 +1,6 @@
 #include "netpack.h"
 #include "buffer.h"
+#include <string.h>
 
 net::ezNetPack::ezNetPack(uint16_t s)
 {
@@ -7,6 +8,7 @@ net::ezNetPack::ezNetPack(uint16_t s)
 	capacity_=s;
 	size_=0;
 	data_=new char[s];
+	memset(data_,0,s); // test
 }
 
 net::ezNetPack::~ezNetPack()

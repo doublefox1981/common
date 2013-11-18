@@ -51,6 +51,8 @@ private:
 	ezBuffer* inbuf_;
 	ezBuffer* outbuf_;
 	list_head sendqueue_;
+	FILE* fp_;
+	int insize_;
 };
 
 class ezSelectPoller:public ezPoller

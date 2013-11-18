@@ -16,23 +16,26 @@ namespace net
 	class ezBuffer
 	{
 	public:
-		static const size_t ezInitSize=128*1024;
-		ezBuffer(size_t initSize=ezInitSize);
+		static const size_t ezInitSize=16*1024;
+		explicit ezBuffer(size_t initSize=ezInitSize);
 		~ezBuffer();
-		void reset();
-		size_t readableSize() {return writePos_-readPos_;}
-		size_t writableSize() {return capacity_-writePos_+readPos_;}
-		size_t getReadable(char*& buff);
-		size_t getWritable(char*& buff);
-		void addReadPos(size_t s);
-		void addWritePos(size_t s);
-		bool appendBuffer(char* data,size_t s);
-		void appendBuffer(size_t s);
+		void drain(size_t len);
+		int remove(void* data,size_t datlen);
+		void align();
+		int canexpand();
+		int expand(size_t datlen);
+		int add(const void* data,size_t datlen);
+		int readfd(int fd);
+		int writefd(int fd);
+		int readable(char*& pbuf);
+		size_t off() {return off_;}
 	private:
-		char* buffer_;
-		size_t capacity_;
-		size_t readPos_;
-		size_t writePos_;
+		char *buffer_;
+		char *orig_buffer_;
+
+		size_t misalign_;
+		size_t totallen_;
+		size_t off_;
 	};
 }
 

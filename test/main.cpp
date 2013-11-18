@@ -17,13 +17,20 @@ using namespace std;
 class TestPackHander:public net::ezNetPackHander
 {
 public:
+	TestPackHander():seq_(0){}
 	virtual void process(ezConnection* conn,ezNetPack* pack)
 	{
 		base::ezBufferReader reader(pack->data_,pack->size_);
 		int seq=0;
 		reader.Read(seq);
+		if(seq_==0)
+			seq_=seq;
+		else
+			assert(seq==++seq_);
 		printf("recv %d seq=%d\n",pack->size_,seq);
 	}
+private:
+	int seq_;
 };
 
 class TestServerPackHander:public net::ezNetPackHander
@@ -34,7 +41,7 @@ public:
 		base::ezBufferReader reader(pack->data_,pack->size_);
 		int seq=0;
 		reader.Read(seq);
-		printf("recv %d seq=%d\n",pack->size_,seq);
+		//printf("recv %d seq=%d\n",pack->size_,seq);
 
 		int s=pack->size_;
 		ezNetPack* msg=new ezNetPack(s);
@@ -65,7 +72,11 @@ public:
 		ezClientHander::onClose(looper,fd,uuid);
 	}
 };
-
+struct S
+{
+	list_head lst;
+	int i;
+};
 int main()
 {
 	InitNetwork();
@@ -73,13 +84,13 @@ int main()
 	ezConnectionMgr* mgr=new ezConnectionMgr;
 	mgr->setDefaultHander(new TestServerPackHander());
 	ezEventLoop* ev=new ezEventLoop;
-	ev->init(new ezEpollPoller(ev),new ezServerHander((numeric_limits<uint16_t>::max)()),mgr);
+	ev->init(new ezEpollPoller(ev),new ezServerHander(/*(numeric_limits<uint16_t>::max)()*/15003),mgr);
 	ev->serveOnPort(10010);
 #else
 	ezConnectionMgr* mgr=new ezConnectionMgr;
 	mgr->setDefaultHander(new TestPackHander());
 	ezEventLoop* ev=new ezEventLoop;
-	ev->init(new ezSelectPoller(ev),new TestClientHander((numeric_limits<uint16_t>::max)()),mgr);
+	ev->init(new ezSelectPoller(ev),new TestClientHander(/*(numeric_limits<uint16_t>::max)()*/15003),mgr);
 	ev->getConnectionMgr()->connectTo(ev,"192.168.99.51",10010);
 #endif
 	base::ezTimer timer;
@@ -104,7 +115,7 @@ int main()
 			ezConnection* conn=ev->getConnectionMgr()->findConnection(*iter);
 			if(!conn)
 				continue;
-			for(int i=0;i<4;++i)
+			for(int i=0;i<2;++i)
 			{
 				int ss=rand()%15000+4;
 				ezNetPack* msg=new ezNetPack(ss);

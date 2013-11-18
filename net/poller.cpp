@@ -85,35 +85,32 @@ net::ezSelectPoller::ezSelectPoller(ezEventLoop* loop):ezPoller(loop)
 	FD_ZERO(&urfds_);
 	FD_ZERO(&uwfds_);
 }
-
+#ifdef __linux__
+#include <unistd.h>
+#include <sys/types.h>
+#else
+#include <io.h>
+#endif
 // 暂时不支持epoll边缘触发的方式，因为有可能读事件未完全读数据
 void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid)
 {
 	if(event&ezNetRead)
 	{
-		char* pbuf=nullptr;
-		size_t s=inbuf_->getWritable(pbuf);
-		if(s>0&&pbuf)
+		int retval=inbuf_->readfd(fd);
+		if((retval==0)||(retval<0&&errno!=EAGAIN&&errno!=EINTR))
 		{
-			int retval=Read(fd,pbuf,s);
-			if((retval==0)||(retval<0&&errno!=EAGAIN))
-			{
-				looper->n2oCloseFd(fd,uuid);
-				looper->del(fd);
-				return;
-			}
-			else
-				inbuf_->addWritePos(retval);
+			looper->n2oCloseFd(fd,uuid);
+			looper->del(fd);
+			return;
 		}
 		ezHander* hander=looper->getHander();
 		char* rbuf=nullptr;
-		size_t rs=inbuf_->getReadable(rbuf);
+		int rs=inbuf_->readable(rbuf);
 		if(rs>0)
 		{
 			int rets=hander->decode(looper,fd,uuid,rbuf,rs);
-			assert(rets<=(int)inbuf_->readableSize());
 			if(rets>0)
-				inbuf_->addReadPos(rets);
+				inbuf_->drain(rets);
 			else if(rets<0)
 			{
 				looper->n2oError(fd,uuid);
@@ -125,30 +122,18 @@ void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid
 	if(event&ezNetWrite)
 	{
 		char* pbuf=nullptr;
-		size_t s=outbuf_->getReadable(pbuf);
-		if(s>0&&pbuf)
+		int s=outbuf_->readable(pbuf);
+		if(s>0)
 		{
-			int sendlen=0;
-			while(sendlen<(int)s)
+			int retval=outbuf_->writefd(fd);
+			if(retval<0)
 			{
-				int retval=Write(fd,pbuf,s);
-				if(retval<0)
-				{
-					if(errno==EWOULDBLOCK||errno==EAGAIN)
-						break;
-					else
-					{
-						looper->n2oError(fd,uuid);
-						looper->del(fd);
-						return;
-					}
-				}
-				else
-					sendlen+=retval;
+				looper->n2oError(fd,uuid);
+				looper->del(fd);
+				return;
 			}
-			outbuf_->addReadPos(sendlen);
 		}
-		if(outbuf_->readableSize()<=0&&list_empty(&sendqueue_))
+		else if(list_empty(&sendqueue_))
 		{
 			looper->getPoller()->modFd(fd,ezNetWrite,ezNetWrite|ezNetRead,false);
 			return;
@@ -164,8 +149,10 @@ void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid
 net::ezClientFd::ezClientFd()
 {
 	inbuf_=new ezBuffer();
-	outbuf_=new ezBuffer();
+	outbuf_=new ezBuffer(16*1024);
 	INIT_LIST_HEAD(&sendqueue_);
+	fp_=fopen("data.bin","w");
+	insize_=0;
 }
 
 net::ezClientFd::~ezClientFd()
@@ -178,6 +165,7 @@ net::ezClientFd::~ezClientFd()
 	list_for_each_safe(iter,next,&sendqueue_)
 	{
 		net::ezSendBlock* blk=list_entry(iter,net::ezSendBlock,lst_);
+		list_del(iter);
 		delete blk;
 	}
 }
@@ -191,31 +179,28 @@ size_t net::ezClientFd::formatMsg()
 {
 	if(list_empty(&sendqueue_))
 		return 0;
-	char* pbuf=nullptr;
-	size_t s=outbuf_->getWritable(pbuf);
-	if(s<=0)
-		return 0;
-	base::ezBufferWriter writer(pbuf,s);
-	LIST_HEAD(tmplist);
-	list_splice_init(&sendqueue_,&tmplist);
 	list_head *iter,*next;
-	list_for_each_safe(iter,next,&tmplist)
+	list_for_each_safe(iter,next,&sendqueue_)
 	{
 		ezSendBlock* blk=list_entry(iter,ezSendBlock,lst_);
 		assert(blk->pack_);
-		if(writer.CanIncreaseSize(sizeof(uint16_t)+blk->pack_->size_))
+		int canadd=outbuf_->canexpand();
+		if(sizeof(uint16_t)+blk->pack_->size_<=canadd)
 		{
-			writer.Write(blk->pack_->size_);
-			writer.WriteBuffer(blk->pack_->data_,blk->pack_->size_);
+			list_del(iter);
+			outbuf_->add(&(blk->pack_->size_),sizeof(blk->pack_->size_));
+			outbuf_->add(blk->pack_->data_,blk->pack_->size_);
+			// test
+			base::ezBufferReader reader(blk->pack_->data_,blk->pack_->size_);
+			int seq=0;
+			reader.Read(seq);
+			printf("send %d seq=%d\n",blk->pack_->size_,seq);
 			delete blk;
 		}
 		else
 			break;
 	}
-	outbuf_->addWritePos(writer.GetUsedSize());
-	list_for_each_safe_from(iter,next,&tmplist)
-		list_add_tail(iter,&sendqueue_);
-	return outbuf_->readableSize();
+	return outbuf_->off();
 }
 
 #ifdef __linux__

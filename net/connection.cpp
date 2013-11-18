@@ -176,7 +176,7 @@ int net::ezServerHander::decode(ezEventLoop* looper,int fd,uint64_t uuid,char* b
 		reader.Read<uint16_t>(msglen);
 		if(reader.Fail())
 			break;
-		if(msglen>maxMsgSize_)
+		if(msglen<=0||msglen>maxMsgSize_)
 			return -1;
 		if(!reader.CanIncreaseSize(msglen))
 			break;
