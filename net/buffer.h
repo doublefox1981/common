@@ -22,7 +22,8 @@ namespace net
 		void drain(size_t len);
 		int remove(void* data,size_t datlen);
 		void align();
-		int canexpand();
+		int maxadd();
+		int fastadd();
 		int expand(size_t datlen);
 		int add(const void* data,size_t datlen);
 		int readfd(int fd);

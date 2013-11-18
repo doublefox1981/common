@@ -50,9 +50,14 @@ void net::ezBuffer::align()
 	misalign_=0;
 }
 
-int net::ezBuffer::canexpand()
+int net::ezBuffer::maxadd()
 {
 	return (totallen_-off_);
+}
+
+int net::ezBuffer::fastadd()
+{
+	return (totallen_-off_-misalign_);
 }
 
 int net::ezBuffer::expand(size_t datlen)
@@ -80,33 +85,19 @@ int net::ezBuffer::add(const void* data,size_t datlen)
 
 int net::ezBuffer::readfd(int fd)
 {
-	int canread=canexpand();
+	int canread=fastadd();
 	if(canread<=0)
-		return -1;
-	char* p;
-	int n = canread;
-
-#if defined(FIONREAD)
-#ifdef __linux__
-	if (ioctl(fd,FIONREAD,&n)==-1||n==0){
-#else
-	u_long lng = n;
-	if (ioctlsocket(fd,FIONREAD,&lng)==-1||(n=lng)==0){
-#endif
-		n = canread;
+	{
+		align();
+		canread=fastadd();
+		if(canread<=0)
+			return 0x7fffffff;
 	}
-#endif
-	if(n>canread)
-		n=canread;
-	if (expand(n)<0)
-		return -1;
-
-	p=buffer_+off_;
-	int retn=Read(fd,p,n);
-	
+	char* p=buffer_+off_;
+	int retn=Read(fd,p,canread);
 	if(retn>0)
-		off_+=n;
-	return n;
+		off_+=retn;
+	return retn;
 }
 
 int net::ezBuffer::writefd(int fd)

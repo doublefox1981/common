@@ -184,7 +184,7 @@ size_t net::ezClientFd::formatMsg()
 	{
 		ezSendBlock* blk=list_entry(iter,ezSendBlock,lst_);
 		assert(blk->pack_);
-		int canadd=outbuf_->canexpand();
+		int canadd=outbuf_->fastadd();
 		if(sizeof(uint16_t)+blk->pack_->size_<=canadd)
 		{
 			list_del(iter);
