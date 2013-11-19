@@ -115,7 +115,7 @@ int main()
 			ezConnection* conn=ev->getConnectionMgr()->findConnection(*iter);
 			if(!conn)
 				continue;
-			for(int i=0;i<2;++i)
+			for(int i=0;i<1;++i)
 			{
 				int ss=rand()%15000+4;
 				ezNetPack* msg=new ezNetPack(ss);

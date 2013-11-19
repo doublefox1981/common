@@ -149,10 +149,8 @@ void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid
 net::ezClientFd::ezClientFd()
 {
 	inbuf_=new ezBuffer();
-	outbuf_=new ezBuffer(16*1024);
+	outbuf_=new ezBuffer();
 	INIT_LIST_HEAD(&sendqueue_);
-	fp_=fopen("data.bin","w");
-	insize_=0;
 }
 
 net::ezClientFd::~ezClientFd()
@@ -161,13 +159,16 @@ net::ezClientFd::~ezClientFd()
 		delete inbuf_;
 	if(outbuf_)
 		delete outbuf_;
+	int i=0;
 	list_head *iter,*next;
 	list_for_each_safe(iter,next,&sendqueue_)
 	{
 		net::ezSendBlock* blk=list_entry(iter,net::ezSendBlock,lst_);
 		list_del(iter);
 		delete blk;
+		++i;
 	}
+	printf("destruct msg total=%d\n",i);
 }
 
 void net::ezClientFd::sendMsg( ezSendBlock* blk )
@@ -190,12 +191,6 @@ size_t net::ezClientFd::formatMsg()
 			list_del(iter);
 			outbuf_->add(&(blk->pack_->size_),sizeof(blk->pack_->size_));
 			outbuf_->add(blk->pack_->data_,blk->pack_->size_);
-			// test
-			base::ezBufferReader reader(blk->pack_->data_,blk->pack_->size_);
-			int seq=0;
-			reader.Read(seq);
-			printf("send %d seq=%d\n",blk->pack_->size_,seq);
-			delete blk;
 		}
 		else
 			break;

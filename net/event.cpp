@@ -133,6 +133,7 @@ void net::ezEventLoop::processMsg()
 	list_for_each_safe(iter,next,&tmplst)
 	{
 		ezSendBlock* blk=list_entry(iter,ezSendBlock,lst_);
+		list_del(iter);
 		if(blk->fd_<(int)events_.size()&&blk->fd_>0)
 		{
 			ezFdData* evd=events_[blk->fd_];
@@ -143,7 +144,10 @@ void net::ezEventLoop::processMsg()
 			}
 		}
 		if(blk) 
+		{
+			printf("delete blk \n");
 			delete blk;
+		}
 	}
 	for(size_t s=0;s<events_.size();++s)
 	{

@@ -4,7 +4,7 @@
 
 net::ezBuffer::ezBuffer(size_t initSize/*=ezInitSize*/)
 {
-	orig_buffer_=(char*)malloc(initSize);
+	orig_buffer_=new char[initSize];
 	buffer_=orig_buffer_;
 	totallen_=initSize;
 	misalign_=0;
@@ -14,7 +14,7 @@ net::ezBuffer::ezBuffer(size_t initSize/*=ezInitSize*/)
 net::ezBuffer::~ezBuffer()
 {
 	if(orig_buffer_)
-		free(orig_buffer_);
+		delete [] orig_buffer_;
 }
 
 void net::ezBuffer::drain(size_t len)
