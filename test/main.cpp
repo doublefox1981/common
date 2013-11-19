@@ -6,6 +6,7 @@
 #include "../base/scopeguard.h"
 #include "../base/eztime.h"
 #include "../base/eztimer.h"
+#include "../base/thread.h"
 #include <limits>
 #include <algorithm>
 #include <queue>
@@ -52,6 +53,21 @@ public:
 	}
 };
 
+class NetThread:public base::Threads
+{
+public:
+	explicit NetThread(ezEventLoop* l):looper_(l){}
+	virtual void Run()
+	{
+		while(true)
+		{
+			looper_->netEventLoop();
+			base::ezSleep(5);
+		}
+	}
+	ezEventLoop* looper_;
+};
+
 std::unordered_set<uint64_t> gConnSet;
 class TestClientHander:public ezClientHander
 {
@@ -93,6 +109,9 @@ int main()
 	ev->init(new ezSelectPoller(ev),new TestClientHander(/*(numeric_limits<uint16_t>::max)()*/15003),mgr);
 	ev->getConnectionMgr()->connectTo(ev,"192.168.99.51",10010);
 #endif
+	NetThread* thread=new NetThread(ev);
+	thread->Start();
+
 	base::ezTimer timer;
 	base::ezTimerTask* task=new ezReconnectTimerTask(ev->getConnectionMgr());
 	task->config(base::ezNowTick(),10*1000,base::ezTimerTask::TIMER_FOREVER);
@@ -105,7 +124,6 @@ int main()
 		int64_t t=base::ezNowTick();
 		string s;
 		base::ezFormatTime(time(NULL),s);
-		ev->netEventLoop();
 		ev->crossEventLoop();
 		timer.tick(t);
 		base::ezSleep(10);

@@ -191,54 +191,54 @@ namespace base
 	}
 #endif
 
-// 	class Threads
-// 	{
-// 	public:
-// 		virtual void Start();
-// 		void setCurrentPriority( ThreadPriority priority );
-// 		unsigned long getTick();
-// 
-// #ifdef _WIN32
-// 		static DWORD WINAPI thread_func(void *data) 
-// 		{
-// #else
-// 		static void * thread_func(void *data) 
-// 		{
-// #endif	
-// 			Threads *thread = (Threads *)data;
-// 			thread->Run();
-// 			return 0;
-// 		}
-// 		virtual void Run() {}
-// 
-// 		Threads()
-// 		{
-// 			mbExit = false;
-// 		}
-// 		virtual ~Threads()
-// 		{
-// 		}
-// 
-// 		virtual void Stop()
-// 		{
-// 			mbExit = true;
-// #ifndef _WIN32
-// 			pthread_join(mthread,nullptr);
-// #else
-// 			WaitForSingleObject(mthread,INFINITE);
-// #endif
-// 		}
-// 
-// 	private:
-// 		int getPlatformPriority( ThreadPriority & priority );
-// 		unsigned long mStartTick;
-// 	protected:
-// 		bool  mbExit;
-// #ifndef _WIN32
-// 		pthread_t mthread;
-// #else
-// 		HANDLE mthread;
-// #endif
-// 	};
+	class Threads
+	{
+	public:
+		virtual void Start();
+		void setCurrentPriority( ThreadPriority priority );
+		unsigned long getTick();
+
+#ifdef _WIN32
+		static DWORD WINAPI thread_func(void *data) 
+		{
+#else
+		static void * thread_func(void *data) 
+		{
+#endif	
+			Threads *thread = (Threads *)data;
+			thread->Run();
+			return 0;
+		}
+		virtual void Run() {}
+
+		Threads()
+		{
+			mbExit = false;
+		}
+		virtual ~Threads()
+		{
+		}
+
+		virtual void Stop()
+		{
+			mbExit = true;
+#ifndef _WIN32
+			pthread_join(mthread,nullptr);
+#else
+			WaitForSingleObject(mthread,INFINITE);
+#endif
+		}
+
+	private:
+		int getPlatformPriority( ThreadPriority & priority );
+		unsigned long mStartTick;
+	protected:
+		bool  mbExit;
+#ifndef _WIN32
+		pthread_t mthread;
+#else
+		HANDLE mthread;
+#endif
+	};
 }
 #endif
