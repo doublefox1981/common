@@ -191,6 +191,7 @@ size_t net::ezClientFd::formatMsg()
 			list_del(iter);
 			outbuf_->add(&(blk->pack_->size_),sizeof(blk->pack_->size_));
 			outbuf_->add(blk->pack_->data_,blk->pack_->size_);
+			delete blk;
 		}
 		else
 			break;
