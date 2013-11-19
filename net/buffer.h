@@ -16,11 +16,7 @@ namespace net
 	class ezBuffer
 	{
 	public:
-#ifdef __linux__
-		static const size_t ezInitSize=16*1024;
-#else
 		static const size_t ezInitSize=128*1024;
-#endif
 		explicit ezBuffer(size_t initSize=ezInitSize);
 		~ezBuffer();
 		void drain(size_t len);
