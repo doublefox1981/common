@@ -11,20 +11,21 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="arg_parser.h" />
+    <ClInclude Include="cmdline.h" />
     <ClInclude Include="eztime.h" />
     <ClInclude Include="eztimer.h" />
     <ClInclude Include="list.h" />
     <ClInclude Include="memorystream.h" />
+    <ClInclude Include="optionparser.h" />
     <ClInclude Include="scopeguard.h" />
     <ClInclude Include="singleton.h" />
     <ClInclude Include="thread.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="arg_parser.cc" />
     <ClCompile Include="eztime.cpp" />
     <ClCompile Include="eztimer.cpp" />
     <ClCompile Include="listdebug.cpp" />
+    <ClCompile Include="optionparser.cpp" />
     <ClCompile Include="thread.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
