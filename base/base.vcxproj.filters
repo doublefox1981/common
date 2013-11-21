@@ -8,7 +8,6 @@
     <ClInclude Include="scopeguard.h" />
     <ClInclude Include="eztime.h" />
     <ClInclude Include="eztimer.h" />
-    <ClInclude Include="optionparser.h" />
     <ClInclude Include="cmdline.h" />
   </ItemGroup>
   <ItemGroup>
@@ -16,6 +15,5 @@
     <ClCompile Include="listdebug.cpp" />
     <ClCompile Include="eztime.cpp" />
     <ClCompile Include="eztimer.cpp" />
-    <ClCompile Include="optionparser.cpp" />
   </ItemGroup>
 </Project>
