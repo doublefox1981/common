@@ -66,6 +66,7 @@ public:
 	virtual ~ezGameObject();
 	void setConnection(ezConnection* conn) {conn_=conn;}
 	ezConnection* getConnection(){return conn_;}
+  void sendNetpack(ezNetPack* pack);
 	virtual void Close();
 private:
 	ezConnection* conn_;

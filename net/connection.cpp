@@ -209,6 +209,14 @@ void net::ezGameObject::Close()
 	if(conn_) conn_->Close();
 }
 
+void net::ezGameObject::sendNetpack(ezNetPack* pack)
+{
+  if(conn_)
+    conn_->sendNetPack(pack);
+  else
+    delete pack;
+}
+
 net::ezGameObject::ezGameObject()
 {
 
