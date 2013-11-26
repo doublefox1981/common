@@ -66,7 +66,7 @@ public:
 	int del(int fd);
 	int mod(int fd,int event,bool set);
 	int maxFd() {return maxfd_;}
-	ezFdData* ezFdDatai(int i) {return events_[i];}
+	ezFdData* ezFdDatai(int i) {return fds_[i];}
 	void pushFired(ezFdData* ezD){fired_.push_back(ezD);}
 	void netEventLoop();
 	void crossEventLoop();
@@ -97,8 +97,8 @@ private:
 	ezHander* hander_;
 	ezConnectionMgr* conMgr_;
 
-	std::vector<ezFdData*> events_;
-	std::vector<ezFdData*> fired_;
+	std::vector<ezFdData*> fds_;     // all fd
+	std::vector<ezFdData*> fired_;   // fd that fired event
 	int maxfd_;
 	
 	// net->other

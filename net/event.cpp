@@ -41,15 +41,15 @@ uint64_t net::ezEventLoop::add(int fd,uint64_t uuid,ezFd *ezfd,int event)
 	data->event_|=event;
 	if(fd>maxfd_)
 	{
-		events_.resize(fd+1);
+		fds_.resize(fd+1);
 		maxfd_ = fd;
 	}
-	if(events_[fd])
+	if(fds_[fd])
 	{
-		delete events_[fd];
-		events_[fd]=nullptr;
+		delete fds_[fd];
+		fds_[fd]=nullptr;
 	}
-	events_[fd] = data;
+	fds_[fd] = data;
 	poller_->addFd(fd,event);
 	return data->uuid_;
 }
@@ -58,11 +58,11 @@ int net::ezEventLoop::del(int fd)
 {
 	assert(fd<=maxfd_);
 	assert(fd>=0);
-	if(!events_[fd])
+	if(!fds_[fd])
 		return -1;
-	int event=events_[fd]->event_;
-	delete events_[fd];
-	events_[fd]=nullptr;
+	int event=fds_[fd]->event_;
+	delete fds_[fd];
+	fds_[fd]=nullptr;
 	poller_->delFd(fd,event);
 	net::CloseSocket(fd);
 	return 0;
@@ -72,13 +72,13 @@ int net::ezEventLoop::mod(int fd,int event,bool set)
 {
 	assert(fd>=0);
 	assert(fd<=maxfd_);
-	assert(events_[fd]);
-	assert(events_[fd]->event_!=ezNetNone);
-	poller_->modFd(fd,event,events_[fd]->event_,set);
+	assert(fds_[fd]);
+	assert(fds_[fd]->event_!=ezNetNone);
+	poller_->modFd(fd,event,fds_[fd]->event_,set);
 	if(set)
-		events_[fd]->event_|=event;
+		fds_[fd]->event_|=event;
 	else
-		events_[fd]->event_&=~event;
+		fds_[fd]->event_&=~event;
 	return 0;
 }
 
@@ -134,9 +134,9 @@ void net::ezEventLoop::processMsg()
 	{
 		ezSendBlock* blk=list_entry(iter,ezSendBlock,lst_);
 		list_del(iter);
-		if(blk->fd_<(int)events_.size()&&blk->fd_>0)
+		if(blk->fd_<(int)fds_.size()&&blk->fd_>0)
 		{
-			ezFdData* evd=events_[blk->fd_];
+			ezFdData* evd=fds_[blk->fd_];
 			if(evd&&evd->ezfd_)
 			{
 				evd->ezfd_->sendMsg(blk);
@@ -149,9 +149,9 @@ void net::ezEventLoop::processMsg()
 			delete blk;
 		}
 	}
-	for(size_t s=0;s<events_.size();++s)
+	for(size_t s=0;s<fds_.size();++s)
 	{
-		ezFdData* evd=events_[s];
+		ezFdData* evd=fds_[s];
 		if(evd&&evd->ezfd_)
 		{
 			if(evd->ezfd_->formatMsg()>0)
@@ -166,7 +166,7 @@ void net::ezEventLoop::netEventLoop()
 	for(size_t s=0;s<fired_.size();++s)
 	{
 		ezFdData* ezD=fired_[s];
-		events_[ezD->fd_]->ezfd_->onEvent(this,ezD->fd_,ezD->event_,ezD->uuid_);
+		fds_[ezD->fd_]->ezfd_->onEvent(this,ezD->fd_,ezD->event_,ezD->uuid_);
 		delete ezD;
 	}
 	fired_.clear();
