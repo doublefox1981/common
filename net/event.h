@@ -5,6 +5,7 @@
 #include "../base/thread.h"
 #include "../base/list.h"
 #include <vector>
+#include <unordered_set>
 
 namespace net
 {
@@ -66,8 +67,10 @@ public:
 	int del(int fd);
 	int mod(int fd,int event,bool set);
 	int maxFd() {return maxfd_;}
+  void addWriteFd(int fd);
+  void delWriteFd(int fd);
 	ezFdData* ezFdDatai(int i) {return fds_[i];}
-	void pushFired(ezFdData* ezD){fired_.push_back(ezD);}
+	void pushFired(ezFdData* ezD){firedfd_.push_back(ezD);}
 	void netEventLoop();
 	void crossEventLoop();
 
@@ -97,8 +100,9 @@ private:
 	ezHander* hander_;
 	ezConnectionMgr* conMgr_;
 
-	std::vector<ezFdData*> fds_;     // all fd
-	std::vector<ezFdData*> fired_;   // fd that fired event
+	std::vector<ezFdData*>  fds_;        // all fd
+	std::vector<ezFdData*>  firedfd_;    // fd that fired event
+  std::unordered_set<int> writedfd_;   // fd that have out msg
 	int maxfd_;
 	
 	// net->other

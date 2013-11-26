@@ -123,9 +123,10 @@ void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid
 	{
 		char* pbuf=nullptr;
 		int s=outbuf_->readable(pbuf);
+    int retval=0;
 		if(s>0)
 		{
-			int retval=outbuf_->writefd(fd);
+			retval=outbuf_->writefd(fd);
 			if(retval<0)
 			{
 				looper->n2oError(fd,uuid);
@@ -133,16 +134,18 @@ void net::ezClientFd::onEvent(ezEventLoop* looper,int fd,int event,uint64_t uuid
 				return;
 			}
 		}
-		else if(list_empty(&sendqueue_))
+    // 本次数据已经全部write成功
+		if(list_empty(&sendqueue_)&&retval==0)
 		{
+      looper->delWriteFd(fd);
 			looper->getPoller()->modFd(fd,ezNetWrite,ezNetWrite|ezNetRead,false);
-			return;
 		}
 	}
 	if(event&ezNetErr)
 	{
 		looper->n2oError(fd,uuid);
 		looper->del(fd);
+    return;
 	}
 }
 

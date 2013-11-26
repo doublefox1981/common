@@ -108,7 +108,7 @@ int net::ezBuffer::writefd(int fd)
 		if(retn<0)
 		{
 			if(errno==EWOULDBLOCK||errno==EAGAIN)
-				return 0;
+				return 1;
 			else
 				return -1;
 		}

@@ -65,6 +65,7 @@ int net::ezEventLoop::del(int fd)
 	fds_[fd]=nullptr;
 	poller_->delFd(fd,event);
 	net::CloseSocket(fd);
+  delWriteFd(fd);
 	return 0;
 }
 
@@ -80,6 +81,21 @@ int net::ezEventLoop::mod(int fd,int event,bool set)
 	else
 		fds_[fd]->event_&=~event;
 	return 0;
+}
+
+void net::ezEventLoop::addWriteFd(int fd)
+{
+  auto iter=writedfd_.find(fd);
+  if(iter!=writedfd_.end())
+    return;
+  writedfd_.insert(fd);
+}
+
+void net::ezEventLoop::delWriteFd(int fd)
+{
+  auto iter=writedfd_.find(fd);
+  if(iter!=writedfd_.end())
+    writedfd_.erase(iter);
 }
 
 void net::ezEventLoop::processEv()
@@ -141,6 +157,7 @@ void net::ezEventLoop::processMsg()
 			{
 				evd->ezfd_->sendMsg(blk);
 				blk=nullptr;
+        addWriteFd(blk->fd_);
 			}
 		}
 		if(blk) 
@@ -149,9 +166,14 @@ void net::ezEventLoop::processMsg()
 			delete blk;
 		}
 	}
-	for(size_t s=0;s<fds_.size();++s)
+	for(auto iter=writedfd_.begin();iter!=writedfd_.end();)
 	{
-		ezFdData* evd=fds_[s];
+    int fd=*iter;
+    if(fd<=0||fd>=fds_.size())
+      iter=writedfd_.erase(iter);
+    else
+      ++iter;
+		ezFdData* evd=fds_[fd];
 		if(evd&&evd->ezfd_)
 		{
 			if(evd->ezfd_->formatMsg()>0)
@@ -163,13 +185,13 @@ void net::ezEventLoop::processMsg()
 void net::ezEventLoop::netEventLoop()
 {
 	poller_->poll();
-	for(size_t s=0;s<fired_.size();++s)
+	for(size_t s=0;s<firedfd_.size();++s)
 	{
-		ezFdData* ezD=fired_[s];
+		ezFdData* ezD=firedfd_[s];
 		fds_[ezD->fd_]->ezfd_->onEvent(this,ezD->fd_,ezD->event_,ezD->uuid_);
 		delete ezD;
 	}
-	fired_.clear();
+	firedfd_.clear();
 	processEv();
 	processMsg();
 }
