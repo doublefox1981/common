@@ -156,8 +156,8 @@ void net::ezEventLoop::processMsg()
 			if(evd&&evd->ezfd_)
 			{
 				evd->ezfd_->sendMsg(blk);
-				blk=nullptr;
         addWriteFd(blk->fd_);
+				blk=nullptr;
 			}
 		}
 		if(blk) 
