@@ -9,7 +9,6 @@
 #include <semaphore.h>
 #include <sys/time.h>
 #endif
-#include <stdio.h>
 
 namespace base
 {
@@ -188,7 +187,6 @@ namespace base
     unsigned spinCount;
   public:
     Sleeper() : spinCount(0) {}
-    ~Sleeper(){printf("spincount=%d\n",spinCount);}
     void wait() {
 #ifndef __linux__
       if(spinCount < kMaxActiveSpin)
