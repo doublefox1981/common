@@ -9,9 +9,17 @@
 #include <semaphore.h>
 #include <sys/time.h>
 #endif
+#include <stdio.h>
 
 namespace base
 {
+  class MutexInterface
+  {
+  public:
+    virtual ~MutexInterface(){}
+    virtual void Lock()=0;
+    virtual void Unlock()=0;
+  };
 #ifndef __linux__
 	class AtomicNumber
 	{
@@ -23,18 +31,32 @@ namespace base
 		long Dec(){return InterlockedDecrement(&mValue);}
 		long Add(int n){return InterlockedExchangeAdd(&mValue,n);}
 		long Sub(int n){return InterlockedExchangeAdd(&mValue,-n);}
+    bool Cas(long cmp,long newv){return InterlockedCompareExchange(&mValue,newv,cmp)==cmp;}
 	private:
 		volatile long mValue;
 	};
 
-	class Mutex
+  class AtomicPtr
+  {
+  public:
+    AtomicPtr():ptr_(nullptr){}
+    void Set(void* p){ptr_=p;} // non-threadsafe
+    void* Xchg(void* p){return InterlockedExchangePointer (&ptr_,p);}
+    void* Cas(void* cmp,void* p){return InterlockedCompareExchangePointer((volatile PVOID*)&ptr_,p, cmp);}
+  private:
+    AtomicPtr(const AtomicPtr&);
+    AtomicPtr& operator=(const AtomicPtr&);
+    volatile void* ptr_;
+  };
+
+	class Mutex:public MutexInterface
 	{
 	public:
 		Mutex()
 		{
 			InitializeCriticalSection(&mutex);
 		}
-		~Mutex ()
+		virtual ~Mutex ()
 		{
 			DeleteCriticalSection(&mutex);
 		}
@@ -85,11 +107,25 @@ namespace base
 		long Dec(){return __sync_sub_and_fetch(&mValue,1);}
 		long Add(int n){return __sync_add_and_fetch(&mValue,n);}
 		long Sub(int n){return __sync_sub_and_fetch(&mValue,n);}
+    bool Cas(long cmp,long newv) {return __sync_bool_compare_and_swap(&mValue,cmp,newv);}
 	private:
 		volatile long mValue;
 	};
 
-	class Mutex
+  class AtomicPtr
+  {
+  public:
+    AtomicPtr():ptr_(nullptr){}
+    void Set(void* p){ptr_=p;} // non-threadsafe
+    void* Xchg(void* p){return (void*)__sync_lock_test_and_set((int*)ptr_,p);}
+    void* Cas(void* cmp,void* p){return (void*)__sync_val_compare_and_swap((int*)ptr_,cmp,p);}
+  private:
+    AtomicPtr(const AtomicPtr&);
+    AtomicPtr& operator=(const AtomicPtr&);
+    volatile void* ptr_;
+  };
+
+	class Mutex:public MutexInterface
 	{
 	public:
 		Mutex()
@@ -101,7 +137,7 @@ namespace base
 			}
 			pthread_mutex_init (&mutex, &attr);
 		}
-		~Mutex ()
+		virtual ~Mutex ()
 		{
 			pthread_mutex_destroy (&mutex);
 			if(!--attr_refcount)
@@ -146,6 +182,64 @@ namespace base
 
 #endif
 
+  class Sleeper 
+  {
+    static const unsigned kMaxActiveSpin = 4000;
+    unsigned spinCount;
+  public:
+    Sleeper() : spinCount(0) {}
+    ~Sleeper(){printf("spincount=%d\n",spinCount);}
+    void wait() {
+#ifndef __linux__
+      if(spinCount < kMaxActiveSpin)
+      {
+        ++spinCount;
+        __asm nop;
+      }else
+      {
+        // windows temp
+        Sleep(0);
+      }
+#else
+      if (spinCount < kMaxActiveSpin) 
+      {
+        ++spinCount;
+        asm volatile("pause");
+      } else 
+      {
+        /*
+        * Always sleep 0.5ms, assuming this will make the kernel put
+        * us down for whatever its minimum timer resolution is (in
+        * linux this varies by kernel version from 1ms to 10ms).
+        */
+        struct timespec ts = { 0, 500000 };
+        nanosleep(&ts, NULL);
+      }
+#endif
+    }
+  };
+
+  class SpinLock:public MutexInterface
+  {
+  public:
+    SpinLock(){lock_.Set(FREE);}
+    virtual void Lock()
+    {
+      Sleeper sleeper;
+      do 
+      {
+        sleeper.wait();
+      } while(!lock_.Cas(FREE,LOCKED));
+    }
+    virtual void Unlock()
+    {
+      lock_.Set(FREE);
+    }
+  private:
+    enum { FREE = 0, LOCKED = 1 };
+    AtomicNumber lock_;
+  };
+
 	class SysEvent
 	{
 	public:
@@ -164,10 +258,10 @@ namespace base
 	class Locker
 	{
 	public:
-		explicit Locker(Mutex *mutex){m_mutex = mutex;m_mutex->Lock();}
-		~Locker(){m_mutex->Unlock();}
+		explicit Locker(MutexInterface *mutex){mutex_ = mutex;mutex_->Lock();}
+		~Locker(){mutex_->Unlock();}
 	private:
-		Mutex *m_mutex;
+		MutexInterface* mutex_;
 	};
 
 	enum ThreadPriority 

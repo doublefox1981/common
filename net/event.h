@@ -106,14 +106,14 @@ private:
 	int maxfd_;
 	
 	// net->other
-	base::Mutex mutexCrossEv_;
+	base::SpinLock mutexCrossEv_;
 	list_head crossEv_;
 
 	// other->net
-	base::Mutex mutexO2NCrossEv_;
+	base::SpinLock mutexO2NCrossEv_;
 	list_head crossO2NEv_;
 
-	base::Mutex mutexSendQueue_;
+	base::SpinLock mutexSendQueue_;
 	list_head sendMsgQueue_;
 };
 }
