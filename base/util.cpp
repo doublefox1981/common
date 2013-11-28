@@ -85,7 +85,8 @@ void base::ColoredPrintf(EPrintColor color, const char* fmt, ...)
 #else
   printf("\033[0;3%sm", GetAnsiColorCode(color));
   vprintf(fmt, args);
-  printf("\033[m");  // Resets the terminal to default.
-#endif  // GTEST_OS_WINDOWS && !GTEST_OS_WINDOWS_MOBILE
+  printf("\033[m");
+  fflush(stdout);
+#endif
   va_end(args);
 }

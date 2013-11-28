@@ -98,6 +98,7 @@ int main()
 {
   base::ColoredPrintf(base::COLOR_YELLOW,"asdfasdfasd");
   base::ColoredPrintf(base::COLOR_RED,"hewenhui");
+  
 	InitNetwork();
 #ifdef __linux__
 	ezConnectionMgr* mgr=new ezConnectionMgr;
