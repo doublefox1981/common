@@ -19,12 +19,14 @@
     <ClInclude Include="scopeguard.h" />
     <ClInclude Include="singleton.h" />
     <ClInclude Include="thread.h" />
+    <ClInclude Include="util.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="eztime.cpp" />
     <ClCompile Include="eztimer.cpp" />
     <ClCompile Include="listdebug.cpp" />
     <ClCompile Include="thread.cpp" />
+    <ClCompile Include="util.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{A555CFDA-E59A-4FAC-A7F4-AA50F903C03F}</ProjectGuid>

@@ -7,6 +7,7 @@
 #include "../base/eztime.h"
 #include "../base/eztimer.h"
 #include "../base/thread.h"
+#include "../base/util.h"
 #include <limits>
 #include <algorithm>
 #include <queue>
@@ -95,6 +96,8 @@ struct S
 };
 int main()
 {
+  base::ColoredPrintf(base::COLOR_YELLOW,"asdfasdfasd");
+  base::ColoredPrintf(base::COLOR_RED,"hewenhui");
 	InitNetwork();
 #ifdef __linux__
 	ezConnectionMgr* mgr=new ezConnectionMgr;

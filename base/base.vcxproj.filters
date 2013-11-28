@@ -9,11 +9,13 @@
     <ClInclude Include="eztime.h" />
     <ClInclude Include="eztimer.h" />
     <ClInclude Include="cmdline.h" />
+    <ClInclude Include="util.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="thread.cpp" />
     <ClCompile Include="listdebug.cpp" />
     <ClCompile Include="eztime.cpp" />
     <ClCompile Include="eztimer.cpp" />
+    <ClCompile Include="util.cpp" />
   </ItemGroup>
 </Project>
