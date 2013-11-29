@@ -99,6 +99,17 @@ struct S
 int main()
 {
   base::ezLogger::instance()->Start();
+  const char* cc="hello world";
+  LOG_INFO("%08x ",cc);
+  std::string format;
+  base::StringPrintf(&format,"%08x",cc);
+  for(size_t len=0;len<strlen(cc);++len)
+  {
+    format+=" ";
+    base::StringAppendf(&format,"%02x",char(cc[len]));
+  }
+  LOG_INFO("%s",format.c_str());
+  
   InitNetwork();
 #ifdef __linux__
 	ezConnectionMgr* mgr=new ezConnectionMgr;
