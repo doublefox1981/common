@@ -1,5 +1,6 @@
 #ifndef _BASE_LOGGING_H
 #define _BASE_LOGGING_H
+#include <cstdarg>
 #include "list.h"
 #include "thread.h"
 #include "singleton.h"
@@ -11,6 +12,7 @@ namespace base
   public:
     ezLogger();
     virtual ~ezLogger();
+    void setLogLevel(int lvl){logLevel_=lvl;}
     void info(const char* format,...);
     void warn(const char* format,...);
     void error(const char* format,...);

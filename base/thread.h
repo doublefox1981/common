@@ -116,8 +116,8 @@ namespace base
   public:
     AtomicPtr():ptr_(nullptr){}
     void Set(void* p){ptr_=p;} // non-threadsafe
-    void* Xchg(void* p){return (void*)__sync_lock_test_and_set((int*)ptr_,p);}
-    void* Cas(void* cmp,void* p){return (void*)__sync_val_compare_and_swap((int*)ptr_,cmp,p);}
+    void* Xchg(void* p){return (void*)__sync_lock_test_and_set((long long*)ptr_,p);}
+    void* Cas(void* cmp,void* p){return (void*)__sync_val_compare_and_swap((long long*)ptr_,cmp,p);}
   private:
     AtomicPtr(const AtomicPtr&);
     AtomicPtr& operator=(const AtomicPtr&);

@@ -89,13 +89,14 @@ base::ezLogger::ezLogger() :logLevel_(0)
 {
   INIT_LIST_HEAD(&lst_);
 }
-
-inline struct tm* localtime_r(const time_t* timep, struct tm* result) {
+#ifndef __linux__
+static inline struct tm* localtime_r(const time_t* timep, struct tm* result) {
   localtime_s(result, timep);
   return result;
 }
 #ifndef snprintf
 #define snprintf _snprintf
+#endif
 #endif
 void base::ezLogger::Run()
 {
@@ -122,25 +123,25 @@ void base::ezLogger::Run()
         case ELOG_INFO:
           {
             color=COLOR_DEFAULT;
-            snprintf(prefix,sizeof(prefix),"%s","INFO>>>");
+            snprintf(prefix,sizeof(prefix),"%s","INFO>>> ");
           }
           break;
         case ELOG_WARNNING:
           {
             color=COLOR_YELLOW;
-            snprintf(prefix,sizeof(prefix),"%s","WARNNING>>>");
+            snprintf(prefix,sizeof(prefix),"%s","WARNNING>>> ");
           }
           break;
         case ELOG_ERROR:
           {
             color=COLOR_RED;
-            snprintf(prefix,sizeof(prefix),"%s","ERROR>>>");
+            snprintf(prefix,sizeof(prefix),"%s","ERROR>>> ");
           }
           break;
         case ELOG_FATAL:
           {
             color=COLOR_RED;
-            snprintf(prefix,sizeof(prefix),"%s","FATAL>>>");
+            snprintf(prefix,sizeof(prefix),"%s","FATAL>>> ");
           }
           break;
         default: break;

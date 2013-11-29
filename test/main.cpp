@@ -31,7 +31,7 @@ public:
 			seq_=seq;
 		else
 			assert(seq==++seq_);
-		printf("recv %d seq=%d\n",pack->size_,seq);
+		LOG_INFO("recv %d seq=%d",pack->size_,seq);
 	}
 private:
 	int seq_;

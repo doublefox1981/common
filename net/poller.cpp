@@ -228,7 +228,7 @@ void net::ezEpollPoller::addFd(int fd,int mask)
   ee.data.u64=0;
   ee.data.fd=fd;
   if(epoll_ctl(epollFd_,EPOLL_CTL_ADD,fd,&ee)==-1) 
-    ELOG_ERROR("EPOLL_CTL_ADD fail\n");
+    LOG_ERROR("EPOLL_CTL_ADD fail\n");
 }
 
 void net::ezEpollPoller::delFd(int fd,int mask)
@@ -240,7 +240,7 @@ void net::ezEpollPoller::delFd(int fd,int mask)
   ee.data.u64=0;
   ee.data.fd=fd;
   if(epoll_ctl(epollFd_,EPOLL_CTL_DEL,fd,&ee)==-1) 
-    ELOG_ERROR("EPOLL_CTL_DEL fail\n");
+    LOG_ERROR("EPOLL_CTL_DEL fail\n");
 }
 
 void net::ezEpollPoller::modFd(int fd,int mask,int srcmask,bool set)
@@ -257,7 +257,7 @@ void net::ezEpollPoller::modFd(int fd,int mask,int srcmask,bool set)
   ee.data.u64 = 0;
   ee.data.fd = fd;
   if(epoll_ctl(epollFd_,EPOLL_CTL_MOD,fd,&ee)==-1) 
-    ELOG_ERROR("EPOLL_CTL_MOD fail\n");
+    LOG_ERROR("EPOLL_CTL_MOD fail\n");
 }
 
 void net::ezEpollPoller::poll()
