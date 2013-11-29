@@ -12,7 +12,7 @@ void ezSocketError(const char* err)
 #ifndef __linux__
 	errno=GetLastError();
 #endif
-	LOG_ERROR("%s:errno=%d\n",err,errno);
+	LOG_ERROR("%s:errno=%d",err,errno);
 }
 
 #ifndef __linux__

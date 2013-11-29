@@ -165,7 +165,7 @@ void net::ezEventLoop::processMsg()
 		}
 		if(blk) 
 		{
-			LOG_INFO("delete blk \n");
+			LOG_INFO("delete blk ");
 			delete blk;
 		}
 	}

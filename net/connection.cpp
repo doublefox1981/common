@@ -145,7 +145,7 @@ void net::ezServerHander::onOpen(ezEventLoop* looper,int fd,uint64_t uuid)
 		char ipport[128];
 		net::ToIpPort(ipport,sizeof(ipport),net::GetPeerAddr(fd));
 		conn->setIpAddr(ipport);
-		LOG_INFO("new connector from %s\n",ipport);
+		LOG_INFO("new connector from %s",ipport);
 	}
 }
 
@@ -153,7 +153,7 @@ void net::ezServerHander::onClose(ezEventLoop* looper,int fd,uint64_t uuid)
 {
 	ezConnection* conn=looper->getConnectionMgr()->findConnection(uuid);
 	std::string ip=conn->getIpAddr();
-	LOG_INFO("disconnect %s\n",ip.c_str());
+	LOG_INFO("disconnect %s",ip.c_str());
 	conn=nullptr;
 	looper->getConnectionMgr()->delConnection(uuid);
 }
@@ -251,12 +251,12 @@ void net::ezClientHander::onOpen(ezEventLoop* looper,int fd,uint64_t uuid)
 		char ipport[128];
 		net::ToIpPort(ipport,sizeof(ipport),GetPeerAddr(fd));
 		conn->setIpAddr(ipport);
-		LOG_INFO("connect to %s ok\n",ipport);
+		LOG_INFO("connect to %s ok",ipport);
 	}
 	else
 	{
 		info->connectOK_=false;
-		LOG_WARN("connect to %s:%d fail \n",info->ip_.c_str(),info->port_);
+		LOG_WARN("connect to %s:%d fail ",info->ip_.c_str(),info->port_);
 	}
 }
 
@@ -266,7 +266,7 @@ void net::ezClientHander::onClose(ezEventLoop* looper,int fd,uint64_t uuid)
 	if(!conn)
 		return;
 	std::string ip=conn->getIpAddr();
-	LOG_INFO("disconnect %s\n",ip.c_str());
+	LOG_INFO("disconnect %s",ip.c_str());
 	conn=nullptr;
 	ezConnectToInfo* info=looper->getConnectionMgr()->findConnectToInfo(uuid);
 	if(info)

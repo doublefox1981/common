@@ -45,7 +45,7 @@ public:
 		base::ezBufferReader reader(pack->data_,pack->size_);
 		int seq=0;
 		reader.Read(seq);
-		//printf("recv %d seq=%d\n",pack->size_,seq);
+		//LOG_INFO("recv %d seq=%d",pack->size_,seq);
 
 		int s=pack->size_;
 		ezNetPack* msg=new ezNetPack(s);
