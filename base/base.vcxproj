@@ -15,6 +15,7 @@
     <ClInclude Include="eztime.h" />
     <ClInclude Include="eztimer.h" />
     <ClInclude Include="list.h" />
+    <ClInclude Include="logging.h" />
     <ClInclude Include="memorystream.h" />
     <ClInclude Include="scopeguard.h" />
     <ClInclude Include="singleton.h" />
@@ -25,6 +26,7 @@
     <ClCompile Include="eztime.cpp" />
     <ClCompile Include="eztimer.cpp" />
     <ClCompile Include="listdebug.cpp" />
+    <ClCompile Include="logging.cpp" />
     <ClCompile Include="thread.cpp" />
     <ClCompile Include="util.cpp" />
   </ItemGroup>
@@ -62,7 +64,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

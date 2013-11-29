@@ -8,6 +8,8 @@
 #include "../base/eztimer.h"
 #include "../base/thread.h"
 #include "../base/util.h"
+#include "../base/logging.h"
+
 #include <limits>
 #include <algorithm>
 #include <queue>
@@ -96,9 +98,10 @@ struct S
 };
 int main()
 {
-  base::ColoredPrintf(base::COLOR_YELLOW,"asdfasdfasd");
-  base::ColoredPrintf(base::COLOR_RED,"hewenhui");
-  
+  std::string str=base::StringPrintf("%s","192.168.1.1");
+  base::ezLogger::instance()->Start();
+  LOG_WARN("11111");
+  LOG_ERROR("asdfsdf");
 	InitNetwork();
 #ifdef __linux__
 	ezConnectionMgr* mgr=new ezConnectionMgr;

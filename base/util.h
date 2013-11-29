@@ -1,9 +1,9 @@
 #ifndef _UTIL_H
 #define _UTIL_H
+#include <string>
 
 namespace base
 {
-
   enum EPrintColor 
   {
     COLOR_DEFAULT,
@@ -12,6 +12,10 @@ namespace base
     COLOR_YELLOW
   };
 
-  void ColoredPrintf(EPrintColor color,const char* fmt,...); 
+  extern void ColoredPrintf(EPrintColor color,const char* fmt,...);
+  extern void StringPrintfImpl(std::string& output, const char* format,va_list args); 
+  extern std::string StringPrintf(const char* format, ...);
+  extern std::string& StringAppendf(std::string* output, const char* format, ...);
+  extern void StringPrintf(std::string* output, const char* format, ...);
 }
 #endif

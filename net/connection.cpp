@@ -3,6 +3,7 @@
 #include "netpack.h"
 #include "event.h"
 #include "../base/memorystream.h"
+#include "../base/logging.h"
 
 using namespace net;
 
@@ -255,7 +256,7 @@ void net::ezClientHander::onOpen(ezEventLoop* looper,int fd,uint64_t uuid)
 	else
 	{
 		info->connectOK_=false;
-		printf("connect to %s:%d fail \n",info->ip_.c_str(),info->port_);
+		LOG_WARN("connect to %s:%d fail \n",info->ip_.c_str(),info->port_);
 	}
 }
 

@@ -10,6 +10,7 @@
     <ClInclude Include="eztimer.h" />
     <ClInclude Include="cmdline.h" />
     <ClInclude Include="util.h" />
+    <ClInclude Include="logging.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="thread.cpp" />
@@ -17,5 +18,6 @@
     <ClCompile Include="eztime.cpp" />
     <ClCompile Include="eztimer.cpp" />
     <ClCompile Include="util.cpp" />
+    <ClCompile Include="logging.cpp" />
   </ItemGroup>
 </Project>
