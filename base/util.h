@@ -2,6 +2,15 @@
 #define _UTIL_H
 #include <string>
 
+#if defined(_MSC_VER)
+#define MSVC_PUSH_DISABLE_WARNING(n) __pragma(warning(push)) \
+  __pragma(warning(disable:n))
+#define MSVC_POP_WARNING() __pragma(warning(pop))
+#else
+#define MSVC_PUSH_DISABLE_WARNING(n)
+#define MSVC_POP_WARNING()
+#endif
+
 namespace base
 {
   enum EPrintColor 

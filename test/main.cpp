@@ -98,11 +98,8 @@ struct S
 };
 int main()
 {
-  std::string str=base::StringPrintf("%s","192.168.1.1");
   base::ezLogger::instance()->Start();
-  LOG_WARN("11111");
-  LOG_ERROR("asdfsdf");
-	InitNetwork();
+  InitNetwork();
 #ifdef __linux__
 	ezConnectionMgr* mgr=new ezConnectionMgr;
 	mgr->setDefaultHander(new TestServerPackHander());

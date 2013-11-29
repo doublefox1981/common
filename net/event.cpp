@@ -4,6 +4,8 @@
 #include "connection.h"
 #include "../base/memorystream.h"
 #include "../base/thread.h"
+#include "../base/logging.h"
+#include "../base/util.h"
 #include <assert.h>
 
 int net::ezEventLoop::init(ezPoller* poller,ezHander* hander,ezConnectionMgr* mgr)
@@ -140,6 +142,7 @@ void net::ezEventLoop::processEv()
 
 void net::ezEventLoop::processMsg()
 {
+  MSVC_PUSH_DISABLE_WARNING(4018);
 	LIST_HEAD(tmplst);
 	{
 		base::Locker lock(&mutexSendQueue_);
@@ -162,7 +165,7 @@ void net::ezEventLoop::processMsg()
 		}
 		if(blk) 
 		{
-			printf("delete blk \n");
+			LOG_INFO("delete blk \n");
 			delete blk;
 		}
 	}
@@ -180,6 +183,7 @@ void net::ezEventLoop::processMsg()
 				mod(evd->fd_,ezNetWrite,true);
 		}
 	}
+  MSVC_POP_WARNING();
 }
 
 void net::ezEventLoop::netEventLoop()

@@ -91,15 +91,6 @@ void base::ColoredPrintf(EPrintColor color, const char* fmt, ...)
   va_end(args);
 }
 
-#if defined(_MSC_VER)
-#define MSVC_PUSH_DISABLE_WARNING(n) __pragma(warning(push)) \
-  __pragma(warning(disable:n))
-#define MSVC_POP_WARNING() __pragma(warning(pop))
-#else
-#define MSVC_PUSH_DISABLE_WARNING(n)
-#define MSVC_POP_WARNING()
-#endif
-
 #ifndef __linux__
 /*  windows 和 linux snprintf实现方式不一致，统一为linux方式
 **  来源于 http://www.ijs.si/software/snprintf/

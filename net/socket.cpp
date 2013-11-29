@@ -1,5 +1,6 @@
 #include "portable.h"
 #include "socket.h"
+#include "../base/logging.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -11,7 +12,7 @@ void ezSocketError(const char* err)
 #ifndef __linux__
 	errno=GetLastError();
 #endif
-	printf("%s:errno=%d\n",err,errno);
+	LOG_ERROR("%s:errno=%d\n",err,errno);
 }
 
 #ifndef __linux__
