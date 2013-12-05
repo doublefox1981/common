@@ -11,12 +11,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="atomicops.h" />
     <ClInclude Include="cmdline.h" />
     <ClInclude Include="eztime.h" />
     <ClInclude Include="eztimer.h" />
     <ClInclude Include="list.h" />
     <ClInclude Include="logging.h" />
     <ClInclude Include="memorystream.h" />
+    <ClInclude Include="readerwriterqueue.h" />
     <ClInclude Include="scopeguard.h" />
     <ClInclude Include="singleton.h" />
     <ClInclude Include="thread.h" />

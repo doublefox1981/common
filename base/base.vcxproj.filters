@@ -11,6 +11,8 @@
     <ClInclude Include="cmdline.h" />
     <ClInclude Include="util.h" />
     <ClInclude Include="logging.h" />
+    <ClInclude Include="readerwriterqueue.h" />
+    <ClInclude Include="atomicops.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="thread.cpp" />

@@ -91,11 +91,7 @@ public:
 		ezClientHander::onClose(looper,fd,uuid);
 	}
 };
-struct S
-{
-	list_head lst;
-	int i;
-};
+
 int main()
 {
   base::ezLogger::instance()->Start();

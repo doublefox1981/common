@@ -102,15 +102,9 @@ void net::ezEventLoop::delWriteFd(int fd)
 
 void net::ezEventLoop::processEv()
 {
-	LIST_HEAD(tmplst);
+  ezCrossEventData* ev=nullptr;
+  while(toIO_.try_dequeue(ev))
 	{
-		base::Locker lock(&mutexO2NCrossEv_);
-		list_splice_init(&crossO2NEv_,&tmplst);
-	}
-	list_head *iter,*next;
-	list_for_each_safe(iter,next,&tmplst)
-	{
-		ezCrossEventData* ev=list_entry(iter,ezCrossEventData,evlst_);
 		if(ev->event_==ezCrossClose)
 		{
 			n2oCloseFd(ev->fd_,ev->uuid_);
@@ -143,16 +137,9 @@ void net::ezEventLoop::processEv()
 void net::ezEventLoop::processMsg()
 {
   MSVC_PUSH_DISABLE_WARNING(4018);
-	LIST_HEAD(tmplst);
+  ezSendBlock* blk=nullptr;
+  while(toMsg_.try_dequeue(blk))
 	{
-		base::Locker lock(&mutexSendQueue_);
-		list_splice_init(&sendMsgQueue_,&tmplst);
-	}
-	list_head *iter,*next;
-	list_for_each_safe(iter,next,&tmplst)
-	{
-		ezSendBlock* blk=list_entry(iter,ezSendBlock,lst_);
-		list_del(iter);
 		if(blk->fd_<(int)fds_.size()&&blk->fd_>0)
 		{
 			ezFdData* evd=fds_[blk->fd_];
@@ -202,42 +189,35 @@ void net::ezEventLoop::netEventLoop()
 
 void net::ezEventLoop::crossEventLoop()
 {
-	LIST_HEAD(tmplst);
-	{
-		base::Locker lock(&mutexCrossEv_);
-		list_splice_init(&crossEv_,&tmplst);
-	}
-	list_head *iter,*next;
-	list_for_each_safe(iter,next,&tmplst)
-	{
-		ezCrossEventData* evd=list_entry(iter,ezCrossEventData,evlst_);
-		switch(evd->event_)
-		{
-		case ezCrossOpen:
-			hander_->onOpen(this,evd->fd_,evd->uuid_);
-			break;
-		case ezCrossClose:
-			hander_->onClose(this,evd->fd_,evd->uuid_);
-			break;
-		case ezCrossError:
-			hander_->onError(this,evd->fd_,evd->uuid_);
-			break;
-		case ezCrossData:
-			{
-				assert(evd->msg_);
-				hander_->onData(this,evd->fd_,evd->uuid_,evd->msg_);
-			}
-			break;
-		default: break;
-		}
-		delete evd;
-	}
+  ezCrossEventData* evd=nullptr;
+  while(toApp_.try_dequeue(evd))
+  {
+    switch(evd->event_)
+    {
+    case ezCrossOpen:
+      hander_->onOpen(this,evd->fd_,evd->uuid_);
+      break;
+    case ezCrossClose:
+      hander_->onClose(this,evd->fd_,evd->uuid_);
+      break;
+    case ezCrossError:
+      hander_->onError(this,evd->fd_,evd->uuid_);
+      break;
+    case ezCrossData:
+      {
+        assert(evd->msg_);
+        hander_->onData(this,evd->fd_,evd->uuid_,evd->msg_);
+      }
+      break;
+    default: break;
+    }
+    delete evd;
+  }
 }
 
 void net::ezEventLoop::n2oCrossEvent(ezCrossEventData* ev)
 {
-	base::Locker lock(&mutexCrossEv_);
-	list_add_tail(&ev->evlst_,&crossEv_);
+  toApp_.enqueue(ev);
 }
 
 void net::ezEventLoop::n2oCloseFd(int fd,uint64_t uuid)
@@ -274,9 +254,6 @@ net::ezEventLoop::ezEventLoop()
 	conMgr_=nullptr;
 	maxfd_=-1;
 	suuid_.Set(1);
-	INIT_LIST_HEAD(&crossEv_);
-	INIT_LIST_HEAD(&crossO2NEv_);
-	INIT_LIST_HEAD(&sendMsgQueue_);
 }
 
 net::ezEventLoop::~ezEventLoop()
@@ -298,8 +275,7 @@ void net::ezEventLoop::o2nCloseFd(int fd,uint64_t uuid)
 	ev->uuid_=uuid;
 	ev->event_=ezCrossClose;
 
-	base::Locker lock(&mutexO2NCrossEv_);
-	list_add_tail(&ev->evlst_,&crossO2NEv_);
+  toIO_.enqueue(ev);
 }
 
 void net::ezEventLoop::o2nConnectTo(uint64_t uuid,const char* toip,int toport)
@@ -315,8 +291,7 @@ void net::ezEventLoop::o2nConnectTo(uint64_t uuid,const char* toip,int toport)
 	writer.WriteBuffer(toip,int(strlen(toip)));
 	msg->size_=writer.GetUsedSize();
 
-	base::Locker lock(&mutexO2NCrossEv_);
-	list_add_tail(&ev->evlst_,&crossO2NEv_);
+  toIO_.enqueue(ev);
 }
 
 void net::ezEventLoop::sendMsg(int fd,ezNetPack* msg)
@@ -325,8 +300,7 @@ void net::ezEventLoop::sendMsg(int fd,ezNetPack* msg)
 	blk->fd_=fd;
 	blk->pack_=msg;
 
-	base::Locker lock(&mutexSendQueue_);
-	list_add_tail(&blk->lst_,&sendMsgQueue_);
+  toMsg_.enqueue(blk);
 }
 
 net::ezFdData::~ezFdData()

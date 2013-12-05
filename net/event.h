@@ -4,6 +4,7 @@
 #include "netpack.h"
 #include "../base/thread.h"
 #include "../base/list.h"
+#include "../base/readerwriterqueue.h"
 #include <vector>
 #include <unordered_set>
 
@@ -46,7 +47,6 @@ struct ezFdData
 // 跨线程事件通知
 struct ezCrossEventData
 {
-	struct list_head evlst_;
 	int fd_;
 	uint64_t uuid_;
 	int event_;
@@ -55,6 +55,8 @@ struct ezCrossEventData
 	~ezCrossEventData();
 };
 
+typedef moodycamel::ReaderWriterQueue<ezCrossEventData*> EventQueue;
+typedef moodycamel::ReaderWriterQueue<ezSendBlock*> MsgQueue;
 class ezEventLoop
 {
 public:
@@ -104,17 +106,11 @@ private:
 	std::vector<ezFdData*>  firedfd_;    // fd that fired event
   std::unordered_set<int> writedfd_;   // fd that have out msg
 	int maxfd_;
-	
-	// net->other
-	base::SpinLock mutexCrossEv_;
-	list_head crossEv_;
 
-	// other->net
-	base::SpinLock mutexO2NCrossEv_;
-	list_head crossO2NEv_;
+  EventQueue toIO_;  // to io thread
+  EventQueue toApp_; // to application
+  MsgQueue   toMsg_; // sended msg,to io thread
 
-	base::SpinLock mutexSendQueue_;
-	list_head sendMsgQueue_;
 };
 }
 #endif
