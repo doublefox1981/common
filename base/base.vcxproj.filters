@@ -13,6 +13,10 @@
     <ClInclude Include="logging.h" />
     <ClInclude Include="readerwriterqueue.h" />
     <ClInclude Include="atomicops.h" />
+    <ClInclude Include="bitset.h" />
+    <ClInclude Include="signal.h" />
+    <ClInclude Include="portable.h" />
+    <ClInclude Include="notifyqueue.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="thread.cpp" />
@@ -21,5 +25,6 @@
     <ClCompile Include="eztimer.cpp" />
     <ClCompile Include="util.cpp" />
     <ClCompile Include="logging.cpp" />
+    <ClCompile Include="signal.cpp" />
   </ItemGroup>
 </Project>

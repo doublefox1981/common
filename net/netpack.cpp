@@ -144,10 +144,17 @@ void net::ezMsgCopy(ezMsg* src,ezMsg* dst)
     if(src->flags_&shared)
       src->heap_.ptr_->refcnt_.Add(1);
     else
-      {
-        src->heap_.ptr_->refcnt_.Set(2);
-        src->flags_|=shared;
+    {
+      src->heap_.ptr_->refcnt_.Set(2);
+      src->flags_|=shared;
     }
   }
   *dst=*src;
+}
+
+void net::ezMsgMove(ezMsg* src,ezMsg* dst)
+{
+  ezMsgFree(dst);
+  *dst=*src;
+  ezMsgInit(src);
 }

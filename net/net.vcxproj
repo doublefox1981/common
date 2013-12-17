@@ -14,15 +14,18 @@
     <ClInclude Include="buffer.h" />
     <ClInclude Include="connection.h" />
     <ClInclude Include="event.h" />
+    <ClInclude Include="fd.h" />
+    <ClInclude Include="iothread.h" />
     <ClInclude Include="netpack.h" />
     <ClInclude Include="poller.h" />
-    <ClInclude Include="portable.h" />
     <ClInclude Include="socket.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="buffer.cpp" />
     <ClCompile Include="connection.cpp" />
     <ClCompile Include="event.cpp" />
+    <ClCompile Include="fd.cpp" />
+    <ClCompile Include="iothread.cpp" />
     <ClCompile Include="netpack.cpp" />
     <ClCompile Include="poller.cpp" />
     <ClCompile Include="socket.cpp" />

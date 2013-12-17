@@ -1,6 +1,6 @@
 #ifndef _NETPACK_H
 #define _NETPACK_H
-#include "portable.h"
+#include "../base/portable.h"
 #include "../base/thread.h"
 
 // from 0mq
@@ -25,6 +25,10 @@ namespace net
     type_delimiter = 103,
     type_max = 103
   };
+  /*
+    不单独构造和析构，方便moodycamel.ReaderWriterQueue 快速出入队列
+    使用ezMsgInit等和ezMsgFree,进行初始化和释放资源
+  */
   struct ezMsg
   {
     struct ezBigMsg
@@ -60,6 +64,7 @@ namespace net
   int  ezMsgCapcity(ezMsg* msg);
   int8_t* ezMsgData(ezMsg* msg);
 
+  void ezMsgMove(ezMsg* src,ezMsg* dst);
   void ezMsgCopy(ezMsg* src,ezMsg* dst);
   void ezMsgAddRef(ezMsg* msg,int ref);
   void ezMsgSubRef(ezMsg* msg,int ref);

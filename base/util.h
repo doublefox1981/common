@@ -11,6 +11,7 @@
 #define MSVC_POP_WARNING()
 #endif
 
+
 namespace base
 {
   enum EPrintColor 

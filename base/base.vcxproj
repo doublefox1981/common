@@ -12,14 +12,18 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="atomicops.h" />
+    <ClInclude Include="bitset.h" />
     <ClInclude Include="cmdline.h" />
     <ClInclude Include="eztime.h" />
     <ClInclude Include="eztimer.h" />
     <ClInclude Include="list.h" />
     <ClInclude Include="logging.h" />
+    <ClInclude Include="notifyqueue.h" />
     <ClInclude Include="memorystream.h" />
+    <ClInclude Include="portable.h" />
     <ClInclude Include="readerwriterqueue.h" />
     <ClInclude Include="scopeguard.h" />
+    <ClInclude Include="signal.h" />
     <ClInclude Include="singleton.h" />
     <ClInclude Include="thread.h" />
     <ClInclude Include="util.h" />
@@ -29,6 +33,7 @@
     <ClCompile Include="eztimer.cpp" />
     <ClCompile Include="listdebug.cpp" />
     <ClCompile Include="logging.cpp" />
+    <ClCompile Include="signal.cpp" />
     <ClCompile Include="thread.cpp" />
     <ClCompile Include="util.cpp" />
   </ItemGroup>

@@ -1,116 +1,83 @@
 #ifndef _EVENT_H
 #define _EVENT_H
-#include "portable.h"
 #include "netpack.h"
+#include "../base/portable.h"
 #include "../base/thread.h"
 #include "../base/list.h"
 #include "../base/readerwriterqueue.h"
+#include "../base/notifyqueue.h"
+#include "../base/singleton.h"
 #include <vector>
 #include <unordered_set>
 
 namespace net
 {
-enum ezNetEventType
-{
-	ezNetNone=0,
-	ezNetRead=1,
-	ezNetWrite=2,
-	ezNetErr=4,
-	ezNetAll=ezNetRead|ezNetWrite,
-};
+  enum ezNetEventType
+  {
+    ezNetNone=0,
+    ezNetRead=1,
+    ezNetWrite=2,
+    ezNetErr=4,
+    ezNetAll=ezNetRead|ezNetWrite,
+  };
 
-enum ezCrossEventType
-{
-	ezCrossNone=0,
-	ezCrossOpen=1,
-	ezCrossClose=2,
-	ezCrossError=3,
-	ezCrossData=4,
-};
+  enum ezCrossEventType
+  {
+    ezCrossNone=0,
+    ezCrossOpen=1,
+    ezCrossClose=2,
+    ezCrossError=3,
+    ezCrossData=4,
+    ezCrossPollout=5,
+  };
 
-class ezHander;
-class ezPoller;
-class ezFd;
-class ezConnectionMgr;
+  class ezHander;
+  class ezIoThread;
+  class ezFd;
+  class ezConnectionMgr;
 
-// 网络io事件
-struct ezFdData
-{
-	int fd_;
-	uint64_t uuid_;
-	int event_;
-	ezFd* ezfd_;
-	ezFdData();
-	~ezFdData();
-};
+  // TODO: 析构
+  struct ezCrossEventData
+  {
+    int      fromtid_;
+    int      fd_;
+    uint64_t uuid_;
+    int      event_;
+    ezMsg*   msg_;
+    ezCrossEventData();
+  };
+  void ezCloseCrossEventData(ezCrossEventData& ev);
 
-// 跨线程事件通知
-struct ezCrossEventData
-{
-	int fd_;
-	uint64_t uuid_;
-	int event_;
-	ezNetPack* msg_;
-	ezCrossEventData();
-	~ezCrossEventData();
-};
+  class ezEventLoop
+  {
+  public:
+    ezEventLoop();
+    ~ezEventLoop();
+    int init(ezHander* hander,ezConnectionMgr* mgr,int tnum);
+    int serveOnPort(int port);
+    int shutdown();
+    void sendMsg(int tid,int fd,ezMsg& msg);
+    ezConnectionMgr* getConnectionMgr() {return conMgr_;}
+    ezHander* getHander() {return hander_;}
+    ezIoThread* chooseThread();
+    void notify(ezIoThread* thread,ezCrossEventData& data);
+    void o2nConnectTo(uint64_t uuid,const char* toip,int toport);
+    void o2nCloseFd(int tid,int fd,uint64_t uuid);
+    void loop();
+  private:
+    ezHander*          hander_;
+    ezConnectionMgr*   conMgr_;
+    ezIoThread*        threads_;
+    int                threadnum_;
+  };
 
-typedef moodycamel::ReaderWriterQueue<ezCrossEventData*> EventQueue;
-typedef moodycamel::ReaderWriterQueue<ezSendBlock*> MsgQueue;
-class ezEventLoop
-{
-public:
-	ezEventLoop();
-	~ezEventLoop();
-	int init(ezPoller* poller,ezHander* hander,ezConnectionMgr* mgr);
-	int serveOnPort(int port);
-	int shutdown();
-	uint64_t add(int fd,uint64_t uuid,ezFd *ezfd,int event);
-	int del(int fd);
-	int mod(int fd,int event,bool set);
-	int maxFd() {return maxfd_;}
-  void addWriteFd(int fd);
-  void delWriteFd(int fd);
-	ezFdData* ezFdDatai(int i) {return fds_[i];}
-	void pushFired(ezFdData* ezD){firedfd_.push_back(ezD);}
-	void netEventLoop();
-	void crossEventLoop();
-
-	// net->other
-	void n2oCrossEvent(ezCrossEventData* ev);
-	void n2oCloseFd(int fd,uint64_t uuid);
-	void n2oNewFd(int fd,uint64_t uuid);
-	void n2oError(int fd,uint64_t uuid);
-
-	// other->net
-	void o2nCloseFd(int fd,uint64_t uuid);
-	void o2nConnectTo(uint64_t uuid,const char* toip,int toport);
-
-	void sendMsg(int fd,ezNetPack* msg);
-
-	ezConnectionMgr* getConnectionMgr() {return conMgr_;}
-	ezHander* getHander() {return hander_;}
-	ezPoller* getPoller() {return poller_;}
-	uint64_t uuid();
-private:
-	void processEv();
-	void processMsg();
-
-	base::AtomicNumber suuid_;
-
-	ezPoller* poller_;
-	ezHander* hander_;
-	ezConnectionMgr* conMgr_;
-
-	std::vector<ezFdData*>  fds_;        // all fd
-	std::vector<ezFdData*>  firedfd_;    // fd that fired event
-  std::unordered_set<int> writedfd_;   // fd that have out msg
-	int maxfd_;
-
-  EventQueue toIO_;  // to io thread
-  EventQueue toApp_; // to application
-  MsgQueue   toMsg_; // sended msg,to io thread
-
-};
+  class ezUUID:public base::ezSingleTon<ezUUID>
+  {
+  public:
+    ezUUID(){suuid_.Set(1);}
+    uint64_t uuid();
+  private:
+    base::AtomicNumber suuid_;
+  };
 }
 #endif
