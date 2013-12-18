@@ -1,9 +1,15 @@
-#include "socket.h"
+#include "../base/portable.h"
+#include "../base/memorystream.h"
+#include "../base/logging.h"
 #include "connection.h"
 #include "netpack.h"
 #include "event.h"
-#include "../base/memorystream.h"
-#include "../base/logging.h"
+#include "fd.h"
+#include "poller.h"
+#include "iothread.h"
+#include "socket.h"
+
+
 
 using namespace net;
 
@@ -63,7 +69,7 @@ void net::ezConnection::Close()
   evLooper_->o2nCloseFd(tid_,fd_,uuid_);
 }
 
-void net::ezConnection::setHander(ezNetPackHander* hander)
+void net::ezConnection::setHander(ezINetPackHander* hander)
 {
 	netpackHander_=hander;
 }
@@ -138,20 +144,23 @@ void net::ezConnectionMgr::reconnectAll()
   }
 }
 
-void net::ezServerHander::onOpen(ezEventLoop* looper,int fd,uint64_t uuid,int tid)
+void net::ezServerHander::onOpen(ezIoThread* io,int fd,uint64_t uuid,int bindtid)
 {
-	ezConnection* conn=looper->getConnectionMgr()->addConnection(looper,fd,uuid,tid);
+  ezEventLoop* looper=io->getlooper();
+	ezConnection* conn=looper->getConnectionMgr()->addConnection(looper,fd,uuid,bindtid);
 	if(conn)
 	{
 		char ipport[128];
 		net::ToIpPort(ipport,sizeof(ipport),net::GetPeerAddr(fd));
 		conn->setIpAddr(ipport);
-		LOG_INFO("new connector from %s,tid=%d,fd=%d",ipport,tid,fd);
+		LOG_INFO("new connector from %s,tid=%d,fd=%d",ipport,bindtid,fd);
 	}
 }
 
-void net::ezServerHander::onClose(ezEventLoop* looper,int fd,uint64_t uuid,int tid)
+void net::ezServerHander::onClose(ezIoThread* io,int fd,uint64_t uuid)
 {
+  ezEventLoop* looper=io->getlooper();
+  int tid=io->gettid();
 	ezConnection* conn=looper->getConnectionMgr()->findConnection(uuid);
 	std::string ip=conn->getIpAddr();
 	LOG_INFO("disconnect %s",ip.c_str());
@@ -159,8 +168,9 @@ void net::ezServerHander::onClose(ezEventLoop* looper,int fd,uint64_t uuid,int t
 	looper->getConnectionMgr()->delConnection(uuid);
 }
 
-void net::ezServerHander::onData(ezEventLoop* looper,int fd,uint64_t uuid,ezMsg* msg)
+void net::ezServerHander::onData(ezIoThread* io,int fd,uint64_t uuid,ezMsg* msg)
 {
+  ezEventLoop* looper=io->getlooper();
 	net::ezConnection* conn=looper->getConnectionMgr()->findConnection(uuid);
 	if(conn)
 	{
@@ -168,43 +178,14 @@ void net::ezServerHander::onData(ezEventLoop* looper,int fd,uint64_t uuid,ezMsg*
 	}
 }
 
-int net::ezServerHander::decode(ezEventLoop* looper,int fd,uint64_t uuid,char* buf,size_t s)
+void net::ezServerHander::onError(ezIoThread* io,int fd,uint64_t uuid)
 {
-	base::ezBufferReader reader(buf,s);
-	int retlen=0;
-// 	while(true)
-// 	{
-// 		uint16_t msglen=0;
-// 		reader.Read<uint16_t>(msglen);
-// 		if(reader.Fail())
-// 			break;
-// 		if(msglen<=0||msglen>maxMsgSize_)
-// 			return -1;
-// 		if(!reader.CanIncreaseSize(msglen))
-// 			break;
-// 		ezNetPack* msg=new ezNetPack(msglen);
-// 		reader.ReadBuffer(msg->data_,msglen);
-// 		msg->size_=msglen;
-// 		ezCrossEventData* ev=new ezCrossEventData;
-// 		ev->fd_=fd;
-// 		ev->uuid_=uuid;
-// 		ev->event_=ezCrossData;
-// 		ev->msg_=msg;
-// 		looper->n2oCrossEvent(ev);
-// 		retlen+=(sizeof(uint16_t)+msglen);
-// 	}
-	return retlen;
+  int tid=io->gettid();
+	onClose(io,fd,uuid);
 }
 
-void net::ezServerHander::onError(ezEventLoop* looper,int fd,uint64_t uuid,int tid)
-{
-	onClose(looper,fd,uuid,tid);
-}
-
-net::ezServerHander::ezServerHander(uint16_t maxMsgSize):maxMsgSize_(maxMsgSize)
-{
-
-}
+net::ezServerHander::ezServerHander(ezIDecoder* de):decoder_(de)
+{}
 
 void net::ezGameObject::Close()
 {
@@ -238,15 +219,16 @@ void net::ezConnectToGameObject::Close()
 		conn->getEventLooper()->getConnectionMgr()->delConnectToInfo(conn->uuid());
 }
 
-net::ezClientHander::ezClientHander(uint16_t maxMsgSize):maxMsgSize_(maxMsgSize){}
+net::ezClientHander::ezClientHander(ezIDecoder* de):decoder_(de){}
 
-void net::ezClientHander::onOpen(ezEventLoop* looper,int fd,uint64_t uuid,int tid)
+void net::ezClientHander::onOpen(ezIoThread* io,int fd,uint64_t uuid,int bindtid)
 {
+  ezEventLoop* looper=io->getlooper();
 	ezConnectToInfo* info=looper->getConnectionMgr()->findConnectToInfo(uuid);
 	assert(info);
 	if(fd>0)
 	{
-		ezConnection* conn=looper->getConnectionMgr()->addConnection(looper,fd,uuid,tid);
+		ezConnection* conn=looper->getConnectionMgr()->addConnection(looper,fd,uuid,bindtid);
 		assert(conn);
 		info->connectOK_=true;
 		char ipport[128];
@@ -261,8 +243,10 @@ void net::ezClientHander::onOpen(ezEventLoop* looper,int fd,uint64_t uuid,int ti
 	}
 }
 
-void net::ezClientHander::onClose(ezEventLoop* looper,int fd,uint64_t uuid,int tid)
+void net::ezClientHander::onClose(ezIoThread* io,int fd,uint64_t uuid)
 {
+  ezEventLoop* looper=io->getlooper();
+  int tid=io->gettid();
 	ezConnection* conn=looper->getConnectionMgr()->findConnection(uuid);
 	if(!conn)
 		return;
@@ -275,13 +259,15 @@ void net::ezClientHander::onClose(ezEventLoop* looper,int fd,uint64_t uuid,int t
 	looper->getConnectionMgr()->delConnection(uuid);
 }
 
-void net::ezClientHander::onError(ezEventLoop* looper,int fd,uint64_t uuid,int tid)
+void net::ezClientHander::onError(ezIoThread* io,int fd,uint64_t uuid)
 {
-	onClose(looper,fd,uuid,tid);
+	onClose(io,fd,uuid);
 }
 
-void net::ezClientHander::onData(ezEventLoop* looper,int fd,uint64_t uuid,ezMsg* msg)
+void net::ezClientHander::onData(ezIoThread* io,int fd,uint64_t uuid,ezMsg* msg)
 {
+  ezEventLoop* looper=io->getlooper();
+  int tid=io->gettid();
 	net::ezConnection* conn=looper->getConnectionMgr()->findConnection(uuid);
 	if(conn)
 	{
@@ -289,35 +275,32 @@ void net::ezClientHander::onData(ezEventLoop* looper,int fd,uint64_t uuid,ezMsg*
 	}
 }
 
-int net::ezClientHander::decode(ezEventLoop* looper,int fd,uint64_t uuid,char* buf,size_t s)
-{
-	base::ezBufferReader reader(buf,s);
-	int retlen=0;
-// 	while(true)
-// 	{
-// 		uint16_t msglen=0;
-// 		reader.Read<uint16_t>(msglen);
-// 		if(reader.Fail())
-// 			break;
-// 		if(msglen<=0||msglen>maxMsgSize_)
-// 			return -1;
-// 		if(!reader.CanIncreaseSize(msglen))
-// 			break;
-// 		ezMsg* msg=new ezMsg(msglen);
-// 		reader.ReadBuffer(msg->data_,msglen);
-// 		msg->size_=msglen;
-// 		ezCrossEventData* ev=new ezCrossEventData;
-// 		ev->fd_=fd;
-// 		ev->uuid_=uuid;
-// 		ev->event_=ezCrossData;
-// 		ev->msg_=msg;
-// 		looper->n2oCrossEvent(ev);
-// 		retlen+=(sizeof(uint16_t)+msglen);
-// 	}
-	return retlen;
-}
-
 void net::ezReconnectTimerTask::run()
 {
 	mgr_->reconnectAll();
+}
+
+int net::ezMsgDecoder::decode(ezIMessagePusher* pusher,uint64_t uuid,char* buf,size_t s)
+{
+  base::ezBufferReader reader(buf,s);
+  int retlen=0;
+  while(true)
+  {
+    uint16_t msglen=0;
+    reader.Read<uint16_t>(msglen);
+    if(reader.Fail())
+      break;
+    if(msglen<=0||msglen>maxMsgSize_)
+      return -1;
+    if(!reader.CanIncreaseSize(msglen))
+      break;
+    int onelen=sizeof(uint16_t)+msglen;
+    ezMsgWarper msg;
+    msg.uuid_=uuid;
+    ezMsgInitSize(&msg.msg_,onelen);
+    reader.ReadBuffer((char*)ezMsgData(&msg.msg_),msglen);
+    retlen+=onelen;
+    pusher->pushmsg(&msg);
+  }
+  return retlen;
 }

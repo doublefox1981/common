@@ -1,16 +1,13 @@
 #include "../base/portable.h"
 #include "../base/memorystream.h"
-#include "event.h"
-#include "fd.h"
-#include "poller.h"
 #include "iothread.h"
-#include "socket.h"
 
-net::ezIoThread::ezIoThread():tid_(0)
+net::ezIoThread::ezIoThread():tid_(0),load_(0),maxfd_(-1)
 {
   poller_=new ezSelectPoller(this);
   ioqueue_=new CrossEvQueue;
   mainqueue_=new CrossEvQueue;
+  msgqueue_=new MsgWarperQueue;
   add(ioqueue_->getfd(),ezUUID::instance()->uuid(),this,ezNetRead);
 }
 
@@ -22,6 +19,8 @@ net::ezIoThread::~ezIoThread()
     delete ioqueue_;
   if(mainqueue_)
     delete mainqueue_;
+  if(msgqueue_)
+    delete msgqueue_;
 }
 
 void net::ezIoThread::settid(int tid)
@@ -41,10 +40,10 @@ void net::ezIoThread::onEvent(ezIoThread* io,int fd,int event,uint64_t uuid)
     ezCrossEventData data;
     while(ioqueue_->recv(data))
     {
-      switch(event)
+      switch(data.event_)
       {
       case ezCrossPollout:
-        mod(fd,ezNetRead,true);
+        mod(data.fd_,ezNetWrite,true);
         break;
       case ezCrossOpen:
         {
@@ -79,6 +78,7 @@ void net::ezIoThread::onEvent(ezIoThread* io,int fd,int event,uint64_t uuid)
 
 uint64_t net::ezIoThread::add(int fd,uint64_t uuid,ezFd *ezfd,int event)
 {
+  ++load_;
   ezFdData* data = new ezFdData();
   data->uuid_=uuid;
   data->fd_=fd;
@@ -105,6 +105,7 @@ int net::ezIoThread::del(int fd)
   assert(fd>=0);
   if(!fds_[fd])
     return -1;
+  --load_;
   int event=fds_[fd]->event_;
   delete fds_[fd];
   fds_[fd]=nullptr;
@@ -164,4 +165,20 @@ bool net::ezIoThread::mainpull(ezCrossEventData& data)
 void net::ezIoThread::pushmain(ezCrossEventData& data)
 {
   return mainqueue_->send(data);
+}
+
+bool net::ezIoThread::pushmsg(ezMsgWarper* msg)
+{
+  msgqueue_->enqueue(*msg);
+  return true;
+}
+
+void net::ezIoThread::sendMsg(int fd,ezMsg& msg)
+{
+  if(fd<=0||fd>=int(fds_.size()))
+  {
+    ezMsgFree(&msg);
+    return;
+  }
+  fds_[fd]->ezfd_->sendMsg(msg);
 }

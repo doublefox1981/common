@@ -1,8 +1,4 @@
-#include "../net/event.h"
-#include "../net/poller.h"
-#include "../net/connection.h"
-#include "../net/netpack.h"
-#include "../net/socket.h"
+#include "../base/portable.h"
 #include "../base/memorystream.h"
 #include "../base/scopeguard.h"
 #include "../base/eztime.h"
@@ -12,6 +8,14 @@
 #include "../base/logging.h"
 #include "../base/notifyqueue.h"
 
+#include "../net/netpack.h"
+#include "../net/event.h"
+#include "../net/poller.h"
+#include "../net/iothread.h"
+#include "../net/connection.h"
+#include "../net/socket.h"
+
+
 #include <limits>
 #include <algorithm>
 #include <queue>
@@ -20,7 +24,7 @@
 using namespace net;
 using namespace std;
 
-class TestPackHander:public net::ezNetPackHander
+class TestPackHander:public net::ezINetPackHander
 {
 public:
 	TestPackHander():seq_(0){}
@@ -39,7 +43,7 @@ private:
 	int seq_;
 };
 
-class TestServerPackHander:public net::ezNetPackHander
+class TestServerPackHander:public net::ezINetPackHander
 {
 public:
 	virtual void process(ezConnection* conn,ezMsg* pack)
@@ -77,20 +81,20 @@ std::unordered_set<uint64_t> gConnSet;
 class TestClientHander:public net::ezClientHander
 {
 public:
-	explicit TestClientHander(uint16_t t=15000):ezClientHander(t){}
-	virtual void onOpen(ezEventLoop* looper,int fd,uint64_t uuid,int tid)
+	explicit TestClientHander(ezIDecoder* de):ezClientHander(de){}
+	virtual void onOpen(ezIoThread* io,int fd,uint64_t uuid,int bindtid)
 	{
-		ezClientHander::onOpen(looper,fd,uuid,tid);
-		ezConnection* conn=looper->getConnectionMgr()->findConnection(uuid);
+		ezClientHander::onOpen(io,fd,uuid,bindtid);
+		ezConnection* conn=io->getlooper()->getConnectionMgr()->findConnection(uuid);
 		if(conn)
 			gConnSet.insert(uuid);
 	}
-	virtual void onClose(ezEventLoop* looper,int fd,uint64_t uuid,int tid)
+	virtual void onClose(ezIoThread* io,int fd,uint64_t uuid)
 	{
 		auto iter=gConnSet.find(uuid);
 		if(iter!=gConnSet.end())
 			gConnSet.erase(iter);
-		ezClientHander::onClose(looper,fd,uuid,tid);
+		ezClientHander::onClose(io,fd,uuid);
 	}
 };
 
@@ -113,14 +117,14 @@ int main()
 	ezConnectionMgr* mgr=new ezConnectionMgr;
 	mgr->setDefaultHander(new TestServerPackHander());
 	ezEventLoop* ev=new ezEventLoop;
-	ev->init(new ezServerHander((numeric_limits<uint16_t>::max)()),mgr,2);
+	ev->init(new ezServerHander(new net::ezMsgDecoder(10000)),mgr,8);
 	ev->serveOnPort(10010);
 
   ezConnectionMgr* mgr1=new ezConnectionMgr;
   mgr1->setDefaultHander(new TestPackHander());
   ezEventLoop* ev1=new ezEventLoop;
-  ev1->init(new TestClientHander((numeric_limits<uint16_t>::max)()),mgr1,4);
-  for(int i=0;i<16;++i)
+  ev1->init(new TestClientHander(new net::ezMsgDecoder(10000)),mgr1,4);
+  for(int i=0;i<1;++i)
   {
     ev1->getConnectionMgr()->connectTo(ev1,"127.0.0.1",10010);
   }
@@ -148,21 +152,21 @@ int main()
     ev1->loop();
     base::ezSleep(1);
 
-// 		for(auto iter=gConnSet.begin();iter!=gConnSet.end();++iter)
-// 		{
-// 			ezConnection* conn=ev->getConnectionMgr()->findConnection(*iter);
-// 			if(!conn)
-// 				continue;
-// 			for(int i=0;i<4;++i)
-// 			{
-// 				int ss=rand()%15000+4;
-// 				ezNetPack* msg=new ezNetPack(ss);
-// 				msg->size_=ss;
-// 				base::ezBufferWriter writer(msg->data_,msg->capacity_);
-// 				writer.Write(++seq);
-// 				conn->sendNetPack(msg);
-// 			}
-// 		}
+    for(auto iter=gConnSet.begin();iter!=gConnSet.end();++iter)
+    {
+      ezConnection* conn=ev1->getConnectionMgr()->findConnection(*iter);
+      if(!conn)
+        continue;
+      for(int i=0;i<4;++i)
+      {
+        int ss=4096/*(rand()%9000)+4*/;
+        ezMsg msg;
+        net::ezMsgInitSize(&msg,ss);
+        base::ezBufferWriter writer((char*)net::ezMsgData(&msg),net::ezMsgSize(&msg));
+        writer.Write(++seq);
+        conn->sendNetPack(&msg);
+      }
+    }
 	}
 	return 1;
 }

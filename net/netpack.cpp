@@ -23,7 +23,7 @@ void net::ezMsgInitSize(ezMsg* msg,int size)
   {
     msg->type_=type_lmsg;
     msg->flags_=0;
-    msg->size_=0;
+    msg->size_=(uint16_t)size;
     msg->heap_.ptr_=(ezMsg::ezBigMsg*)malloc(sizeof(ezMsg::ezBigMsg)+size);
     msg->heap_.ptr_->data_=(int8_t*)(msg->heap_.ptr_+1);
     msg->heap_.ptr_->capcity_=size;

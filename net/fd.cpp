@@ -45,6 +45,7 @@ void net::ezClientFd::onEvent(ezIoThread* io,int fd,int event,uint64_t uuid)
 {
   if(event&ezNetRead)
   {
+    ezEventLoop* looper=io->getlooper();
     int retval=inbuf_->readfd(fd);
     if((retval==0)||(retval<0&&errno!=EAGAIN&&errno!=EINTR))
     {
@@ -57,44 +58,59 @@ void net::ezClientFd::onEvent(ezIoThread* io,int fd,int event,uint64_t uuid)
       io->del(fd);
       return;
     }
-//     ezHander* hander=looper->getHander();
-//     char* rbuf=nullptr;
-//     int rs=inbuf_->readable(rbuf);
-//     if(rs>0)
-//     {
-//       int rets=hander->decode(looper,fd,uuid,rbuf,rs);
-//       if(rets>0)
-//         inbuf_->drain(rets);
-//       else if(rets<0)
-//       {
-//         looper->n2oError(fd,uuid);
-//         looper->del(fd);
-//         return;
-//       }
-//     }
+    ezIHander* hander=looper->getHander();
+    char* rbuf=nullptr;
+    int rs=inbuf_->readable(rbuf);
+    if(rs>0)
+    {
+      int rets=hander->getDecoder()->decode(io,uuid,rbuf,rs);
+      if(rets>0)
+      {
+        ezCrossEventData data;
+        data.fromtid_=io->gettid();
+        data.fd_=fd;
+        data.event_=ezCrossData;
+        data.uuid_=uuid;
+        io->pushmain(data);
+        inbuf_->drain(rets);
+      }
+      else if(rets<0)
+      {
+        ezCrossEventData data;
+        data.fromtid_=io->gettid();
+        data.fd_=fd;
+        data.event_=ezCrossError;
+        data.uuid_=uuid;
+        io->pushmain(data);
+        io->del(fd);
+        return;
+      }
+    }
   }
   if(event&ezNetWrite)
   {
-//     char* pbuf=nullptr;
-//     int s=outbuf_->readable(pbuf);
-//     int retval=0;
-//     if(s>0)
-//     {
-//       retval=outbuf_->writefd(fd);
-//       if(retval<0)
-//       {
-//         looper->n2oError(fd,uuid);
-//         looper->del(fd);
-//         return;
-//       }
-//     }
-//     // 本次数据已经全部write成功
-//     ezMsg msg;
-//     if(!sendqueue_.try_dequeue(msg)&&retval==0)
-//     {
-//       looper->delWriteFd(fd);
-//       looper->getPoller()->modFd(fd,ezNetWrite,ezNetWrite|ezNetRead,false);
-//     }
+    formatMsg();
+    char* pbuf=nullptr;
+    int s=outbuf_->readable(pbuf);
+    int retval=0;
+    if(s>0)
+    {
+      retval=outbuf_->writefd(fd);
+      if(retval<0)
+      {
+        ezCrossEventData data;
+        data.fromtid_=io->gettid();
+        data.fd_=fd;
+        data.event_=ezCrossError;
+        data.uuid_=uuid;
+        io->pushmain(data);
+        io->del(fd);
+        return;
+      }
+    }
+    ezMsg msg;
+    if(!sendqueue_.try_dequeue(msg)&&retval==0)
+      io->mod(fd,ezNetWrite,false);
   }
   if(event&ezNetErr)
   {
@@ -134,25 +150,30 @@ void net::ezClientFd::sendMsg(ezMsg& blk)
 size_t net::ezClientFd::formatMsg()
 {
   MSVC_PUSH_DISABLE_WARNING(4018);
-  //   ezMsg msg;
-  //   while(sendqueue_.try_dequeue(msg))
-  //   {
-  //     int canadd=outbuf_->fastadd();
-  //     uint16_t msize=(uint16_t)ezMsgSize(&msg);
-  //     if(sizeof(uint16_t)+msize<=canadd)
-  //     {
-  //       outbuf_->add(&msize,sizeof(msize));
-  //       outbuf_->add(ezMsgData(&msg),msize);
-  //       ezMsgFree(&msg);
-  //     }
-  //     else
-  //     {
-  //       ezMsgCopy(&msg,&cacheMsg_);
-  //       break;
-  //     }
-  //   }
+  ezMsg msg;
+  while(sendqueue_.try_dequeue(msg))
+  {
+    int canadd=outbuf_->fastadd();
+    uint16_t msize=(uint16_t)ezMsgSize(&msg);
+    if(sizeof(uint16_t)+msize<=canadd)
+    {
+      outbuf_->add(&msize,sizeof(msize));
+      outbuf_->add(ezMsgData(&msg),msize);
+      ezMsgFree(&msg);
+    }
+    //     else
+    //     {
+    //       ezMsgCopy(&msg,&cacheMsg_);
+    //       break;
+    //     }
+  }
   return outbuf_->off();
   MSVC_POP_WARNING();
+}
+
+bool net::ezClientFd::pullmsg(ezMsg* msg)
+{
+  return sendqueue_.try_dequeue(*msg);
 }
 
 net::ezFdData::~ezFdData()

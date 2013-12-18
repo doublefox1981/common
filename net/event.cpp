@@ -10,7 +10,7 @@
 #include "../base/util.h"
 #include <assert.h>
 
-int net::ezEventLoop::init(ezHander* hander,ezConnectionMgr* mgr,int tnum)
+int net::ezEventLoop::init(ezIHander* hander,ezConnectionMgr* mgr,int tnum)
 {
 	hander_=hander;
 	conMgr_=mgr;
@@ -92,7 +92,7 @@ void net::ezEventLoop::o2nCloseFd(int tid,int fd,uint64_t uuid)
   ev.fd_=fd;
   ev.uuid_=uuid;
   ev.event_=ezCrossClose;
-  notify(&threads_[tid],ev);
+  notify(&threads_[tid-1],ev);
 }
 
 void net::ezEventLoop::o2nConnectTo(uint64_t uuid,const char* toip,int toport)
@@ -109,18 +109,35 @@ void net::ezEventLoop::o2nConnectTo(uint64_t uuid,const char* toip,int toport)
   writer.Write(uint16_t(strlen(toip)));
   writer.WriteBuffer(toip,int(strlen(toip)));
   msg->size_=writer.GetUsedSize();
-  notify(chooseThread(),ev);
+  notify(&threads_[0],ev);
 }
 
 void net::ezEventLoop::sendMsg(int tid,int fd,ezMsg& msg)
 {
   assert(tid>0&&tid<=threadnum_);
-  ezIoThread& th=threads_[tid];
+  ezIoThread& th=threads_[tid-1];
+  th.sendMsg(fd,msg);
+  ezCrossEventData ev;
+  ev.fromtid_=0;
+  ev.fd_=fd;
+  ev.uuid_=0;
+  ev.event_=ezCrossPollout;
+  notify(&th,ev);
 }
 
 net::ezIoThread* net::ezEventLoop::chooseThread()
 {
-  return &threads_[rand()%threadnum_];
+  int idx=0;
+  int minload=threads_[idx].getload();
+  for(int i=0;i<threadnum_;++i)
+  {
+    if(threads_[i].getload()<minload)
+    {
+      minload=threads_[i].getload();
+      idx=i;
+    }
+  }
+  return &threads_[idx];
 }
 
 void net::ezEventLoop::notify(net::ezIoThread* thread,net::ezCrossEventData& data)
@@ -133,29 +150,25 @@ void net::ezEventLoop::loop()
   ezCrossEventData data;
   for(int i=0;i<threadnum_;++i)
   {
+    ezIoThread* thread=&threads_[i];
     while(threads_[i].mainpull(data))
     {
       switch(data.event_)
       {
       case ezCrossOpen:
-        hander_->onOpen(this,data.fd_,data.uuid_,data.fromtid_);
+        hander_->onOpen(thread,data.fd_,data.uuid_,data.fromtid_);
         break;
       case ezCrossClose:
-        hander_->onClose(this,data.fd_,data.uuid_,data.fromtid_);
+        hander_->onClose(thread,data.fd_,data.uuid_);
         break;
       case ezCrossError:
-        hander_->onError(this,data.fd_,data.uuid_,data.fromtid_);
-        break;
-        //       case ezCrossData:
-        //         {
-        //           assert(evd->msg_);
-        //           hander_->onData(this,data.fd_,data.uuid_,data.msg_);
-        //         }
+        hander_->onError(thread,data.fd_,data.uuid_);
         break;
       default: break;
       }
       ezCloseCrossEventData(data);
     }
+    //
   }
 }
 

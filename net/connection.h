@@ -11,52 +11,68 @@ namespace net
 {
 class ezEventLoop;
 struct ezMsg;
-// 连接建立，断开，错误，以及解包拼包接口，通过继承可以实现各种包格式
-class ezHander
-{
-public:
-	virtual void onOpen(ezEventLoop* looper,int fd,uint64_t uuid,int tid)=0;
-	virtual void onClose(ezEventLoop* looper,int fd,uint64_t uuid,int tid)=0;
-	virtual void onError(ezEventLoop* looper,int fd,uint64_t uuid,int tid)=0;
-	virtual void onData(ezEventLoop* looper,int fd,uint64_t uuid,ezMsg* msg)=0;
-	virtual int decode(ezEventLoop* looper,int fd,uint64_t uuid,char* buf,size_t s)=0;
-};
-
-// 服务器模型
-class ezServerHander:public ezHander
-{
-public:
-	explicit ezServerHander(uint16_t maxMsgSize);
-	virtual void onOpen(ezEventLoop* looper,int fd,uint64_t uuid,int tid);
-	virtual void onClose(ezEventLoop* looper,int fd,uint64_t uuid,int tid);
-	virtual void onError(ezEventLoop* looper,int fd,uint64_t uuid,int tid);
-	virtual void onData(ezEventLoop* looper,int fd,uint64_t uuid,ezMsg* msg);
-	// 供网络线程调用
-	virtual int decode(ezEventLoop* looper,int fd,uint64_t uuid,char* buf,size_t s);
-private:
-	uint16_t maxMsgSize_;
-};
-
-// 客户端模型
-class ezClientHander:public ezHander
-{
-public:
-	explicit ezClientHander(uint16_t maxMsgSize);
-	virtual void onOpen(ezEventLoop* looper,int fd,uint64_t uuid,int tid);
-	virtual void onClose(ezEventLoop* looper,int fd,uint64_t uuid,int tid);
-	virtual void onError(ezEventLoop* looper,int fd,uint64_t uuid,int tid);
-	virtual void onData(ezEventLoop* looper,int fd,uint64_t uuid,ezMsg* msg);
-	virtual int decode(ezEventLoop* looper,int fd,uint64_t uuid,char* buf,size_t s);
-private:
-	uint16_t maxMsgSize_;
-};
-
 class ezConnection;
-// 实际消息处理接口
-class ezNetPackHander
+class ezIMessagePusher;
+class ezIMessagePuller;
+class ezIoThread;
+
+class ezIDecoder
 {
 public:
-	virtual void process(ezConnection* conn,ezMsg* pack)=0;
+  virtual ~ezIDecoder(){}
+  virtual int decode(ezIMessagePusher* pusher,uint64_t uuid,char* buf,size_t s)=0;
+};
+
+class ezINetPackHander
+{
+public:
+  virtual void process(ezConnection* conn,ezMsg* pack)=0;
+};
+
+class ezIHander
+{
+public:
+	virtual void onOpen(ezIoThread* io,int fd,uint64_t uuid,int bindtid)=0;
+	virtual void onClose(ezIoThread* io,int fd,uint64_t uuid)=0;
+	virtual void onError(ezIoThread* io,int fd,uint64_t uuid)=0;
+	virtual void onData(ezIoThread* io,int fd,uint64_t uuid,ezMsg* msg)=0;
+  virtual ezIDecoder* getDecoder()=0;
+};
+
+class ezServerHander:public ezIHander
+{
+public:
+	explicit ezServerHander(ezIDecoder* de);
+	virtual void onOpen(ezIoThread* io,int fd,uint64_t uuid,int bindtid);
+	virtual void onClose(ezIoThread* io,int fd,uint64_t uuid);
+	virtual void onError(ezIoThread* io,int fd,uint64_t uuid);
+	virtual void onData(ezIoThread* io,int fd,uint64_t uuid,ezMsg* msg);
+  virtual ezIDecoder* getDecoder(){return decoder_;}
+private:
+  ezIDecoder* decoder_;
+};
+
+class ezClientHander:public ezIHander
+{
+public:
+	explicit ezClientHander(ezIDecoder* de);
+	virtual void onOpen(ezIoThread* io,int fd,uint64_t uuid,int bindtid);
+	virtual void onClose(ezIoThread* io,int fd,uint64_t uuid);
+	virtual void onError(ezIoThread* io,int fd,uint64_t uuid);
+	virtual void onData(ezIoThread* io,int fd,uint64_t uuid,ezMsg* msg);
+  virtual ezIDecoder* getDecoder(){return decoder_;}
+private:
+  ezIDecoder* decoder_;
+};
+
+class ezMsgDecoder:public ezIDecoder
+{
+public:
+  explicit ezMsgDecoder(uint16_t maxsize):maxMsgSize_(maxsize){}
+  virtual ~ezMsgDecoder(){}
+  virtual int decode(ezIMessagePusher* pusher,uint64_t uuid,char* buf,size_t s);
+private:
+  uint16_t maxMsgSize_;
 };
 
 class ezGameObject
@@ -71,6 +87,7 @@ public:
 private:
 	ezConnection* conn_;
 };
+
 class ezConnectToGameObject:public ezGameObject
 {
 public:
@@ -93,8 +110,8 @@ public:
 	void setIpAddr(const char* ip){ip_=ip;}
 	std::string getIpAddr() {return ip_;}
 	void sendNetPack(ezMsg* pack);
-	ezNetPackHander* getHander(){return netpackHander_;}
-	void setHander(ezNetPackHander* hander);
+	ezINetPackHander* getHander(){return netpackHander_;}
+	void setHander(ezINetPackHander* hander);
 private:
 	uint64_t uuid_;
 	int fd_;
@@ -102,7 +119,7 @@ private:
 	std::string ip_;
 	ezGameObject* gameObj_;
 	ezEventLoop* evLooper_;
-	ezNetPackHander* netpackHander_;
+	ezINetPackHander* netpackHander_;
 };
 
 struct ezConnectToInfo
@@ -120,7 +137,7 @@ class ezConnectionMgr
 public:
 	ezConnectionMgr():looper_(nullptr),defaultHander_(nullptr){}
 	virtual ~ezConnectionMgr(){if(defaultHander_) delete defaultHander_;}
-	void setDefaultHander(ezNetPackHander* hander){defaultHander_=hander;}
+	void setDefaultHander(ezINetPackHander* hander){defaultHander_=hander;}
 	ezConnection* addConnection(ezEventLoop* looper,int fd,uint64_t uuid,int tid);
 	void delConnection(uint64_t uuid);
 	ezConnection* findConnection(uint64_t uuid);
@@ -133,7 +150,7 @@ private:
 	std::unordered_map<uint64_t,ezConnection*> mapConns_;
 	std::vector<ezConnectToInfo> vecConnectTo_;
 	ezEventLoop* looper_;
-	ezNetPackHander* defaultHander_;
+	ezINetPackHander* defaultHander_;
 };
 
 class ezReconnectTimerTask:public base::ezTimerTask

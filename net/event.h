@@ -31,7 +31,7 @@ namespace net
     ezCrossPollout=5,
   };
 
-  class ezHander;
+  class ezIHander;
   class ezIoThread;
   class ezFd;
   class ezConnectionMgr;
@@ -48,24 +48,30 @@ namespace net
   };
   void ezCloseCrossEventData(ezCrossEventData& ev);
 
+  struct ezMsgWarper
+  {
+    uint64_t uuid_;
+    ezMsg    msg_;
+  };
+
   class ezEventLoop
   {
   public:
     ezEventLoop();
     ~ezEventLoop();
-    int init(ezHander* hander,ezConnectionMgr* mgr,int tnum);
+    int init(ezIHander* hander,ezConnectionMgr* mgr,int tnum);
     int serveOnPort(int port);
     int shutdown();
     void sendMsg(int tid,int fd,ezMsg& msg);
     ezConnectionMgr* getConnectionMgr() {return conMgr_;}
-    ezHander* getHander() {return hander_;}
+    ezIHander* getHander() {return hander_;}
     ezIoThread* chooseThread();
     void notify(ezIoThread* thread,ezCrossEventData& data);
     void o2nConnectTo(uint64_t uuid,const char* toip,int toport);
     void o2nCloseFd(int tid,int fd,uint64_t uuid);
     void loop();
   private:
-    ezHander*          hander_;
+    ezIHander*          hander_;
     ezConnectionMgr*   conMgr_;
     ezIoThread*        threads_;
     int                threadnum_;

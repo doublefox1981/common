@@ -8,6 +8,7 @@
 namespace net{
   class ezIoThread;
   class ezFd;
+  struct ezMsgWarper;
   struct ezFdData
   {
     int fd_;
@@ -16,6 +17,18 @@ namespace net{
     ezFd* ezfd_;
     ezFdData();
     ~ezFdData();
+  };
+
+  class ezIMessagePusher
+  {
+  public:
+    virtual bool pushmsg(ezMsgWarper* msg)=0;
+  };
+
+  class ezIMessagePuller
+  {
+  public:
+    virtual bool pullmsg(ezMsg* msg)=0;
   };
 
   class ezFd
@@ -36,7 +49,7 @@ namespace net{
   };
   
   typedef moodycamel::ReaderWriterQueue<ezMsg> MsgQueue;
-  class ezClientFd:public ezFd
+  class ezClientFd:public ezFd,public ezIMessagePuller
   {
   public:
     ezClientFd();
@@ -44,6 +57,7 @@ namespace net{
     virtual void onEvent(ezIoThread* io,int fd,int event,uint64_t uuid);
     virtual void sendMsg(ezMsg& blk);
     virtual size_t formatMsg();
+    virtual bool pullmsg(ezMsg* msg);
   private:
     ezBuffer* inbuf_;
     ezBuffer* outbuf_;
