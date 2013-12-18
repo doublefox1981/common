@@ -62,6 +62,8 @@ namespace net{
     ezBuffer* inbuf_;
     ezBuffer* outbuf_;
     MsgQueue  sendqueue_;
+    ezMsg     cachemsg_;
+    bool      cached_;
   };
 }
 #endif

@@ -89,28 +89,32 @@ void net::ezClientFd::onEvent(ezIoThread* io,int fd,int event,uint64_t uuid)
   }
   if(event&ezNetWrite)
   {
-    formatMsg();
-    char* pbuf=nullptr;
-    int s=outbuf_->readable(pbuf);
-    int retval=0;
-    if(s>0)
+    while(true)
     {
-      retval=outbuf_->writefd(fd);
-      if(retval<0)
+      if(formatMsg()<=0)
+        break;
+      char* pbuf=nullptr;
+      int s=outbuf_->readable(pbuf);
+      int retval=0;
+      if(s>0)
       {
-        ezCrossEventData data;
-        data.fromtid_=io->gettid();
-        data.fd_=fd;
-        data.event_=ezCrossError;
-        data.uuid_=uuid;
-        io->pushmain(data);
-        io->del(fd);
-        return;
+        retval=outbuf_->writefd(fd);
+        if(retval<0)
+        {
+          ezCrossEventData data;
+          data.fromtid_=io->gettid();
+          data.fd_=fd;
+          data.event_=ezCrossError;
+          data.uuid_=uuid;
+          io->pushmain(data);
+          io->del(fd);
+          return;
+        }
+        else if(retval>0)
+          break;
       }
     }
-    ezMsg msg;
-    if(!sendqueue_.try_dequeue(msg)&&retval==0)
-      io->mod(fd,ezNetWrite,false);
+    io->mod(fd,ezNetWrite,false);
   }
   if(event&ezNetErr)
   {
@@ -129,6 +133,8 @@ net::ezClientFd::ezClientFd()
 {
   inbuf_=new ezBuffer();
   outbuf_=new ezBuffer();
+  ezMsgInit(&cachemsg_);
+  cached_=false;
 }
 
 net::ezClientFd::~ezClientFd()
@@ -150,6 +156,17 @@ void net::ezClientFd::sendMsg(ezMsg& blk)
 size_t net::ezClientFd::formatMsg()
 {
   MSVC_PUSH_DISABLE_WARNING(4018);
+  if(cached_)
+  {
+    int canadd=outbuf_->fastadd();
+    uint16_t msize=(uint16_t)ezMsgSize(&cachemsg_);
+    if(sizeof(uint16_t)+msize>canadd)
+      return 0;
+    outbuf_->add(&msize,sizeof(msize));
+    outbuf_->add(ezMsgData(&cachemsg_),msize);
+    ezMsgFree(&cachemsg_);
+    cached_=false;
+  }
   ezMsg msg;
   while(sendqueue_.try_dequeue(msg))
   {
@@ -161,11 +178,12 @@ size_t net::ezClientFd::formatMsg()
       outbuf_->add(ezMsgData(&msg),msize);
       ezMsgFree(&msg);
     }
-    //     else
-    //     {
-    //       ezMsgCopy(&msg,&cacheMsg_);
-    //       break;
-    //     }
+    else
+    {
+      ezMsgCopy(&msg,&cachemsg_);
+      cached_=true;
+      break;
+    }
   }
   return outbuf_->off();
   MSVC_POP_WARNING();
