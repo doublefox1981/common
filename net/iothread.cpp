@@ -5,20 +5,16 @@
 net::ezIoThread::ezIoThread():tid_(0),load_(0),maxfd_(-1)
 {
   poller_=new ezSelectPoller(this);
-  ioqueue_=new CrossEvQueue;
-  mainqueue_=new CrossEvQueue;
   msgqueue_=new MsgWarperQueue;
-  add(ioqueue_->getfd(),ezUUID::instance()->uuid(),this,ezNetRead);
+  poller_->addFd(evqueue_->getfd(),ezNetRead);
 }
 
 net::ezIoThread::~ezIoThread()
 {
   if(poller_)
     delete poller_;
-  if(ioqueue_)
-    delete ioqueue_;
-  if(mainqueue_)
-    delete mainqueue_;
+  if(evqueue_)
+    delete evqueue_;
   if(msgqueue_)
     delete msgqueue_;
 }
@@ -28,51 +24,15 @@ void net::ezIoThread::settid(int tid)
   tid_=tid;
 }
 
-void net::ezIoThread::notify(ezCrossEventData& ev)
-{
-  ioqueue_->send(ev);
-}
-
-void net::ezIoThread::onEvent(ezIoThread* io,int fd,int event,uint64_t uuid)
+void net::ezIoThread::OnEvent(ezIoThread* io,int fd,int event,uint64_t uuid)
 {
   if(event&ezNetRead)
   {
-    ezCrossEventData data;
-    while(ioqueue_->recv(data))
+    ezThreadEvent ev;
+    while(evqueue_->recv(ev))
     {
-      switch(data.event_)
-      {
-      case ezCrossPollout:
-        mod(data.fd_,ezNetWrite,true);
-        break;
-      case ezCrossOpen:
-        {
-          assert(data.msg_);
-          int port=0;
-          base::ezBufferReader reader((char*)ezMsgData(data.msg_),ezMsgSize(data.msg_));
-          reader.Read(port);
-          uint16_t iplen=0;
-          reader.Read(iplen);
-          std::string ip;
-          reader.ReadString(ip,iplen);
-          int sock=ConnectTo(ip.c_str(),port);
-          if(sock>0)
-          {
-            add(sock,0,new ezClientFd,ezNetRead);
-            ezCrossEventData sendEv;
-            sendEv.fromtid_=gettid();
-            sendEv.fd_=sock;
-            sendEv.uuid_=data.uuid_;
-            sendEv.event_=ezCrossOpen;
-            mainqueue_->send(sendEv);
-          }
-        }
-        break;
-      default:
-        break;
-      }
+      ev.hander_->ProcessEvent(ev);
     }
-    ezCloseCrossEventData(data);
   }
 }
 
@@ -175,10 +135,21 @@ bool net::ezIoThread::pushmsg(ezMsgWarper* msg)
 
 void net::ezIoThread::sendMsg(int fd,ezMsg& msg)
 {
-  if(fd<=0||fd>=int(fds_.size()))
+  if(fd<=0||fd>=int(fds_.size())||!fds_[fd])
   {
     ezMsgFree(&msg);
     return;
   }
+
   fds_[fd]->ezfd_->sendMsg(msg);
+}
+
+bool net::ezIoThread::pullwarpmsg(ezMsgWarper& warpmsg)
+{
+  return msgqueue_->try_dequeue(warpmsg);
+}
+
+void net::ezIoThread::ProcessEvent(ezThreadEvent& ev)
+{
+
 }

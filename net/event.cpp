@@ -23,6 +23,12 @@ int net::ezEventLoop::init(ezIHander* hander,ezConnectionMgr* mgr,int tnum)
     threads_[i].setlooper(this);
     threads_[i].Start();
   }
+  evqueues_=new (ThreadEvQueue*)[tnum+1];
+  evqueues_[0]=mainevqueue_;
+  for(int i=1;i<=tnum;++i)
+  {
+    evqueues_[i]=getThread(i)->getevqueue();
+  }
 	return 0;
 }
 
@@ -41,41 +47,19 @@ int net::ezEventLoop::serveOnPort(int port)
   return 0;
 }
 
-// void net::ezEventLoop::n2oCrossEvent(ezCrossEventData& ev)
-// {
-//   toApp_.enqueue(ev);
-// }
-// 
-// void net::ezEventLoop::n2oCloseFd(int fd,uint64_t uuid)
-// {
-// 	ezCrossEventData data;
-// 	data.fd_=fd;
-// 	data.event_=ezCrossClose;
-// 	data.uuid_=uuid;
-// 	n2oCrossEvent(data);
-// }
-// 
-// 
-// void net::ezEventLoop::n2oError(int fd,uint64_t uuid)
-// {
-// 	ezCrossEventData data;
-// 	data.fd_=fd;
-// 	data.event_=ezCrossError;
-// 	data.uuid_=uuid;
-// 	n2oCrossEvent(data);
-// }
-
 net::ezEventLoop::ezEventLoop()
 {
 	hander_=nullptr;
 	conMgr_=nullptr;
   threadnum_=0;
+  mainevqueue_=new ThreadEvQueue;
 }
 
 net::ezEventLoop::~ezEventLoop()
 {
 	if(hander_) delete hander_;
 	if(conMgr_) delete conMgr_;
+  if(mainevqueue_) delete mainevqueue_; // TODO: clean
 }
 
 uint64_t net::ezUUID::uuid()
@@ -125,7 +109,21 @@ void net::ezEventLoop::sendMsg(int tid,int fd,ezMsg& msg)
   notify(&th,ev);
 }
 
-net::ezIoThread* net::ezEventLoop::chooseThread()
+void net::ezEventLoop::OccerEvent(int tid,ezThreadEvent& ev)
+{
+  if(tid<=threadnum_)
+    evqueues_[tid]->send(ev);
+}
+
+ezIoThread* net::ezEventLoop::GetThread(int idx)
+{
+  if(idx>0&&idx<=threadnum_)
+    return &threads_[idx];
+  else
+    return NULL;
+}
+
+net::ezIoThread* net::ezEventLoop::ChooseThread()
 {
   int idx=0;
   int minload=threads_[idx].getload();
@@ -148,6 +146,7 @@ void net::ezEventLoop::notify(net::ezIoThread* thread,net::ezCrossEventData& dat
 void net::ezEventLoop::loop()
 {
   ezCrossEventData data;
+  ezMsgWarper warpmsg;
   for(int i=0;i<threadnum_;++i)
   {
     ezIoThread* thread=&threads_[i];
@@ -168,7 +167,11 @@ void net::ezEventLoop::loop()
       }
       ezCloseCrossEventData(data);
     }
-    //
+    while(thread->pullwarpmsg(warpmsg))
+    {
+      hander_->onData(thread,0,warpmsg.uuid_,&warpmsg.msg_);
+      ezMsgFree(&warpmsg.msg_);
+    }
   }
 }
 
@@ -177,4 +180,12 @@ void net::ezCloseCrossEventData(ezCrossEventData& ev)
 {
   if(ev.msg_)
     ezMsgFree(ev.msg_);
+}
+
+net::ezThreadEventHander::ezThreadEventHander(ezEventLoop* loop,int tid):looper_(loop),tid_(tid)
+{}
+
+void net::ezThreadEventHander::OccurEvent(ezThreadEvent& ev)
+{
+  looper_->OccerEvent(tid_,ev);
 }

@@ -94,7 +94,7 @@ public:
 	virtual void Close();
 };
 
-class ezConnection
+class ezConnection:public ezThreadEventHander
 {
 public:
 	explicit ezConnection(ezEventLoop* looper);
@@ -114,7 +114,7 @@ public:
 	void setHander(ezINetPackHander* hander);
 private:
 	uint64_t uuid_;
-	int fd_;
+	ezFd* fd_;
   int tid_;
 	std::string ip_;
 	ezGameObject* gameObj_;

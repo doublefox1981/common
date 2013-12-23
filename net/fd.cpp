@@ -20,14 +20,13 @@ void net::ezListenerFd::onEvent(ezIoThread* io,int fd,int mask,uint64_t uuid)
     SOCKET s=net::Accept(fd,&si);
     if(s==INVALID_SOCKET)
       return;
-    ezIoThread* newio=io->getlooper()->chooseThread();
-    uint64_t uuid=newio->add(s,ezUUID::instance()->uuid(),new ezClientFd,ezNetRead);
-    ezCrossEventData data;
-    data.fromtid_=newio->gettid();
-    data.fd_=fd;
-    data.event_=ezCrossOpen;
-    data.uuid_=uuid;
-    io->pushmain(data);
+    ezIoThread* newio=io->GetLooper()->ChooseThread();
+    assert(newio);
+    ezClientFd* clifd=new ezClientFd(io->GetLooper(),newio);
+    ezThreadEvent ev;
+    ev.type_=ezThreadEvent::NEW_FD;
+    ev.hander_=newio;
+    newio->OccurEvent(ev);
   }
 }
 
@@ -129,7 +128,7 @@ void net::ezClientFd::onEvent(ezIoThread* io,int fd,int event,uint64_t uuid)
   }
 }
 
-net::ezClientFd::ezClientFd()
+net::ezClientFd::ezClientFd(ezEventLoop* loop,ezIoThread* io,int fd):ezThreadEventHander(loop,io->GetTid())
 {
   inbuf_=new ezBuffer();
   outbuf_=new ezBuffer();
@@ -192,6 +191,20 @@ size_t net::ezClientFd::formatMsg()
 bool net::ezClientFd::pullmsg(ezMsg* msg)
 {
   return sendqueue_.try_dequeue(*msg);
+}
+
+void net::ezClientFd::ProcessEvent(ezThreadEvent& ev)
+{
+  switch(ev.type_)
+  {
+  case ezThreadEvent::NEW_FD:
+    {
+
+    }
+    break;
+  default:
+    break;
+  }
 }
 
 net::ezFdData::~ezFdData()

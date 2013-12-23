@@ -234,7 +234,7 @@ void net::ezClientHander::onOpen(ezIoThread* io,int fd,uint64_t uuid,int bindtid
 		char ipport[128];
 		net::ToIpPort(ipport,sizeof(ipport),GetPeerAddr(fd));
 		conn->setIpAddr(ipport);
-		LOG_INFO("connect to %s ok",ipport);
+		LOG_INFO("connect to %s ok,fd=%d",ipport,fd);
 	}
 	else
 	{

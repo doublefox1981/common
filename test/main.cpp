@@ -46,20 +46,16 @@ private:
 class TestServerPackHander:public net::ezINetPackHander
 {
 public:
-	virtual void process(ezConnection* conn,ezMsg* pack)
-	{
-// 		base::ezBufferReader reader(pack->data_,pack->size_);
-// 		int seq=0;
-// 		reader.Read(seq);
-// 		//LOG_INFO("recv %d seq=%d",pack->size_,seq);
-// 
-// 		int s=pack->size_;
-// 		ezNetPack* msg=new ezNetPack(s);
-// 		msg->size_=s;
-// 		base::ezBufferWriter writer(msg->data_,msg->capacity_);
-// 		writer.Write(seq);
-// 		conn->sendNetPack(msg);
-	}
+  virtual void process(ezConnection* conn,ezMsg* pack)
+  {
+    base::ezBufferReader reader((char*)ezMsgData(pack),ezMsgSize(pack));
+    int seq=0;
+    reader.Read(seq);
+    //LOG_INFO("recv %d seq=%d",pack->size_,seq);
+    ezMsg reply;
+    ezMsgCopy(pack,&reply);
+    conn->sendNetPack(&reply);
+  }
 };
 
 class NetThread:public base::Threads
@@ -117,13 +113,13 @@ int main()
 	ezConnectionMgr* mgr=new ezConnectionMgr;
 	mgr->setDefaultHander(new TestServerPackHander());
 	ezEventLoop* ev=new ezEventLoop;
-	ev->init(new ezServerHander(new net::ezMsgDecoder(10000)),mgr,8);
+	ev->init(new ezServerHander(new net::ezMsgDecoder(10000)),mgr,1);
 	ev->serveOnPort(10010);
 
   ezConnectionMgr* mgr1=new ezConnectionMgr;
   mgr1->setDefaultHander(new TestPackHander());
   ezEventLoop* ev1=new ezEventLoop;
-  ev1->init(new TestClientHander(new net::ezMsgDecoder(10000)),mgr1,4);
+  ev1->init(new TestClientHander(new net::ezMsgDecoder(10000)),mgr1,1);
   for(int i=0;i<1;++i)
   {
     ev1->getConnectionMgr()->connectTo(ev1,"127.0.0.1",10010);

@@ -34,36 +34,35 @@ namespace net{
   class ezFd
   {
   public:
-    virtual void onEvent(ezIoThread* io,int fd,int event,uint64_t uuid)=0;
-    virtual void sendMsg(ezMsg& blk)=0;
-    virtual size_t formatMsg()=0;
+    virtual void OnEvent(ezIoThread* io,int fd,int event,uint64_t uuid)=0;
     virtual ~ezFd(){}
   };
 
   class ezListenerFd:public ezFd
   {
   public:
-    virtual void onEvent(ezIoThread* io,int fd,int event,uint64_t uuid);
-    virtual void sendMsg(ezMsg& blk);
-    virtual size_t formatMsg();
+    virtual void OnEvent(ezIoThread* io,int fd,int event,uint64_t uuid);
   };
   
   typedef moodycamel::ReaderWriterQueue<ezMsg> MsgQueue;
-  class ezClientFd:public ezFd,public ezIMessagePuller
+  class ezClientFd:public ezFd,public ezIMessagePuller,public ezThreadEventHander
   {
   public:
-    ezClientFd();
+    ezClientFd(ezEventLoop* loop,ezIoThread* io,int fd);
     virtual ~ezClientFd();
-    virtual void onEvent(ezIoThread* io,int fd,int event,uint64_t uuid);
-    virtual void sendMsg(ezMsg& blk);
-    virtual size_t formatMsg();
+    virtual void OnEvent(ezIoThread* io,int fd,int event,uint64_t uuid);
+    virtual void ProcessEvent(ezThreadEvent& ev);
     virtual bool pullmsg(ezMsg* msg);
   private:
-    ezBuffer* inbuf_;
-    ezBuffer* outbuf_;
-    MsgQueue  sendqueue_;
-    ezMsg     cachemsg_;
-    bool      cached_;
+    ezIoThread* io_;
+    int         fd_;
+    ezBuffer*   inbuf_;
+    ezBuffer*   outbuf_;
+    MsgQueue    sendqueue_;
+    MsgQueue    recvqueue_;
+    ezMsg       cachemsg_;
+    bool        cached_;
+    ezConnection* conn_;
   };
 }
 #endif
