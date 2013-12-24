@@ -31,18 +31,22 @@ namespace net
     ezCrossPollout=5,
   };
 
-  class ezIHander;
   class ezIoThread;
-  class ezFd;
-  class ezConnectionMgr;
+  class ezConnection;
+  class ezIConnnectionHander;
 
   class ezThreadEventHander;
   struct ezThreadEvent
   {
     enum ThreadEventType
     {
+      NEW_SERVICE,
       NEW_FD,
       NEW_CONNECTION,
+      CLOSE_PASSIVE, 
+      CLOSE_ACTIVE,
+      CLOSE_FD,
+      CLOSE_CONNECTION,
     }type_;
     ezThreadEventHander* hander_;
   };
@@ -59,27 +63,26 @@ namespace net
   public:
     ezEventLoop();
     ~ezEventLoop();
-    int init(ezIHander* hander,ezConnectionMgr* mgr,int tnum);
-    int serveOnPort(int port);
+    int Initialize(ezIConnnectionHander* hander,int tnum);
+    int ServeOnPort(int port);
     int shutdown();
     void sendMsg(int tid,int fd,ezMsg& msg);
-    ezConnectionMgr* getConnectionMgr() {return conMgr_;}
-    ezIHander* getHander() {return hander_;}
+    ezIConnnectionHander* GetHander() {return hander_;}
     ezIoThread* ChooseThread();
     ezIoThread* GetThread(int idx);
     void OccerEvent(int tid,ezThreadEvent& ev);
-    int gettid() {return 0;}
-    void notify(ezIoThread* thread,ezCrossEventData& data);
-    void o2nConnectTo(uint64_t uuid,const char* toip,int toport);
-    void o2nCloseFd(int tid,int fd,uint64_t uuid);
+    int GetTid() {return 0;}
     void loop();
+    void AddConnection(ezConnection* con);
+    void DelConnection(ezConnection* con);
+    int GetConnectionNum();
   private:
-    ezIHander*         hander_;
-    ezConnectionMgr*   conMgr_;
-    ezIoThread*        threads_;
-    int                threadnum_;
-    ThreadEvQueue**    evqueues_;
-    ThreadEvQueue*     mainevqueue_;
+    ezIConnnectionHander*             hander_;
+    ezIoThread**                      threads_;
+    int                               threadnum_;
+    ThreadEvQueue**                   evqueues_;
+    ThreadEvQueue*                    mainevqueue_;
+    std::unordered_set<ezConnection*> conns_;
   };
 
   class ezUUID:public base::ezSingleTon<ezUUID>

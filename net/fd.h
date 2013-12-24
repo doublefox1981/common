@@ -2,22 +2,14 @@
 #define _NET_FD_H
 #include "buffer.h"
 #include "netpack.h"
+#include "event.h"
+#include "poller.h"
 #include "../base/readerwriterqueue.h"
 #include "../base/notifyqueue.h"
 
 namespace net{
   class ezIoThread;
-  class ezFd;
   struct ezMsgWarper;
-  struct ezFdData
-  {
-    int fd_;
-    uint64_t uuid_;
-    int event_;
-    ezFd* ezfd_;
-    ezFdData();
-    ~ezFdData();
-  };
 
   class ezIMessagePusher
   {
@@ -31,28 +23,33 @@ namespace net{
     virtual bool pullmsg(ezMsg* msg)=0;
   };
 
-  class ezFd
+  class ezListenerFd:public ezPollerEventHander,public ezThreadEventHander
   {
   public:
-    virtual void OnEvent(ezIoThread* io,int fd,int event,uint64_t uuid)=0;
-    virtual ~ezFd(){}
+    ezListenerFd(ezEventLoop* loop,ezIoThread* io,int fd);
+    virtual ~ezListenerFd(){}
+    virtual void ProcessEvent(ezThreadEvent& ev);
+    virtual void HandleInEvent();
+    virtual void HandleOutEvent(){}
+  private:
+    int fd_;
+    ezIoThread* io_;
   };
 
-  class ezListenerFd:public ezFd
-  {
-  public:
-    virtual void OnEvent(ezIoThread* io,int fd,int event,uint64_t uuid);
-  };
-  
   typedef moodycamel::ReaderWriterQueue<ezMsg> MsgQueue;
-  class ezClientFd:public ezFd,public ezIMessagePuller,public ezThreadEventHander
+  class ezClientFd:public ezPollerEventHander,public ezThreadEventHander
   {
   public:
     ezClientFd(ezEventLoop* loop,ezIoThread* io,int fd);
     virtual ~ezClientFd();
-    virtual void OnEvent(ezIoThread* io,int fd,int event,uint64_t uuid);
+    virtual void HandleInEvent();
+    virtual void HandleOutEvent();
     virtual void ProcessEvent(ezThreadEvent& ev);
     virtual bool pullmsg(ezMsg* msg);
+    void SendMsg(ezMsg& msg);
+    bool RecvMsg(ezMsg& msg);
+    void ActiveClose();
+    void PassiveClose();
   private:
     ezIoThread* io_;
     int         fd_;

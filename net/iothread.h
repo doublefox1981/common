@@ -8,32 +8,22 @@
 
 namespace net{
   class ezPoller;
-  typedef base::ezNotifyQueue<ezCrossEventData> CrossEvQueue;
-  typedef moodycamel::ReaderWriterQueue<ezMsgWarper> MsgWarperQueue;
-  class ezIoThread:public ezFd,public base::Threads,public ezThreadEventHander
+  class ezIoThread:public ezPollerEventHander,public base::Threads,public ezThreadEventHander
   {
   public:
-    ezIoThread();
+    ezIoThread(ezEventLoop* loop,int tid);
     virtual ~ezIoThread();
-    ThreadEvQueue* getevqueue() {return evqueue_;}
-    int getload(){return load_;}
-    uint64_t add(int fd,uint64_t uuid,ezFd *ezfd,int event);
-    int del(int fd);
-    int mod(int fd,int event,bool set);
-    ezFdData* getfd(int i);
-    int getmax(){return maxfd_;}
-    void pushfired(ezFdData* fd);
-    virtual void OnEvent(ezIoThread* io,int fd,int event,uint64_t uuid);
+    ThreadEvQueue* GetEvQueue() {return evqueue_;}
+    ezPoller* GetPoller() {return poller_;}
+    int GetLoad(){return load_;}
+    virtual void HandleInEvent();
+    virtual void HandleOutEvent(){}
     virtual void ProcessEvent(ezThreadEvent& ev);
     virtual void Run();
   private:
     int                     load_;
-    int                     maxfd_;
-    ezPoller                poller_;
+    ezPoller*               poller_;
     ThreadEvQueue*          evqueue_;
-    MsgWarperQueue*         msgqueue_;
-    std::vector<ezFdData*>  fds_;        
-    std::vector<ezFdData*>  firedfd_;
   };
 }
 #endif

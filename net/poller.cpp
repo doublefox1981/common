@@ -10,63 +10,122 @@
 #include "connection.h"
 #include "iothread.h"
 
-void net::ezSelectPoller::addFd(int fd,int mask)
+bool net::ezSelectPoller::WillDelete(const ezSelectFdEntry& entry)
 {
-  if(mask&ezNetRead)
-    FD_SET(fd,&rfds_);
-  if(mask&ezNetWrite)
-    FD_SET(fd,&wfds_);
+  return entry.fd_==INVALID_SOCKET;
 }
 
-void net::ezSelectPoller::delFd(int fd,int mask)
+void net::ezSelectPoller::Poll()
 {
-  if(mask&ezNetRead)
-    FD_CLR(fd,&rfds_);
-  if(mask&ezNetWrite)
-    FD_CLR(fd,&wfds_);
-}
-
-void net::ezSelectPoller::modFd(int fd,int mask,int srcmask,bool set)
-{
-  if(!set)
-    delFd(fd,mask);
-  else
-    addFd(fd,mask);
-}
-
-void net::ezSelectPoller::poll()
-{
-  net::ezIoThread* thread=getBindThread();
   struct timeval tm = {0,0};
   memcpy(&urfds_,&rfds_,sizeof(fd_set));
   memcpy(&uwfds_,&wfds_,sizeof(fd_set));
-  int retval=select(thread->getmax()+1,&urfds_,&uwfds_,nullptr,&tm);
+  memcpy(&uefds_,&efds_,sizeof(fd_set));
+  int retval=select(maxfd_+1,&urfds_,&uwfds_,&uefds_,&tm);
   if(retval>0)
   {
-    for(int j=0;j<=thread->getmax();++j)
+    for(size_t j=0;j<=fdarray_.size();++j)
     {
-      int mask=0;
-      ezFdData* d=thread->getfd(j);
-      if(!d||d->event_==ezNetNone) continue;
-      if(d->event_&ezNetRead&&FD_ISSET(d->fd_,&urfds_))
-        mask|=ezNetRead;
-      if(d->event_&ezNetWrite&&FD_ISSET(d->fd_,&uwfds_))
-        mask|=ezNetWrite;
-      ezFdData* fireD=new ezFdData;
-      fireD->event_=mask;
-      fireD->fd_=d->fd_;
-      fireD->uuid_=d->uuid_;
-      thread->pushfired(fireD);
+      ezSelectFdEntry& entry=fdarray_[j];
+      if(entry.fd_==INVALID_SOCKET)
+        continue;
+      if(FD_ISSET(entry.fd_,&urfds_))
+        entry.hander_->HandleInEvent();
+      if(FD_ISSET(entry.fd_,&uwfds_))
+        entry.hander_->HandleOutEvent();
+      if(FD_ISSET(entry.fd_,&uefds_))
+        entry.hander_->HandleInEvent();
     }
+  }
+  if(willdelfd_)
+  {
+    fdarray_.erase(std::remove_if(fdarray_.begin(),fdarray_.end(),ezSelectPoller::WillDelete),fdarray_.end());
+    willdelfd_ = false;
   }
 }
 
-net::ezSelectPoller::ezSelectPoller(net::ezIoThread* io):ezPoller(io)
+net::ezSelectPoller::ezSelectPoller()
 {
   FD_ZERO(&rfds_);
   FD_ZERO(&wfds_);
   FD_ZERO(&urfds_);
   FD_ZERO(&uwfds_);
+  FD_ZERO(&efds_);
+  FD_ZERO(&uefds_);
+  maxfd_=-1;
+  willdelfd_=false;
+}
+
+bool net::ezSelectPoller::AddFd(int fd,ezPollerEventHander* hander)
+{
+  if(fdarray_.size()>=FD_SETSIZE)
+    return false;
+  ezSelectFdEntry entry={fd,hander};
+  fdarray_.push_back(entry);
+  FD_SET(fd,&efds_);
+  if(fd>maxfd_)
+    maxfd_=fd;
+  return true;
+}
+
+void net::ezSelectPoller::DelFd(int fd)
+{
+  bool found=false;
+  for (auto iter=fdarray_.begin ();iter!=fdarray_.end ();++iter)
+  {
+    if (iter->fd_==fd)
+    {
+      found=true;
+      iter->fd_=INVALID_SOCKET;
+      break;
+    }
+  }
+  if(!found)
+    return;
+  willdelfd_=true;
+
+  FD_CLR(fd,&rfds_);
+  FD_CLR(fd,&wfds_);
+  FD_CLR(fd,&rfds_);
+
+  FD_CLR(fd,&urfds_);
+  FD_CLR(fd,&uwfds_);
+  FD_CLR(fd,&uefds_);
+
+  if (fd==maxfd_) 
+  {
+    maxfd_ = INVALID_SOCKET;
+    for (auto it=fdarray_.begin();it!=fdarray_.end ();++it)
+    {
+      if(it->fd_>maxfd_)
+        maxfd_=it->fd_;
+    }
+  }
+}
+
+void net::ezSelectPoller::SetPollIn(int fd)
+{
+  FD_SET(fd,&rfds_);
+}
+
+void net::ezSelectPoller::ResetPollIn(int fd)
+{
+  FD_CLR(fd,&rfds_);
+}
+
+void net::ezSelectPoller::SetPollOut(int fd)
+{
+  FD_SET(fd,&wfds_);
+}
+
+void net::ezSelectPoller::ResetPollOut(int fd)
+{
+  FD_CLR(fd,&uwfds_);
+}
+
+net::ezPoller* net::CreatePoller()
+{
+  return new ezSelectPoller;
 }
 
 #ifdef __linux__
