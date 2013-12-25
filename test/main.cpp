@@ -39,24 +39,20 @@ public:
 	ezEventLoop* looper_;
 };
 
-std::unordered_set<uint64_t> gConnSet;
+std::unordered_set<ezConnection*> gConnSet;
 class TestClientHander:public net::ezClientHander
 {
 public:
-	virtual void onOpen(ezConnection* conn)
+	virtual void OnOpen(ezConnection* conn)
 	{
-// 		ezClientHander::onOpen(io,fd,uuid,bindtid);
-//     ezConnection* conn=io->getlooper()->getConnectionMgr()->findConnection(uuid);
-//     if(conn)
-//       gConnSet.insert(uuid);
+    gConnSet.insert(conn);
 	}
-	virtual void onClose(ezConnection* conn)
-	{
-// 		auto iter=gConnSet.find(uuid);
-// 		if(iter!=gConnSet.end())
-// 			gConnSet.erase(iter);
-// 		ezClientHander::onClose(io,fd,uuid);
-	}
+  virtual void OnClose(ezConnection* conn)
+  {
+    auto iter=gConnSet.find(conn);
+    if(iter!=gConnSet.end())
+      gConnSet.erase(iter);
+  }
 };
 
 int main()
@@ -81,7 +77,7 @@ int main()
   base::ezSleep(10000);
 
   ezEventLoop* ev1=new ezEventLoop;
-  ev1->Initialize(new ezClientHander,new ezMsgDecoder(10000),1);
+  ev1->Initialize(new TestClientHander,new ezMsgDecoder(10000),1);
   for(int i=0;i<1;++i)
   {
     ev1->ConnectTo("127.0.0.1",10010,i);
@@ -110,21 +106,21 @@ int main()
     ev1->Loop();
     base::ezSleep(1);
 
-//     for(auto iter=gConnSet.begin();iter!=gConnSet.end();++iter)
-//     {
-//       ezConnection* conn=ev1->getConnectionMgr()->findConnection(*iter);
-//       if(!conn)
-//         continue;
-//       for(int i=0;i<4;++i)
-//       {
-//         int ss=4096/*(rand()%9000)+4*/;
-//         ezMsg msg;
-//         net::ezMsgInitSize(&msg,ss);
-//         base::ezBufferWriter writer((char*)net::ezMsgData(&msg),net::ezMsgSize(&msg));
-//         writer.Write(++seq);
-//         conn->sendNetPack(&msg);
-//       }
-//     }
+    for(auto iter=gConnSet.begin();iter!=gConnSet.end();++iter)
+    {
+      ezConnection* conn=*iter;
+      if(!conn)
+        continue;
+      for(int i=0;i<4;++i)
+      {
+        int ss=4096/*(rand()%9000)+4*/;
+        ezMsg msg;
+        net::ezMsgInitSize(&msg,ss);
+        base::ezBufferWriter writer((char*)net::ezMsgData(&msg),net::ezMsgSize(&msg));
+        writer.Write(++seq);
+        conn->SendMsg(msg);
+      }
+    }
 	}
 	return 1;
 }
