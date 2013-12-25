@@ -76,15 +76,16 @@ int main()
   net::InitNetwork();
 
 	ezEventLoop* ev=new ezEventLoop;
-  ev->Initialize(new ezServerHander,4);
+  ev->Initialize(new ezServerHander,new ezMsgDecoder(10000),1);
 	ev->ServeOnPort(10010);
+  base::ezSleep(10000);
 
   ezEventLoop* ev1=new ezEventLoop;
-  ev1->Initialize(new ezClientHander,4);
-//   for(int i=0;i<1;++i)
-//   {
-//     ev1->getConnectionMgr()->connectTo(ev1,"127.0.0.1",10010);
-//   }
+  ev1->Initialize(new ezClientHander,new ezMsgDecoder(10000),1);
+  for(int i=0;i<1;++i)
+  {
+    ev1->ConnectTo("127.0.0.1",10010,i);
+  }
 // 	base::ezTimer timer;
 // 	base::ezTimerTask* task=new ezReconnectTimerTask(ev->getConnectionMgr());
 // 	task->config(base::ezNowTick(),10*1000,base::ezTimerTask::TIMER_FOREVER);
@@ -105,8 +106,8 @@ int main()
 //       data.uuid_=ev->uuid();
 //       queue_.send(data);
 //     }
-    ev->loop();
-    ev1->loop();
+    ev->Loop();
+    ev1->Loop();
     base::ezSleep(1);
 
 //     for(auto iter=gConnSet.begin();iter!=gConnSet.end();++iter)

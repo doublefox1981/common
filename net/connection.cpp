@@ -64,6 +64,8 @@ void net::ezConnection::CloseClient()
 
 void net::ezConnection::ProcessEvent(ezThreadEvent& ev)
 {
+  ezIConnnectionHander* hander=GetLooper()->GetHander();
+  ezMsg msg;
   switch(ev.type_)
   {
   case ezThreadEvent::NEW_CONNECTION:
@@ -72,22 +74,23 @@ void net::ezConnection::ProcessEvent(ezThreadEvent& ev)
     break;
   case ezThreadEvent::CLOSE_PASSIVE:
   case ezThreadEvent::CLOSE_ACTIVE:
+    while(RecvMsg(msg))
     {
-      ezIConnnectionHander* hander=GetLooper()->GetHander();
-      ezMsg msg;
-      while(RecvMsg(msg))
-      {
-        hander->OnData(this,&msg);
-        ezMsgFree(&msg);
-      }
-      CloseClient();
+      hander->OnData(this,&msg);
+      ezMsgFree(&msg);
     }
+    CloseClient();
     break;
   case ezThreadEvent::CLOSE_CONNECTION:
+    GetLooper()->GetHander()->OnClose(this);
+    GetLooper()->DelConnection(this);
+    delete this;
+    break;
+  case ezThreadEvent::NEW_MESSAGE:
+    while(RecvMsg(msg))
     {
-      GetLooper()->GetHander()->OnClose(this);
-      GetLooper()->DelConnection(this);
-      delete this;
+      hander->OnData(this,&msg);
+      ezMsgFree(&msg);
     }
     break;
   default:
@@ -95,38 +98,23 @@ void net::ezConnection::ProcessEvent(ezThreadEvent& ev)
   }
 }
 
+int64_t net::ezConnection::GetUserdata()
+{
+  return client_->GetUserData();
+}
+
 void net::ezServerHander::OnOpen(ezConnection* conn)
 {
-//   ezEventLoop* looper=io->getlooper();
-// 	ezConnection* conn=looper->getConnectionMgr()->addConnection(looper,fd,uuid,bindtid);
-// 	if(conn)
-// 	{
-// 		char ipport[128];
-// 		net::ToIpPort(ipport,sizeof(ipport),net::GetPeerAddr(fd));
-// 		conn->setIpAddr(ipport);
-// 		LOG_INFO("new connector from %s,tid=%d,fd=%d",ipport,bindtid,fd);
-// 	}
+  LOG_INFO("new connector from %s",conn->GetIpAddr().c_str());
 }
 
 void net::ezServerHander::OnClose(ezConnection* conn)
 {
-//   ezEventLoop* looper=io->getlooper();
-//   int tid=io->gettid();
-// 	ezConnection* conn=looper->getConnectionMgr()->findConnection(uuid);
-// 	std::string ip=conn->getIpAddr();
-// 	LOG_INFO("disconnect %s",ip.c_str());
-// 	conn=nullptr;
-// 	looper->getConnectionMgr()->delConnection(uuid);
+  LOG_INFO("disconnect %s",conn->GetIpAddr().c_str());
 }
 
 void net::ezServerHander::OnData(ezConnection* conn,ezMsg* msg)
 {
-//   ezEventLoop* looper=io->getlooper();
-//   net::ezConnection* conn=looper->getConnectionMgr()->findConnection(uuid);
-//   if(conn)
-//   {
-//     conn->onRecvNetPack(msg);
-//   }
 }
 
 void net::ezGameObject::Close()
@@ -156,59 +144,23 @@ net::ezGameObject::~ezGameObject()
 void net::ezConnectToGameObject::Close()
 {
 	ezGameObject::Close();
-  // 
 }
 
 void net::ezClientHander::OnOpen(ezConnection* conn)
 {
-//   ezEventLoop* looper=io->getlooper();
-// 	ezConnectToInfo* info=looper->getConnectionMgr()->findConnectToInfo(uuid);
-// 	assert(info);
-// 	if(fd>0)
-// 	{
-// 		ezConnection* conn=looper->getConnectionMgr()->addConnection(looper,fd,uuid,bindtid);
-// 		assert(conn);
-// 		info->connectOK_=true;
-// 		char ipport[128];
-// 		net::ToIpPort(ipport,sizeof(ipport),GetPeerAddr(fd));
-// 		conn->setIpAddr(ipport);
-// 		LOG_INFO("connect to %s ok,fd=%d",ipport,fd);
-// 	}
-// 	else
-// 	{
-// 		info->connectOK_=false;
-// 		LOG_WARN("connect to %s:%d fail ",info->ip_.c_str(),info->port_);
-// 	}
+  LOG_INFO("connect to %s ok,fd=%d",conn->GetIpAddr().c_str());
 }
 
 void net::ezClientHander::OnClose(ezConnection* conn)
 {
-//   ezEventLoop* looper=io->getlooper();
-//   int tid=io->gettid();
-// 	ezConnection* conn=looper->getConnectionMgr()->findConnection(uuid);
-// 	if(!conn)
-// 		return;
-// 	std::string ip=conn->getIpAddr();
-// 	LOG_INFO("disconnect %s",ip.c_str());
-// 	conn=nullptr;
-// 	ezConnectToInfo* info=looper->getConnectionMgr()->findConnectToInfo(uuid);
-// 	if(info)
-// 		info->connectOK_=false;
-// 	looper->getConnectionMgr()->delConnection(uuid);
+  LOG_INFO("disconnect %s",conn->GetIpAddr().c_str());
 }
 
 void net::ezClientHander::OnData(ezConnection* conn,ezMsg* msg)
 {
-//   ezEventLoop* looper=io->getlooper();
-//   int tid=io->gettid();
-// 	net::ezConnection* conn=looper->getConnectionMgr()->findConnection(uuid);
-// 	if(conn)
-// 	{
-// 		conn->onRecvNetPack(msg);
-// 	}
 }
 
-int net::ezMsgDecoder::decode(ezIMessagePusher* pusher,uint64_t uuid,char* buf,size_t s)
+int net::ezMsgDecoder::Decode(ezIMessagePusher* pusher,char* buf,size_t s)
 {
   base::ezBufferReader reader(buf,s);
   int retlen=0;
@@ -223,12 +175,11 @@ int net::ezMsgDecoder::decode(ezIMessagePusher* pusher,uint64_t uuid,char* buf,s
     if(!reader.CanIncreaseSize(msglen))
       break;
     int onelen=sizeof(uint16_t)+msglen;
-    ezMsgWarper msg;
-    msg.uuid_=uuid;
-    ezMsgInitSize(&msg.msg_,onelen);
-    reader.ReadBuffer((char*)ezMsgData(&msg.msg_),msglen);
+    ezMsg msg;
+    ezMsgInitSize(&msg,onelen);
+    reader.ReadBuffer((char*)ezMsgData(&msg),msglen);
     retlen+=onelen;
-    pusher->pushmsg(&msg);
+    pusher->PushMsg(&msg);
   }
   return retlen;
 }

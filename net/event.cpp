@@ -10,9 +10,10 @@
 #include "../base/util.h"
 #include <assert.h>
 
-int net::ezEventLoop::Initialize(ezIConnnectionHander* hander,int tnum)
+int net::ezEventLoop::Initialize(ezIConnnectionHander* hander,ezIDecoder* decoder,int tnum)
 {
 	hander_=hander;
+  decoder_=decoder;
   threadnum_=tnum;
   threads_=new ezIoThread*[tnum];
   for(int i=0;i<tnum;++i)
@@ -47,6 +48,18 @@ int net::ezEventLoop::ServeOnPort(int port)
   return 0;
 }
 
+int net::ezEventLoop::ConnectTo(const std::string& ip,int port,int64_t userdata)
+{
+  ezIoThread* thread=ChooseThread();
+  ezThreadEvent ev;
+  ev.type_=ezThreadEvent::NEW_CONNECTTO;
+  ezConnectToFd* conn=new ezConnectToFd(this,thread,userdata);
+  conn->SetIpPort(ip,port);
+  ev.hander_=conn;
+  ev.hander_->OccurEvent(ev);
+  return 0;
+}
+
 net::ezEventLoop::ezEventLoop()
 {
 	hander_=nullptr;
@@ -57,6 +70,7 @@ net::ezEventLoop::ezEventLoop()
 net::ezEventLoop::~ezEventLoop()
 {
 	if(hander_) delete hander_;
+  if(decoder_) delete decoder_;
   if(mainevqueue_) delete mainevqueue_; // TODO: clean
 }
 
@@ -68,7 +82,7 @@ uint64_t net::ezUUID::uuid()
 void net::ezEventLoop::OccerEvent(int tid,ezThreadEvent& ev)
 {
   assert(tid<=threadnum_);
-  evqueues_[tid]->send(ev);
+  evqueues_[tid]->Send(ev);
 }
 
 net::ezIoThread* net::ezEventLoop::GetThread(int idx)
@@ -94,14 +108,19 @@ net::ezIoThread* net::ezEventLoop::ChooseThread()
   return threads_[idx];
 }
 
-void net::ezEventLoop::loop()
+void net::ezEventLoop::Loop()
 {
+  ezThreadEvent ev;
+  while(mainevqueue_->Recv(ev))
+  {
+    ev.hander_->ProcessEvent(ev);
+  }
 }
 
 void net::ezEventLoop::AddConnection(ezConnection* con)
 {
   assert(conns_.find(con)==conns_.end());
-  //conns_.insert(conns_);
+  conns_.insert(con);
 }
 
 void net::ezEventLoop::DelConnection(ezConnection* con)

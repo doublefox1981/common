@@ -9,7 +9,8 @@ net::ezIoThread::ezIoThread(ezEventLoop* loop,int tid)
 {
   evqueue_=new ThreadEvQueue;
   poller_=CreatePoller();
-  poller_->AddFd(evqueue_->getfd(),this);
+  poller_->AddFd(evqueue_->GetFd(),this);
+  poller_->SetPollIn(evqueue_->GetFd());
 }
 
 net::ezIoThread::~ezIoThread()
@@ -23,7 +24,7 @@ net::ezIoThread::~ezIoThread()
 void net::ezIoThread::HandleInEvent()
 {
   ezThreadEvent ev;
-  while(evqueue_->recv(ev))
+  while(evqueue_->Recv(ev))
   {
     ev.hander_->ProcessEvent(ev);
   }

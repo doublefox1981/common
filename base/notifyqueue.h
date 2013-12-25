@@ -9,13 +9,13 @@ namespace base{
   class ezNotifyQueue
   {
   public:
-    fd_t getfd(){return notify_.getfd();}
-    void send(const T& t)
+    fd_t GetFd(){return notify_.getfd();}
+    void Send(const T& t)
     {
       pipe_.enqueue(t);
       notify_.send();
     }
-    bool recv(T& t)
+    bool Recv(T& t)
     {
       notify_.recv();
       return pipe_.try_dequeue(t);

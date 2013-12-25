@@ -24,7 +24,7 @@ void net::ezSelectPoller::Poll()
   int retval=select(maxfd_+1,&urfds_,&uwfds_,&uefds_,&tm);
   if(retval>0)
   {
-    for(size_t j=0;j<=fdarray_.size();++j)
+    for(size_t j=0;j<fdarray_.size();++j)
     {
       ezSelectFdEntry& entry=fdarray_[j];
       if(entry.fd_==INVALID_SOCKET)
@@ -94,7 +94,7 @@ void net::ezSelectPoller::DelFd(int fd)
 
   if (fd==maxfd_) 
   {
-    maxfd_ = INVALID_SOCKET;
+    maxfd_=INVALID_SOCKET;
     for (auto it=fdarray_.begin();it!=fdarray_.end ();++it)
     {
       if(it->fd_>maxfd_)

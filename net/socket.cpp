@@ -370,32 +370,43 @@ int ConnectNoBlock(const char* ip,int port)
 	return s;
 }
 
-int ConnectTo(const char* ip,int port)
+int ConnectTo(const char* ip,int port,int& s)
 {
-	SOCKET s=::socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
-	if(s==INVALID_SOCKET)
-		return INVALID_SOCKET;
-	int on=1;
-	if (setsockopt(s,SOL_SOCKET,SO_REUSEADDR, (char*)&on, sizeof(on))==-1) 
-	{
-		ezSocketError("setsockopt SO_REUSEADDR");
-		CloseSocket(s);
-		return INVALID_SOCKET;
-	}
-	struct sockaddr_in sa;
-	unsigned long inAddress;
+  s=::socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
+  if(s==INVALID_SOCKET)
+    return INVALID_SOCKET;
+  NonBlock(s);
+  int on=1;
+  if (setsockopt(s,SOL_SOCKET,SO_REUSEADDR, (char*)&on, sizeof(on))==-1) 
+  {
+    ezSocketError("setsockopt SO_REUSEADDR");
+    CloseSocket(s);
+    return INVALID_SOCKET;
+  }
+  struct sockaddr_in sa;
+  unsigned long inAddress;
 
-	sa.sin_family = AF_INET;
-	sa.sin_port = htons((u_short)port);
-	inAddress = inet_addr(ip);
-	sa.sin_addr.s_addr = inAddress;
-	if(Connect(s,sa)==0)
-		return s;
-	else
-	{
-		CloseSocket(s);
-		return INVALID_SOCKET;
-	}
+  sa.sin_family = AF_INET;
+  sa.sin_port = htons((u_short)port);
+  inAddress = inet_addr(ip);
+  sa.sin_addr.s_addr = inAddress;
+  if(Connect(s,sa)==0)
+    return 0;
+#ifdef __linux__
+  if(errno==EINTR)
+  {
+    errno=EINPROGRESS;
+    return INVALID_SOCKET;
+  }
+#else
+  const int err=WSAGetLastError();
+  if (err==WSAEINPROGRESS||err==WSAEWOULDBLOCK)
+  {
+    errno=EINPROGRESS;
+    return INVALID_SOCKET;
+  }
+#endif
+  return INVALID_SOCKET;
 }
 
 bool InitNetwork(int version) 

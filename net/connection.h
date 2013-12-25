@@ -22,7 +22,7 @@ namespace net
   {
   public:
     virtual ~ezIDecoder(){}
-    virtual int Decode(ezIMessagePusher* pusher,uint64_t uuid,char* buf,size_t s)=0;
+    virtual int Decode(ezIMessagePusher* pusher,char* buf,size_t s)=0;
   };
 
   class ezIConnnectionHander
@@ -53,8 +53,7 @@ namespace net
   {
   public:
     explicit ezMsgDecoder(uint16_t maxsize):maxMsgSize_(maxsize){}
-    virtual ~ezMsgDecoder(){}
-    virtual int decode(ezIMessagePusher* pusher,uint64_t uuid,char* buf,size_t s);
+    virtual int Decode(ezIMessagePusher* pusher,char* buf,size_t s);
   private:
     uint16_t maxMsgSize_;
   };
@@ -88,12 +87,14 @@ namespace net
     ezGameObject* GetGameObject(){return gameObj_;}
     void OnRecvNetPack(ezMsg* pack);
     void ActiveClose();
-    void CloseClient();
     void SetIpAddr(const char* ip){ip_=ip;}
-    std::string GetIpAddr() {return ip_;}
+    const std::string& GetIpAddr() {return ip_;}
+    int64_t GetUserdata();
     void SendMsg(ezMsg& msg);
     bool RecvMsg(ezMsg& msg);
     virtual void ProcessEvent(ezThreadEvent& ev);
+  private:
+    void CloseClient();
   private:
     ezClientFd* client_;
     std::string ip_;

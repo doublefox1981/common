@@ -8,6 +8,7 @@
 #include "../base/notifyqueue.h"
 #include "../base/singleton.h"
 #include <vector>
+#include <string>
 #include <unordered_set>
 
 namespace net
@@ -34,19 +35,22 @@ namespace net
   class ezIoThread;
   class ezConnection;
   class ezIConnnectionHander;
-
+  class ezIDecoder;
   class ezThreadEventHander;
   struct ezThreadEvent
   {
     enum ThreadEventType
     {
       NEW_SERVICE,
+      NEW_CONNECTTO,
       NEW_FD,
       NEW_CONNECTION,
       CLOSE_PASSIVE, 
       CLOSE_ACTIVE,
       CLOSE_FD,
       CLOSE_CONNECTION,
+      CLOSE_CONNECTTO,
+      NEW_MESSAGE,
     }type_;
     ezThreadEventHander* hander_;
   };
@@ -63,21 +67,23 @@ namespace net
   public:
     ezEventLoop();
     ~ezEventLoop();
-    int Initialize(ezIConnnectionHander* hander,int tnum);
+    int Initialize(ezIConnnectionHander* hander,ezIDecoder* decoder,int tnum);
     int ServeOnPort(int port);
+    int ConnectTo(const std::string& ip,int port,int64_t userdata);
     int shutdown();
-    void sendMsg(int tid,int fd,ezMsg& msg);
     ezIConnnectionHander* GetHander() {return hander_;}
+    ezIDecoder* GetDecoder() {return decoder_;}
     ezIoThread* ChooseThread();
     ezIoThread* GetThread(int idx);
     void OccerEvent(int tid,ezThreadEvent& ev);
     int GetTid() {return 0;}
-    void loop();
+    void Loop();
     void AddConnection(ezConnection* con);
     void DelConnection(ezConnection* con);
     int GetConnectionNum();
   private:
     ezIConnnectionHander*             hander_;
+    ezIDecoder*                       decoder_;
     ezIoThread**                      threads_;
     int                               threadnum_;
     ThreadEvQueue**                   evqueues_;
