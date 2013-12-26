@@ -1,9 +1,13 @@
 #include "portable.h"
 #include "signal.h"
+#ifdef __linux__
+#define HAVE_EVENTFD
+#endif
 #ifdef HAVE_EVENTFD
 #include <sys/eventfd.h>
 #endif
 #include <assert.h>
+#include <errno.h>
 
 static void UnblockSocket(fd_t s)
 {
@@ -130,7 +134,7 @@ void base::ezSignaler::send()
   unsigned char dummy=0;
   while(true) 
   {
-    ssize_t nbytes = ::send (w, &dummy, sizeof (dummy), 0);
+    ssize_t nbytes = ::send (w_, &dummy, sizeof (dummy), 0);
     if (nbytes==-1&&errno==EINTR)
       continue;
     break;

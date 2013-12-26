@@ -1,6 +1,7 @@
 #include "netpack.h"
 #include "buffer.h"
 #include <string.h>
+#include <limits>
 using namespace net;
 using namespace base;
 

@@ -6,8 +6,12 @@ namespace net
 {
 #ifdef __linux__
 	typedef int SOCKET;
+#ifndef INVALID_SOCKET
 	#define INVALID_SOCKET (SOCKET)(~0)
+#endif
+#ifndef SOCKET_ERROR
 	#define SOCKET_ERROR (SOCKET)(~0)
+#endif
 #else
 	int inet_aton(register const char *cp, struct in_addr *addr);
 	int inet_pton(int af, register const char *cp, struct in_addr *addr);

@@ -14,7 +14,7 @@ void ezSocketError(const char* err)
 #endif
 	LOG_ERROR("%s:errno=%d",err,errno);
 }
-
+#ifndef __linux__
 static int wsa_error_to_errno (int errcode)
 {
   switch (errcode) {
@@ -90,7 +90,6 @@ static int wsa_error_to_errno (int errcode)
   return 0;
 }
 
-#ifndef __linux__
 int inet_pton(int af, const char *cp, struct in_addr *addr)
 {
 	if(af != AF_INET) {

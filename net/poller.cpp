@@ -9,6 +9,7 @@
 #include "netpack.h"
 #include "connection.h"
 #include "iothread.h"
+#include <algorithm>
 
 bool net::ezSelectPoller::WillDelete(const ezSelectFdEntry& entry)
 {
@@ -125,7 +126,11 @@ void net::ezSelectPoller::ResetPollOut(int fd)
 
 net::ezPoller* net::CreatePoller()
 {
+#ifdef __linux__
+  return new ezEpollPoller;
+#else
   return new ezSelectPoller;
+#endif
 }
 
 #ifdef __linux__
@@ -146,20 +151,20 @@ bool net::ezEpollPoller::AddFd(int fd,ezPollerEventHander* hander)
   assert(fd>0);
   if(fdarray_.size()<=fd)
     fdarray_.resize(fd*2+1);
-  if(fdarray_[f])
-    delete fdarray_[f];
+  if(fdarray_[fd])
+    delete fdarray_[fd];
   ezEpollFdEntry* entry=new ezEpollFdEntry;
   entry->fd_=fd;
   entry->hander_=hander;
   entry->event_=0;
   entry->event_|=EPOLLERR;
   entry->event_|=EPOLLHUP;
-  fdarray_[f]=entry;
+  fdarray_[fd]=entry;
 
   struct epoll_event ee;
   ee.events=entry->event_;
   ee.data.ptr=entry;
-  int rc=epoll_ctl(epollFd_,EPOLL_CTL_ADD,fd,&ee);
+  int rc=epoll_ctl(epollfd_,EPOLL_CTL_ADD,fd,&ee);
   assert(rc!=-1);
   return true;
 }
@@ -178,7 +183,7 @@ void net::ezEpollPoller::DelFd(int fd)
   struct epoll_event ee;
   ee.events=entry->event_;
   ee.data.ptr=entry;
-  int rc=epoll_ctl(epollFd_,EPOLL_CTL_DEL,fd,&ee);
+  int rc=epoll_ctl(epollfd_,EPOLL_CTL_DEL,fd,&ee);
   assert(rc!=-1);
 }
 
@@ -196,7 +201,7 @@ void net::ezEpollPoller::SetPollIn(int fd)
   struct epoll_event ee;
   ee.events=entry->event_;
   ee.data.ptr=entry;
-  int rc=epoll_ctl(epollFd_,EPOLL_CTL_MOD,fd,&ee);
+  int rc=epoll_ctl(epollfd_,EPOLL_CTL_MOD,fd,&ee);
   assert(rc!=-1);
 }
 
@@ -214,7 +219,7 @@ void net::ezEpollPoller::ResetPollIn( int fd )
     struct epoll_event ee;
     ee.events=entry->event_;
     ee.data.ptr=entry;
-    int rc=epoll_ctl(epollFd_,EPOLL_CTL_MOD,fd,&ee);
+    int rc=epoll_ctl(epollfd_,EPOLL_CTL_MOD,fd,&ee);
     assert(rc!=-1);
   }
 }
@@ -233,7 +238,7 @@ void net::ezEpollPoller::SetPollOut( int fd )
   struct epoll_event ee;
   ee.events=entry->event_;
   ee.data.ptr=entry;
-  int rc=epoll_ctl(epollFd_,EPOLL_CTL_MOD,fd,&ee);
+  int rc=epoll_ctl(epollfd_,EPOLL_CTL_MOD,fd,&ee);
   assert(rc!=-1);
 }
 
@@ -251,7 +256,7 @@ void net::ezEpollPoller::ResetPollOut( int fd )
     struct epoll_event ee;
     ee.events=entry->event_;
     ee.data.ptr=entry;
-    int rc=epoll_ctl(epollFd_,EPOLL_CTL_MOD,fd,&ee);
+    int rc=epoll_ctl(epollfd_,EPOLL_CTL_MOD,fd,&ee);
     assert(rc!=-1);
   }
 }
@@ -279,7 +284,7 @@ void net::ezEpollPoller::Poll()
   }
   if(willdelfd_)
   {
-    for(size_t s=0;s<delarray_.size()++s)
+    for(size_t s=0;s<delarray_.size();++s)
     {
       delete fdarray_[delarray_[s]];
       fdarray_[delarray_[s]]=nullptr;
