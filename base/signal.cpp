@@ -139,7 +139,12 @@ void base::ezSignaler::send()
 #else
   unsigned char dummy=0;
   int n=::send(w_,(char*)&dummy,sizeof(dummy),0);
-  assert(n==sizeof(dummy));
+  if(n<0)
+  {
+    int err=WSAGetLastError();
+    errno=err;
+  }
+  assert(n==sizeof(dummy)); 
 #endif
 }
 
@@ -164,10 +169,17 @@ void base::ezSignaler::recv()
 //   assert(dummy==0);
 #endif
 #else
-  unsigned char dummy;
+  unsigned char dummy=0;
   int nbytes=::recv(r_,(char*)&dummy,sizeof(dummy),0);
-//   assert(nbytes!=SOCKET_ERROR);
-//   assert(dummy==0);
+  if(nbytes<0)
+  {
+    int err=WSAGetLastError();
+    errno=err;
+    if(errno==WSAEWOULDBLOCK)
+      nbytes=1;
+  }
+  assert(nbytes!=SOCKET_ERROR);
+  assert(dummy==0);
 #endif
 }
 

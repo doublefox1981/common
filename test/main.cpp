@@ -71,13 +71,13 @@ int main()
   
   net::InitNetwork();
 
-	ezEventLoop* ev=new ezEventLoop;
-  ev->Initialize(new ezServerHander,new ezMsgDecoder(10000),new ezMsgEncoder,1);
-	ev->ServeOnPort(10010);
-  base::ezSleep(10000);
+// 	ezEventLoop* ev=new ezEventLoop;
+//   ev->Initialize(new ezServerHander,new ezMsgDecoder(20000),new ezMsgEncoder,1);
+// 	ev->ServeOnPort(10010);
+//   base::ezSleep(10000);
 
   ezEventLoop* ev1=new ezEventLoop;
-  ev1->Initialize(new TestClientHander,new ezMsgDecoder(10000),new ezMsgEncoder,1);
+  ev1->Initialize(new TestClientHander,new ezMsgDecoder(20000),new ezMsgEncoder,1);
   for(int i=0;i<1;++i)
   {
     ev1->ConnectTo("127.0.0.1",10010,i);
@@ -87,7 +87,7 @@ int main()
 // 	task->config(base::ezNowTick(),10*1000,base::ezTimerTask::TIMER_FOREVER);
 // 	timer.addTimeTask(task);
 
-	base::ScopeGuard guard([&](){delete ev;});
+	//base::ScopeGuard guard([&](){delete ev;});
 	int seq=0;
 	while(true)
 	{
@@ -102,7 +102,7 @@ int main()
 //       data.uuid_=ev->uuid();
 //       queue_.send(data);
 //     }
-    ev->Loop();
+    //ev->Loop();
     ev1->Loop();
     base::ezSleep(1);
 
@@ -111,9 +111,9 @@ int main()
       ezConnection* conn=*iter;
       if(!conn)
         continue;
-      for(int i=0;i<4;++i)
+      for(int i=0;i<16;++i)
       {
-        int ss=4096/*(rand()%9000)+4*/;
+        int ss=(rand()%15000+4);
         ezMsg msg;
         net::ezMsgInitSize(&msg,ss);
         base::ezBufferWriter writer((char*)net::ezMsgData(&msg),net::ezMsgSize(&msg));

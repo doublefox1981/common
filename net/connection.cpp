@@ -126,6 +126,10 @@ void net::ezServerHander::OnClose(ezConnection* conn)
 
 void net::ezServerHander::OnData(ezConnection* conn,ezMsg* msg)
 {
+  base::ezBufferReader reader((char*)ezMsgData(msg),ezMsgSize(msg));
+  int seq=0;
+  reader.Read(seq);
+  LOG_INFO("seq=%d,size=%d",seq,ezMsgSize(msg));
 }
 
 void net::ezGameObject::Close()
@@ -197,12 +201,14 @@ int net::ezMsgDecoder::Decode(ezIMessagePusher* pusher,char* buf,size_t s)
 
 void net::ezMsgEncoder::Encode(ezIMessagePuller* puller,ezBuffer* buffer)
 {
+  static int iiii=0;
   ezMsg msg;
   while(puller->PullMsg(&msg))
   {
+    ++iiii;
     int canadd=buffer->fastadd();
     uint16_t msize=(uint16_t)ezMsgSize(&msg);
-    if(sizeof(uint16_t)+msize<=canadd)
+    if(int(sizeof(uint16_t)+msize)<=canadd)
     {
       buffer->add(&msize,sizeof(msize));
       buffer->add(ezMsgData(&msg),msize);
@@ -210,6 +216,7 @@ void net::ezMsgEncoder::Encode(ezIMessagePuller* puller,ezBuffer* buffer)
     }
     else
     {
+      --iiii;
       puller->Rollback(&msg);
       break;
     }

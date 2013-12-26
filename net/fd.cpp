@@ -104,7 +104,10 @@ void net::ezClientFd::HandleOutEvent()
     char* pbuf=nullptr;
     int s=outbuf_->readable(pbuf);
     if(s<=0)
+    {
+      io_->GetPoller()->ResetPollOut(fd_);
       break;
+    }
     else
     {
       int retval=outbuf_->writefd(fd_);
@@ -113,9 +116,10 @@ void net::ezClientFd::HandleOutEvent()
         PassiveClose();
         return;
       }
+      else if(retval==1)
+        break;
     }
   }
-  io_->GetPoller()->ResetPollOut(fd_);
 }
 
 void net::ezClientFd::ProcessEvent(ezThreadEvent& ev)

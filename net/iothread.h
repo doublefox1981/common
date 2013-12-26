@@ -24,7 +24,7 @@ namespace net{
     int                     load_;
     ezPoller*               poller_;
     ThreadEvQueue*          evqueue_;
-
+    int iiii;
   };
 }
 #endif

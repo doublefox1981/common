@@ -86,7 +86,7 @@ void net::ezSelectPoller::DelFd(int fd)
 
   FD_CLR(fd,&rfds_);
   FD_CLR(fd,&wfds_);
-  FD_CLR(fd,&rfds_);
+  FD_CLR(fd,&efds_);
 
   FD_CLR(fd,&urfds_);
   FD_CLR(fd,&uwfds_);
