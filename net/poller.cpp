@@ -138,6 +138,7 @@ net::ezEpollPoller::ezEpollPoller():willdelfd_(false)
 net::ezEpollPoller::~ezEpollPoller()
 {
   close(epollfd_);
+  // fdarray_ clear
 }
 
 bool net::ezEpollPoller::AddFd(int fd,ezPollerEventHander* hander)
