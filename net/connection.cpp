@@ -36,12 +36,23 @@ void net::ezConnection::DetachGameObject()
 
 void net::ezConnection::SendMsg(ezMsg& msg)
 {
-	client_->SendMsg(msg);
+  if(client_)
+  {
+    client_->SendMsg(msg);
+    ezThreadEvent ev;
+    ev.type_=ezThreadEvent::ENABLE_POLLOUT;
+    client_->OccurEvent(ev);
+  }
+  else
+    ezMsgFree(&msg);
 }
 
 bool net::ezConnection::RecvMsg(ezMsg& msg)
 {
-  return client_->RecvMsg(msg);
+  if(client_)
+    return client_->RecvMsg(msg);
+  return 
+    false;
 }
 
 void net::ezConnection::ActiveClose()
@@ -174,12 +185,33 @@ int net::ezMsgDecoder::Decode(ezIMessagePusher* pusher,char* buf,size_t s)
       return -1;
     if(!reader.CanIncreaseSize(msglen))
       break;
-    int onelen=sizeof(uint16_t)+msglen;
     ezMsg msg;
-    ezMsgInitSize(&msg,onelen);
+    ezMsgInitSize(&msg,msglen);
     reader.ReadBuffer((char*)ezMsgData(&msg),msglen);
-    retlen+=onelen;
+    retlen+=sizeof(uint16_t);
+    retlen+=msglen;
     pusher->PushMsg(&msg);
   }
   return retlen;
+}
+
+void net::ezMsgEncoder::Encode(ezIMessagePuller* puller,ezBuffer* buffer)
+{
+  ezMsg msg;
+  while(puller->PullMsg(&msg))
+  {
+    int canadd=buffer->fastadd();
+    uint16_t msize=(uint16_t)ezMsgSize(&msg);
+    if(sizeof(uint16_t)+msize<=canadd)
+    {
+      buffer->add(&msize,sizeof(msize));
+      buffer->add(ezMsgData(&msg),msize);
+      ezMsgFree(&msg);
+    }
+    else
+    {
+      puller->Rollback(&msg);
+      break;
+    }
+  }
 }

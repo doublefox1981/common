@@ -15,6 +15,81 @@ void ezSocketError(const char* err)
 	LOG_ERROR("%s:errno=%d",err,errno);
 }
 
+static int wsa_error_to_errno (int errcode)
+{
+  switch (errcode) {
+    //  10009 - File handle is not valid.
+  case WSAEBADF:
+    return EBADF;
+    //  10013 - Permission denied.
+  case WSAEACCES:
+    return EACCES;
+    //  10014 - Bad address.
+  case WSAEFAULT:
+    return EFAULT;
+    //  10022 - Invalid argument.
+  case WSAEINVAL:
+    return EINVAL;
+    //  10024 - Too many open files.
+  case WSAEMFILE:
+    return EMFILE;
+  case WSAEWOULDBLOCK:
+    return EWOULDBLOCK;
+    //  10036 - Operation now in progress.
+  case WSAEINPROGRESS:
+    return EAGAIN;
+    //  10040 - Message too long.
+  case WSAEMSGSIZE:
+    return EMSGSIZE;
+    //  10043 - Protocol not supported.
+  case WSAEPROTONOSUPPORT:
+    return EPROTONOSUPPORT;
+    //  10047 - Address family not supported by protocol family.
+  case WSAEAFNOSUPPORT:
+    return EAFNOSUPPORT;
+    //  10048 - Address already in use.
+  case WSAEADDRINUSE:
+    return EADDRINUSE;
+    //  10049 - Cannot assign requested address.
+  case WSAEADDRNOTAVAIL:
+    return EADDRNOTAVAIL;
+    //  10050 - Network is down.
+  case WSAENETDOWN:
+    return ENETDOWN;
+    //  10051 - Network is unreachable.
+  case WSAENETUNREACH:
+    return ENETUNREACH;
+    //  10052 - Network dropped connection on reset.
+  case WSAENETRESET:
+    return ENETRESET;
+    //  10053 - Software caused connection abort.
+  case WSAECONNABORTED:
+    return ECONNABORTED;
+    //  10054 - Connection reset by peer.
+  case WSAECONNRESET:
+    return ECONNRESET;
+    //  10055 - No buffer space available.
+  case WSAENOBUFS:
+    return ENOBUFS;
+    //  10057 - Socket is not connected.
+  case WSAENOTCONN:
+    return ENOTCONN;
+    //  10060 - Connection timed out.
+  case WSAETIMEDOUT:
+    return ETIMEDOUT;
+    //  10061 - Connection refused.
+  case WSAECONNREFUSED:
+    return ECONNREFUSED;
+    //  10065 - No route to host.
+  case WSAEHOSTUNREACH:
+    return EHOSTUNREACH;
+  default:
+    break;
+  }
+  //  Not reachable
+  return 0;
+}
+
 #ifndef __linux__
 int inet_pton(int af, const char *cp, struct in_addr *addr)
 {
@@ -264,8 +339,10 @@ int Write(SOCKET sockfd, const void *buf, size_t count)
 {
 	int retval=::send(sockfd,static_cast<const char*>(buf),count,0);
 #ifndef __linux__
-	if(retval<0)
-		errno=WSAGetLastError();
+  if(retval<0)
+  {
+    errno=wsa_error_to_errno(WSAGetLastError());
+  }
 #endif
 	return retval;
 }

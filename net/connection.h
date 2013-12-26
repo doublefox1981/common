@@ -17,12 +17,20 @@ namespace net
   class ezIMessagePuller;
   class ezIoThread;
   class ezClientFd;
+  class ezBuffer;
 
   class ezIDecoder
   {
   public:
     virtual ~ezIDecoder(){}
     virtual int Decode(ezIMessagePusher* pusher,char* buf,size_t s)=0;
+  };
+
+  class ezIEncoder
+  {
+  public:
+    virtual ~ezIEncoder(){}
+    virtual void Encode(ezIMessagePuller* puller,ezBuffer* buff)=0;
   };
 
   class ezIConnnectionHander
@@ -56,6 +64,12 @@ namespace net
     virtual int Decode(ezIMessagePusher* pusher,char* buf,size_t s);
   private:
     uint16_t maxMsgSize_;
+  };
+
+  class ezMsgEncoder:public ezIEncoder
+  {
+  public:
+    virtual void Encode(ezIMessagePuller* puller,ezBuffer* buffer);
   };
 
   class ezGameObject

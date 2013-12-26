@@ -22,6 +22,7 @@ namespace net{
   public:
     virtual ~ezIMessagePuller(){}
     virtual bool PullMsg(ezMsg* msg)=0;
+    virtual void Rollback(ezMsg* msg)=0;
   };
 
   class ezListenerFd:public ezPollerEventHander,public ezThreadEventHander
@@ -47,6 +48,16 @@ namespace net{
     ezClientFd* client_;
   };
 
+  class ezClientMessagePuller:public ezIMessagePuller
+  {
+  public:
+    explicit ezClientMessagePuller(ezClientFd* cli);
+    virtual bool PullMsg(ezMsg* msg);
+    virtual void Rollback(ezMsg*  msg);
+  private:
+    ezClientFd* client_;
+  };
+
   typedef moodycamel::ReaderWriterQueue<ezMsg> MsgQueue;
   class ezClientFd:public ezPollerEventHander,public ezThreadEventHander
   {
@@ -56,7 +67,6 @@ namespace net{
     virtual void HandleInEvent();
     virtual void HandleOutEvent();
     virtual void ProcessEvent(ezThreadEvent& ev);
-    virtual bool pullmsg(ezMsg* msg);
     void SendMsg(ezMsg& msg);
     bool RecvMsg(ezMsg& msg);
     void ActiveClose();
@@ -64,7 +74,9 @@ namespace net{
     int64_t GetUserData(){return userdata_;}
   private:
     ezIDecoder*       decoder_;
+    ezIEncoder*       encoder_;
     ezIMessagePusher* pusher_;
+    ezIMessagePuller* puller_;
     ezIoThread* io_;
     int         fd_;
     int64_t     userdata_;
@@ -77,6 +89,7 @@ namespace net{
     ezConnection* conn_;
 
     friend class ezClientMessagePusher;
+    friend class ezClientMessagePuller;
   };
 
   class ezConnectToFd:public ezPollerEventHander,public ezThreadEventHander

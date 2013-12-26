@@ -36,6 +36,7 @@ namespace net
   class ezConnection;
   class ezIConnnectionHander;
   class ezIDecoder;
+  class ezIEncoder;
   class ezThreadEventHander;
   struct ezThreadEvent
   {
@@ -51,6 +52,7 @@ namespace net
       CLOSE_CONNECTION,
       CLOSE_CONNECTTO,
       NEW_MESSAGE,
+      ENABLE_POLLOUT,
     }type_;
     ezThreadEventHander* hander_;
   };
@@ -67,12 +69,13 @@ namespace net
   public:
     ezEventLoop();
     ~ezEventLoop();
-    int Initialize(ezIConnnectionHander* hander,ezIDecoder* decoder,int tnum);
+    int Initialize(ezIConnnectionHander* hander,ezIDecoder* decoder,ezIEncoder* encoder,int tnum);
     int ServeOnPort(int port);
     int ConnectTo(const std::string& ip,int port,int64_t userdata);
     int shutdown();
     ezIConnnectionHander* GetHander() {return hander_;}
     ezIDecoder* GetDecoder() {return decoder_;}
+    ezIEncoder* GetEncoder() {return encoder_;}
     ezIoThread* ChooseThread();
     ezIoThread* GetThread(int idx);
     void OccerEvent(int tid,ezThreadEvent& ev);
@@ -84,6 +87,7 @@ namespace net
   private:
     ezIConnnectionHander*             hander_;
     ezIDecoder*                       decoder_;
+    ezIEncoder*                       encoder_;
     ezIoThread**                      threads_;
     int                               threadnum_;
     ThreadEvQueue**                   evqueues_;

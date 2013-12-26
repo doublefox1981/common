@@ -53,7 +53,9 @@ net::ezClientFd::ezClientFd(ezEventLoop* loop,ezIoThread* io,int fd,int64_t user
   ,ezThreadEventHander(loop,io->GetTid())
 {
   decoder_=GetLooper()->GetDecoder();
+  encoder_=GetLooper()->GetEncoder();
   pusher_=new ezClientMessagePusher(this);
+  puller_=new ezClientMessagePuller(this);
   inbuf_=new ezBuffer();
   outbuf_=new ezBuffer();
   ezMsgInit(&cachemsg_);
@@ -70,48 +72,6 @@ net::ezClientFd::~ezClientFd()
   while(sendqueue_.try_dequeue(msg))
     ezMsgFree(&msg);
 }
-
-// size_t net::ezClientFd::formatMsg()
-// {
-//   MSVC_PUSH_DISABLE_WARNING(4018);
-//   if(cached_)
-//   {
-//     int canadd=outbuf_->fastadd();
-//     uint16_t msize=(uint16_t)ezMsgSize(&cachemsg_);
-//     if(sizeof(uint16_t)+msize>canadd)
-//       return 0;
-//     outbuf_->add(&msize,sizeof(msize));
-//     outbuf_->add(ezMsgData(&cachemsg_),msize);
-//     ezMsgFree(&cachemsg_);
-//     cached_=false;
-//   }
-//   ezMsg msg;
-//   while(sendqueue_.try_dequeue(msg))
-//   {
-//     int canadd=outbuf_->fastadd();
-//     uint16_t msize=(uint16_t)ezMsgSize(&msg);
-//     if(sizeof(uint16_t)+msize<=canadd)
-//     {
-//       outbuf_->add(&msize,sizeof(msize));
-//       outbuf_->add(ezMsgData(&msg),msize);
-//       ezMsgFree(&msg);
-//     }
-//     else
-//     {
-//       ezMsgCopy(&msg,&cachemsg_);
-//       cached_=true;
-//       break;
-//     }
-//   }
-//   return outbuf_->off();
-//   MSVC_POP_WARNING();
-// }
-
-bool net::ezClientFd::pullmsg(ezMsg* msg)
-{
-  return sendqueue_.try_dequeue(*msg);
-}
-
 
 void net::ezClientFd::HandleInEvent()
 {
@@ -136,35 +96,26 @@ void net::ezClientFd::HandleInEvent()
   }
 }
 
-
 void net::ezClientFd::HandleOutEvent()
 {
-//   while(true)
-//   {
-//     if(formatMsg()<=0)
-//       break;
-//     char* pbuf=nullptr;
-//     int s=outbuf_->readable(pbuf);
-//     int retval=0;
-//     if(s>0)
-//     {
-//       retval=outbuf_->writefd(fd);
-//       if(retval<0)
-//       {
-//         ezCrossEventData data;
-//         data.fromtid_=io->gettid();
-//         data.fd_=fd;
-//         data.event_=ezCrossError;
-//         data.uuid_=uuid;
-//         io->pushmain(data);
-//         io->del(fd);
-//         return;
-//       }
-//       else if(retval>0)
-//         break;
-//     }
-//   }
-//   io->mod(fd,ezNetWrite,false);
+  while(true)
+  {
+    encoder_->Encode(puller_,outbuf_);
+    char* pbuf=nullptr;
+    int s=outbuf_->readable(pbuf);
+    if(s<=0)
+      break;
+    else
+    {
+      int retval=outbuf_->writefd(fd_);
+      if(retval<0)
+      {
+        PassiveClose();
+        return;
+      }
+    }
+  }
+  io_->GetPoller()->ResetPollOut(fd_);
 }
 
 void net::ezClientFd::ProcessEvent(ezThreadEvent& ev)
@@ -197,6 +148,12 @@ void net::ezClientFd::ProcessEvent(ezThreadEvent& ev)
       ev.type_=ezThreadEvent::CLOSE_CONNECTION;
       conn_->OccurEvent(ev);
       delete this;
+    }
+    break;
+  case ezThreadEvent::ENABLE_POLLOUT:
+    {
+      io_->GetPoller()->SetPollOut(fd_);
+      HandleOutEvent();
     }
     break;
   default:
@@ -369,4 +326,28 @@ void net::ezConnectToFd::HandleOutEvent()
   ev.type_=ezThreadEvent::NEW_FD;
   clifd->OccurEvent(ev);
   PostCloseMe();
+}
+
+net::ezClientMessagePuller::ezClientMessagePuller(ezClientFd* cli):client_(cli){}
+
+bool net::ezClientMessagePuller::PullMsg(ezMsg* msg)
+{
+  if(client_->cached_)
+  {
+    client_->cached_=false;
+    ezMsgCopy(&client_->cachemsg_,msg);
+    return true;
+  }
+  else
+    return client_->sendqueue_.try_dequeue(*msg);
+}
+
+void net::ezClientMessagePuller::Rollback(ezMsg* msg)
+{
+  assert(!client_->cached_);
+  if(!client_->cached_)
+  {
+    client_->cached_=true;
+    ezMsgCopy(msg,&client_->cachemsg_);
+  }
 }

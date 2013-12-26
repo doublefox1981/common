@@ -72,12 +72,12 @@ int main()
   net::InitNetwork();
 
 	ezEventLoop* ev=new ezEventLoop;
-  ev->Initialize(new ezServerHander,new ezMsgDecoder(10000),1);
+  ev->Initialize(new ezServerHander,new ezMsgDecoder(10000),new ezMsgEncoder,1);
 	ev->ServeOnPort(10010);
   base::ezSleep(10000);
 
   ezEventLoop* ev1=new ezEventLoop;
-  ev1->Initialize(new TestClientHander,new ezMsgDecoder(10000),1);
+  ev1->Initialize(new TestClientHander,new ezMsgDecoder(10000),new ezMsgEncoder,1);
   for(int i=0;i<1;++i)
   {
     ev1->ConnectTo("127.0.0.1",10010,i);

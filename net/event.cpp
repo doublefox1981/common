@@ -10,10 +10,11 @@
 #include "../base/util.h"
 #include <assert.h>
 
-int net::ezEventLoop::Initialize(ezIConnnectionHander* hander,ezIDecoder* decoder,int tnum)
+int net::ezEventLoop::Initialize(ezIConnnectionHander* hander,ezIDecoder* decoder,ezIEncoder* encoder,int tnum)
 {
 	hander_=hander;
   decoder_=decoder;
+  encoder_=encoder;
   threadnum_=tnum;
   threads_=new ezIoThread*[tnum];
   for(int i=0;i<tnum;++i)
@@ -71,6 +72,7 @@ net::ezEventLoop::~ezEventLoop()
 {
 	if(hander_) delete hander_;
   if(decoder_) delete decoder_;
+  if(encoder_) delete encoder_;
   if(mainevqueue_) delete mainevqueue_; // TODO: clean
 }
 
