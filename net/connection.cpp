@@ -199,13 +199,13 @@ int net::ezMsgDecoder::Decode(ezIMessagePusher* pusher,char* buf,size_t s)
   return retlen;
 }
 
-void net::ezMsgEncoder::Encode(ezIMessagePuller* puller,ezBuffer* buffer)
+bool net::ezMsgEncoder::Encode(ezIMessagePuller* puller,ezBuffer* buffer)
 {
-  static int iiii=0;
   ezMsg msg;
   while(puller->PullMsg(&msg))
   {
-    ++iiii;
+    if(ezMsgIsDelimiter(&msg))
+      return false;
     int canadd=buffer->fastadd();
     uint16_t msize=(uint16_t)ezMsgSize(&msg);
     if(int(sizeof(uint16_t)+msize)<=canadd)
@@ -216,9 +216,9 @@ void net::ezMsgEncoder::Encode(ezIMessagePuller* puller,ezBuffer* buffer)
     }
     else
     {
-      --iiii;
       puller->Rollback(&msg);
       break;
     }
   }
+  return true;
 }

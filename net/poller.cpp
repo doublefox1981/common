@@ -38,6 +38,12 @@ void net::ezSelectPoller::Poll()
         entry.hander_->HandleInEvent();
     }
   }
+  else if(retval<0)
+  {
+#ifndef __linux__
+    errno=wsa_error_to_errno(WSAGetLastError());
+#endif
+  }
   if(willdelfd_)
   {
     fdarray_.erase(std::remove_if(fdarray_.begin(),fdarray_.end(),ezSelectPoller::WillDelete),fdarray_.end());

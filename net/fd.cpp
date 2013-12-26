@@ -99,9 +99,10 @@ void net::ezClientFd::HandleInEvent()
 
 void net::ezClientFd::HandleOutEvent()
 {
+  bool encoderet=true;
   while(true)
   {
-    encoder_->Encode(puller_,outbuf_);
+    encoderet=encoder_->Encode(puller_,outbuf_);
     char* pbuf=nullptr;
     int s=outbuf_->readable(pbuf);
     if(s<=0)
@@ -121,6 +122,8 @@ void net::ezClientFd::HandleOutEvent()
         break;
     }
   }
+  if(!encoderet)
+    ActiveClose();
 }
 
 void net::ezClientFd::ProcessEvent(ezThreadEvent& ev)

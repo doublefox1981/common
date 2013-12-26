@@ -45,10 +45,12 @@ class TestClientHander:public net::ezClientHander
 public:
 	virtual void OnOpen(ezConnection* conn)
 	{
+    ezClientHander::OnOpen(conn);
     gConnSet.insert(conn);
 	}
   virtual void OnClose(ezConnection* conn)
   {
+    ezClientHander::OnClose(conn);
     auto iter=gConnSet.find(conn);
     if(iter!=gConnSet.end())
       gConnSet.erase(iter);
@@ -70,18 +72,19 @@ int main()
   LOG_INFO("%s",format.c_str());
   
   net::InitNetwork();
-
-// 	ezEventLoop* ev=new ezEventLoop;
-//   ev->Initialize(new ezServerHander,new ezMsgDecoder(20000),new ezMsgEncoder,1);
-// 	ev->ServeOnPort(10010);
-//   base::ezSleep(10000);
-
+#ifdef __linux__
+  ezEventLoop* ev=new ezEventLoop;
+  ev->Initialize(new ezServerHander,new ezMsgDecoder(20000),new ezMsgEncoder,4);
+  ev->ServeOnPort(10011);
+#else
   ezEventLoop* ev1=new ezEventLoop;
   ev1->Initialize(new TestClientHander,new ezMsgDecoder(20000),new ezMsgEncoder,1);
   for(int i=0;i<1;++i)
   {
-    ev1->ConnectTo("127.0.0.1",17332,i);
+    ev1->ConnectTo("192.168.99.51",10011,i);
   }
+#endif
+
 // 	base::ezTimer timer;
 // 	base::ezTimerTask* task=new ezReconnectTimerTask(ev->getConnectionMgr());
 // 	task->config(base::ezNowTick(),10*1000,base::ezTimerTask::TIMER_FOREVER);
@@ -102,16 +105,22 @@ int main()
 //       data.uuid_=ev->uuid();
 //       queue_.send(data);
 //     }
-    //ev->Loop();
+#ifdef __linux__
+    ev->Loop();
+#else
     ev1->Loop();
-    base::ezSleep(1);
-
+    if((rand()%100)<10)
+      ev1->ConnectTo("192.168.99.51",10011,0);
+#endif
+    base::ezSleep(20);
     for(auto iter=gConnSet.begin();iter!=gConnSet.end();++iter)
     {
       ezConnection* conn=*iter;
       if(!conn)
         continue;
-      for(int i=0;i<3;++i)
+      //if((rand()%100)>90)
+        conn->ActiveClose();
+      for(int i=0;i<1;++i)
       {
         int ss=(rand()%15000+4);
         ezMsg msg;

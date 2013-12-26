@@ -55,6 +55,11 @@ void net::ezMsgInitDelimiter(ezMsg* msg)
   msg->size_=0;
 }
 
+bool net::ezMsgIsDelimiter(ezMsg* msg)
+{
+  return msg->type_==type_delimiter;
+}
+
 int  net::ezMsgSize(ezMsg* msg)
 {
   return msg->size_;

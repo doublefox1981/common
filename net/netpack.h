@@ -63,6 +63,7 @@ namespace net
   int  ezMsgSize(ezMsg* msg);
   int  ezMsgCapcity(ezMsg* msg);
   int8_t* ezMsgData(ezMsg* msg);
+  bool ezMsgIsDelimiter(ezMsg* msg);
 
   void ezMsgMove(ezMsg* src,ezMsg* dst);
   void ezMsgCopy(ezMsg* src,ezMsg* dst);

@@ -15,7 +15,7 @@ void ezSocketError(const char* err)
 	LOG_ERROR("%s:errno=%d",err,errno);
 }
 #ifndef __linux__
-static int wsa_error_to_errno (int errcode)
+int wsa_error_to_errno (int errcode)
 {
   switch (errcode) {
     //  10009 - File handle is not valid.

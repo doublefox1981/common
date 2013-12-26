@@ -15,6 +15,7 @@ namespace net
 #else
 	int inet_aton(register const char *cp, struct in_addr *addr);
 	int inet_pton(int af, register const char *cp, struct in_addr *addr);
+  int wsa_error_to_errno (int errcode);
 #endif
 	bool InitNetwork(int version=2);
 	void NonBlock(SOCKET s);

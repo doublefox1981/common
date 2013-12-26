@@ -30,7 +30,7 @@ namespace net
   {
   public:
     virtual ~ezIEncoder(){}
-    virtual void Encode(ezIMessagePuller* puller,ezBuffer* buff)=0;
+    virtual bool Encode(ezIMessagePuller* puller,ezBuffer* buff)=0;
   };
 
   class ezIConnnectionHander
@@ -69,7 +69,7 @@ namespace net
   class ezMsgEncoder:public ezIEncoder
   {
   public:
-    virtual void Encode(ezIMessagePuller* puller,ezBuffer* buffer);
+    virtual bool Encode(ezIMessagePuller* puller,ezBuffer* buffer);
   };
 
   class ezGameObject
