@@ -80,7 +80,7 @@ int main()
   ev1->Initialize(new TestClientHander,new ezMsgDecoder(20000),new ezMsgEncoder,1);
   for(int i=0;i<1;++i)
   {
-    ev1->ConnectTo("127.0.0.1",10010,i);
+    ev1->ConnectTo("127.0.0.1",17332,i);
   }
 // 	base::ezTimer timer;
 // 	base::ezTimerTask* task=new ezReconnectTimerTask(ev->getConnectionMgr());
@@ -111,7 +111,7 @@ int main()
       ezConnection* conn=*iter;
       if(!conn)
         continue;
-      for(int i=0;i<16;++i)
+      for(int i=0;i<3;++i)
       {
         int ss=(rand()%15000+4);
         ezMsg msg;

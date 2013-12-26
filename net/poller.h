@@ -61,15 +61,28 @@ namespace net
   class ezEpollPoller:public ezPoller
   {
   public:
-    ezEpollPoller(ezEventLoop* loop);
+    ezEpollPoller();
     virtual ~ezEpollPoller();
-    virtual void addFd(int fd,int mask);
-    virtual void delFd(int fd,int mask);
-    virtual void modFd(int fd,int mask,int srcmask,bool set);
-    virtual void poll();
+    virtual bool AddFd(int fd,ezPollerEventHander* hander);
+    virtual void DelFd(int fd);
+    virtual void SetPollIn(int fd);
+    virtual void ResetPollIn(int fd);
+    virtual void SetPollOut(int fd);
+    virtual void ResetPollOut(int fd);
+    virtual void Poll();
   private:
-    int epollFd_;
-    struct epoll_event epollEvents_[1024];
+    struct ezEpollFdEntry
+    {
+      int fd_;
+      int event_;
+      ezPollerEventHander* hander_;
+    };
+    std::vector<ezEpollFdEntry*> fdarray_;
+    std::vector<int> delarray_;
+    bool willdelfd_;
+  private:
+    int epollfd_;
+    struct epoll_event epollevents_[1024];
   };
 #endif
 }

@@ -5,6 +5,7 @@
 #include <io.h>
 #endif
 #include "../base/util.h"
+#include "../base/eztime.h"
 #include "socket.h"
 #include "event.h"
 #include "connection.h"
@@ -146,8 +147,12 @@ void net::ezClientFd::ProcessEvent(ezThreadEvent& ev)
     break;
   case ezThreadEvent::CLOSE_FD:
     {
-      //TODO clear msg
       io_->GetPoller()->DelFd(fd_);
+      ezMsg msg;
+      while(recvqueue_.try_dequeue(msg))
+        ezMsgFree(&msg);
+      while(sendqueue_.try_dequeue(msg))
+        ezMsgFree(&msg);
       ezThreadEvent ev;
       ev.type_=ezThreadEvent::CLOSE_CONNECTION;
       conn_->OccurEvent(ev);
