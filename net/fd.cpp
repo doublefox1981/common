@@ -140,7 +140,7 @@ void net::ezClientFd::ProcessEvent(ezThreadEvent& ev)
         return;
       }
       poller->SetPollIn(fd_);
-      conn_=new ezConnection(GetLooper(),this,GetLooper()->GetTid());
+      conn_=new ezConnection(GetLooper(),this,GetLooper()->GetTid(),userdata_);
       char ipport[128];
       net::ToIpPort(ipport,sizeof(ipport),net::GetPeerAddr(fd_));
       conn_->SetIpAddr(ipport);

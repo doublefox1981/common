@@ -14,46 +14,53 @@
 #include "../net/iothread.h"
 #include "../net/connection.h"
 #include "../net/socket.h"
-
-
-#include <limits>
-#include <algorithm>
-#include <queue>
-#include <unordered_set>
-
+#include <vector>
+#include <string>
 using namespace net;
 using namespace std;
 
-class NetThread:public base::Threads
+enum EConnectToStatus
 {
-public:
-	explicit NetThread(ezEventLoop* l):looper_(l){}
-	virtual void Run()
-	{
-// 		while(true)
-// 		{
-// 			looper_->netEventLoop();
-// 			base::ezSleep(1);
-// 		}
-	}
-	ezEventLoop* looper_;
+  ECTS_CONNECTING,
+  ECTS_CONNECTOK,
+  ECTS_DISCONNECT,
+};
+struct ConnectToInfo
+{
+  int64_t id_;
+  std::string ip_;
+  int port_;
+  int status_;
+  ezConnection* conn_;
 };
 
-std::unordered_set<ezConnection*> gConnSet;
+std::vector<ConnectToInfo> gConnSet;
 class TestClientHander:public net::ezClientHander
 {
 public:
 	virtual void OnOpen(ezConnection* conn)
 	{
     ezClientHander::OnOpen(conn);
-    gConnSet.insert(conn);
+    for(size_t i=0;i<gConnSet.size();++i)
+    {
+      if(conn->GetUserdata()==gConnSet[i].id_)
+      {
+        gConnSet[i].status_=ECTS_CONNECTOK;
+        gConnSet[i].conn_=conn;
+      }
+    }
 	}
   virtual void OnClose(ezConnection* conn)
   {
     ezClientHander::OnClose(conn);
-    auto iter=gConnSet.find(conn);
-    if(iter!=gConnSet.end())
-      gConnSet.erase(iter);
+    for(size_t i=0;i<gConnSet.size();++i)
+    {
+      if(conn->GetUserdata()==gConnSet[i].id_)
+      {
+        gConnSet[i].status_=ECTS_CONNECTOK;
+        gConnSet[i].conn_=NULL;
+      }
+    }
   }
 };
 
@@ -81,7 +88,9 @@ int main()
   ev1->Initialize(new TestClientHander,new ezMsgDecoder(20000),new ezMsgEncoder,10);
   for(int i=0;i<1;++i)
   {
-    ev1->ConnectTo("192.168.99.51",10011,i,0);
+    ev1->ConnectTo("192.168.99.51",10011,i,10);
+    ConnectToInfo info={i,"192.168..99.51",10011,ECTS_CONNECTING,nullptr};
+    gConnSet.push_back(info);
   }
 #endif
 
@@ -113,9 +122,9 @@ int main()
 //       ev1->ConnectTo("192.168.99.51",10011,0,0);
 #endif
     base::ezSleep(1);
-    for(auto iter=gConnSet.begin();iter!=gConnSet.end();++iter)
+    for(size_t s=0;s<gConnSet.size();++s)
     {
-      ezConnection* conn=*iter;
+      ezConnection* conn=gConnSet[s].conn_;
       if(!conn)
         continue;
 //       if((rand()%100)>90)

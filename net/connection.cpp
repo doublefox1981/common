@@ -11,9 +11,11 @@
 
 using namespace net;
 
-net::ezConnection::ezConnection(ezEventLoop* looper,ezClientFd* client,int tid):ezThreadEventHander(looper,tid)
+net::ezConnection::ezConnection(ezEventLoop* looper,ezClientFd* client,int tid,int64_t userdata):ezThreadEventHander(looper,tid)
   ,client_(client)
-  ,gameObj_(nullptr){}
+  ,gameObj_(nullptr)
+  ,userdata_(userdata)
+{}
 
 net::ezConnection::~ezConnection()
 {
@@ -111,7 +113,7 @@ void net::ezConnection::ProcessEvent(ezThreadEvent& ev)
 
 int64_t net::ezConnection::GetUserdata()
 {
-  return client_->GetUserData();
+  return userdata_;
 }
 
 void net::ezServerHander::OnOpen(ezConnection* conn)

@@ -94,7 +94,7 @@ namespace net
   class ezConnection:public ezThreadEventHander
   {
   public:
-    ezConnection(ezEventLoop* looper,ezClientFd* client,int tid);
+    ezConnection(ezEventLoop* looper,ezClientFd* client,int tid,int64_t userdata);
     virtual ~ezConnection();
     void AttachGameObject(ezGameObject* obj);
     void DetachGameObject();
@@ -113,6 +113,7 @@ namespace net
     ezClientFd* client_;
     std::string ip_;
     ezGameObject* gameObj_;
+    int64_t userdata_;
   };
 
   struct ezConnectToInfo
