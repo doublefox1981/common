@@ -163,7 +163,6 @@ void net::ezConnectToGameObject::Close()
 
 void net::ezClientHander::OnOpen(ezConnection* conn)
 {
-  LOG_INFO("connect to %s ok,fd=%d",conn->GetIpAddr().c_str());
 }
 
 void net::ezClientHander::OnClose(ezConnection* conn)

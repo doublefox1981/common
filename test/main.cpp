@@ -118,11 +118,11 @@ int main()
       ezConnection* conn=*iter;
       if(!conn)
         continue;
-      if((rand()%100)>90)
-      {
-        conn->ActiveClose();
-        continue;
-      }
+//       if((rand()%100)>90)
+//       {
+//         conn->ActiveClose();
+//         continue;
+//       }
       for(int i=0;i<1;++i)
       {
         int ss=(rand()%15000+4);
