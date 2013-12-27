@@ -49,12 +49,12 @@ int net::ezEventLoop::ServeOnPort(int port)
   return 0;
 }
 
-int net::ezEventLoop::ConnectTo(const std::string& ip,int port,int64_t userdata)
+int net::ezEventLoop::ConnectTo(const std::string& ip,int port,int64_t userdata,int32_t reconnect)
 {
   ezIoThread* thread=ChooseThread();
   ezThreadEvent ev;
   ev.type_=ezThreadEvent::NEW_CONNECTTO;
-  ezConnectToFd* conn=new ezConnectToFd(this,thread,userdata);
+  ezConnectToFd* conn=new ezConnectToFd(this,thread,userdata,reconnect);
   conn->SetIpPort(ip,port);
   ev.hander_=conn;
   ev.hander_->OccurEvent(ev);

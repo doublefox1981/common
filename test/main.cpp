@@ -78,10 +78,10 @@ int main()
   ev->ServeOnPort(10011);
 #else
   ezEventLoop* ev1=new ezEventLoop;
-  ev1->Initialize(new TestClientHander,new ezMsgDecoder(20000),new ezMsgEncoder,1);
+  ev1->Initialize(new TestClientHander,new ezMsgDecoder(20000),new ezMsgEncoder,10);
   for(int i=0;i<1;++i)
   {
-    ev1->ConnectTo("192.168.99.51",10011,i);
+    ev1->ConnectTo("192.168.99.51",10011,i,0);
   }
 #endif
 
@@ -109,17 +109,20 @@ int main()
     ev->Loop();
 #else
     ev1->Loop();
-    if((rand()%100)<10)
-      ev1->ConnectTo("192.168.99.51",10011,0);
+//     if((rand()%100)<10)
+//       ev1->ConnectTo("192.168.99.51",10011,0,0);
 #endif
-    base::ezSleep(20);
+    base::ezSleep(1);
     for(auto iter=gConnSet.begin();iter!=gConnSet.end();++iter)
     {
       ezConnection* conn=*iter;
       if(!conn)
         continue;
-      //if((rand()%100)>90)
+      if((rand()%100)>90)
+      {
         conn->ActiveClose();
+        continue;
+      }
       for(int i=0;i<1;++i)
       {
         int ss=(rand()%15000+4);

@@ -5,7 +5,6 @@
 #include "readerwriterqueue.h"
 
 namespace base{
-  // notify_ 用于唤醒io线程,ezNotifyQueue单进单出
   template<typename T>
   class ezNotifyQueue
   {

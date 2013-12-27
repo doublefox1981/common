@@ -1,5 +1,6 @@
 #ifndef _POLLER_H
 #define _POLLER_H
+#include <map>
 
 namespace net
 {
@@ -9,12 +10,15 @@ namespace net
     virtual ~ezPollerEventHander(){}
     virtual void HandleInEvent()=0;
     virtual void HandleOutEvent()=0;
+    virtual void HandleTimer()=0;
   };
 
   class ezPoller
   {
   public:
     virtual ~ezPoller(){}
+    virtual void AddTimer(int64_t timeout,ezPollerEventHander* hander,int32_t timerid)=0;
+    virtual void DelTimer(ezPollerEventHander* hander,int32_t timerid)=0;
     virtual bool AddFd(int fd,ezPollerEventHander* hander)=0;
     virtual void DelFd(int fd)=0;
     virtual void SetPollIn(int fd)=0;
@@ -24,11 +28,28 @@ namespace net
     virtual void Poll()=0;
   };
 
+  class ezPollTimer
+  {
+  public:
+    void AddTimer(int64_t timeout,ezPollerEventHander* hander,int32_t timerid);
+    void DelTimer(ezPollerEventHander* hander,int32_t timerid);
+    int64_t InvokeTimer();
+  private:
+    struct ezTimerEntry
+    {
+      int32_t timerid_;
+      ezPollerEventHander* hander_;
+    };
+    std::multimap<int64_t,ezTimerEntry> timers_;
+  };
+
   class ezSelectPoller:public ezPoller
   {
   public:
     ezSelectPoller();
     virtual ~ezSelectPoller(){}
+    virtual void AddTimer(int64_t timeout,ezPollerEventHander* hander,int32_t timerid);
+    virtual void DelTimer(ezPollerEventHander* hander,int32_t timerid);
     virtual bool AddFd(int fd,ezPollerEventHander* hander);
     virtual void DelFd(int fd);
     virtual void SetPollIn(int fd);
@@ -45,6 +66,7 @@ namespace net
     static bool WillDelete(const ezSelectFdEntry& entry);
   private:
     std::vector<ezSelectFdEntry> fdarray_;
+    ezPollTimer timer_;
     fd_set wfds_;
     fd_set uwfds_;
     fd_set rfds_;
@@ -63,6 +85,8 @@ namespace net
   public:
     ezEpollPoller();
     virtual ~ezEpollPoller();
+    virtual void AddTimer(int64_t timeout,ezPollerEventHander* hander,int32_t timerid);
+    virtual void DelTimer(ezPollerEventHander* hander,int32_t timerid);
     virtual bool AddFd(int fd,ezPollerEventHander* hander);
     virtual void DelFd(int fd);
     virtual void SetPollIn(int fd);
@@ -80,6 +104,7 @@ namespace net
     std::vector<ezEpollFdEntry*> fdarray_;
     std::vector<int> delarray_;
     bool willdelfd_;
+    ezPollTimer timer_;
   private:
     int epollfd_;
     struct epoll_event epollevents_[1024];

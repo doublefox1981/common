@@ -71,7 +71,7 @@ namespace net
     ~ezEventLoop();
     int Initialize(ezIConnnectionHander* hander,ezIDecoder* decoder,ezIEncoder* encoder,int tnum);
     int ServeOnPort(int port);
-    int ConnectTo(const std::string& ip,int port,int64_t userdata);
+    int ConnectTo(const std::string& ip,int port,int64_t userdata,int32_t reconnect);
     int shutdown();
     ezIConnnectionHander* GetHander() {return hander_;}
     ezIDecoder* GetDecoder() {return decoder_;}

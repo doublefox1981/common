@@ -12,6 +12,7 @@
 #include "poller.h"
 #include "fd.h"
 #include "iothread.h"
+#include "../base/logging.h"
 
 net::ezListenerFd::ezListenerFd(ezEventLoop* loop,ezIoThread* io,int fd)
   :fd_(fd),
@@ -211,10 +212,11 @@ inline bool net::ezClientMessagePusher::PushMsg(ezMsg* msg)
   return true;
 }
 
-net::ezConnectToFd::ezConnectToFd(ezEventLoop* loop,ezIoThread* io,int64_t userd)
+net::ezConnectToFd::ezConnectToFd(ezEventLoop* loop,ezIoThread* io,int64_t userd,int32_t reconnect)
   :fd_(0)
   ,io_(io)
   ,userdata_(userd)
+  ,reconnect_(reconnect*1000)
   ,ezThreadEventHander(loop,io->GetTid())
 {}
 
@@ -224,40 +226,44 @@ void net::ezConnectToFd::SetIpPort(const std::string& ip,int port)
   port_=port;
 }
 
+void net::ezConnectToFd::ConnectTo()
+{
+  int retval=net::ConnectTo(ip_.c_str(),port_,fd_);
+  LOG_INFO("connecting %s:%d",ip_.c_str(),port_);
+  if(retval==0)
+  {
+    if(io_->GetPoller()->AddFd(fd_,this))
+      HandleOutEvent();
+    else
+      PostCloseMe();
+  }
+  else if(retval==-1&&errno==EINPROGRESS)
+  {
+    if(io_->GetPoller()->AddFd(fd_,this))
+    {
+      io_->GetPoller()->SetPollIn(fd_);
+      io_->GetPoller()->SetPollOut(fd_);
+    }
+    else
+      PostCloseMe();
+  }
+  else
+  {
+    if(fd_!=INVALID_SOCKET)
+    {
+      CloseSocket(fd_);
+      fd_=INVALID_SOCKET;
+    }
+    Reconnect();
+  }
+}
+
 void net::ezConnectToFd::ProcessEvent(ezThreadEvent& ev)
 {
   switch(ev.type_)
   {
   case ezThreadEvent::NEW_CONNECTTO:
-    {
-      int retval=ConnectTo(ip_.c_str(),port_,fd_);
-      if(retval==0)
-      {
-        if(io_->GetPoller()->AddFd(fd_,this))
-          HandleOutEvent();
-        else
-          PostCloseMe();
-      }
-      else if(retval==-1&&errno==EINPROGRESS)
-      {
-        if(io_->GetPoller()->AddFd(fd_,this))
-        {
-          io_->GetPoller()->SetPollIn(fd_);
-          io_->GetPoller()->SetPollOut(fd_);
-        }
-        else
-          PostCloseMe();
-      }
-      else
-      {
-        if(fd_!=INVALID_SOCKET)
-        {
-          CloseSocket(fd_);
-          fd_=INVALID_SOCKET;
-        }
-        Reconnect();
-      }
-    }
+    ConnectTo();
     break;
   case ezThreadEvent::CLOSE_CONNECTTO:
     {
@@ -272,19 +278,23 @@ void net::ezConnectToFd::ProcessEvent(ezThreadEvent& ev)
 
 void net::ezConnectToFd::CloseMe()
 {
-  // delete timer
+  io_->GetPoller()->DelTimer(this,CONNECTTO_TIMER_ID);
   if(fd_!=INVALID_SOCKET)
   {
     io_->GetPoller()->DelFd(fd_);
     CloseSocket(fd_);
     fd_=INVALID_SOCKET;
   }
+  LOG_INFO("delete net::ezConnectToFd(%s:%d)",ip_.c_str(),port_);
   delete this;
 }
 
 void net::ezConnectToFd::Reconnect()
 {
-
+  if(reconnect_>0)
+    io_->GetPoller()->AddTimer(reconnect_,this,CONNECTTO_TIMER_ID);
+  else
+    PostCloseMe();
 }
 
 void net::ezConnectToFd::PostCloseMe()
@@ -329,15 +339,25 @@ void net::ezConnectToFd::HandleOutEvent()
   fd_=INVALID_SOCKET;
   if(result==INVALID_SOCKET)
   {
+    LOG_INFO("connect to %s:%d fail",ip_.c_str(),port_);
     CloseSocket(result);
     Reconnect();
     return;
   }
-  ezClientFd* clifd=new ezClientFd(GetLooper(),io_,result,userdata_);
-  ezThreadEvent ev;
-  ev.type_=ezThreadEvent::NEW_FD;
-  clifd->OccurEvent(ev);
-  PostCloseMe();
+  else
+  {
+    LOG_INFO("connect to %s:%d ok",ip_.c_str(),port_);
+    ezClientFd* clifd=new ezClientFd(GetLooper(),io_,result,userdata_);
+    ezThreadEvent ev;
+    ev.type_=ezThreadEvent::NEW_FD;
+    clifd->OccurEvent(ev);
+    PostCloseMe();
+  }
+}
+
+void net::ezConnectToFd::HandleTimer()
+{
+  ConnectTo();
 }
 
 net::ezClientMessagePuller::ezClientMessagePuller(ezClientFd* cli):client_(cli){}

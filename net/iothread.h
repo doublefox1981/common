@@ -18,6 +18,7 @@ namespace net{
     int GetLoad(){return load_;}
     virtual void HandleInEvent();
     virtual void HandleOutEvent(){}
+    virtual void HandleTimer(){}
     virtual void ProcessEvent(ezThreadEvent& ev);
     virtual void Run();
   private:

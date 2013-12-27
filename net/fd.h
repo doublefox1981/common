@@ -33,6 +33,7 @@ namespace net{
     virtual void ProcessEvent(ezThreadEvent& ev);
     virtual void HandleInEvent();
     virtual void HandleOutEvent(){}
+    virtual void HandleTimer(){}
   private:
     int fd_;
     ezIoThread* io_;
@@ -66,6 +67,7 @@ namespace net{
     virtual ~ezClientFd();
     virtual void HandleInEvent();
     virtual void HandleOutEvent();
+    virtual void HandleTimer(){}
     virtual void ProcessEvent(ezThreadEvent& ev);
     void SendMsg(ezMsg& msg);
     bool RecvMsg(ezMsg& msg);
@@ -95,11 +97,15 @@ namespace net{
   class ezConnectToFd:public ezPollerEventHander,public ezThreadEventHander
   {
   public:
-    ezConnectToFd(ezEventLoop* loop,ezIoThread* io,int64_t userd);
+    static const int CONNECTTO_TIMER_ID=1;
+  public:
+    ezConnectToFd(ezEventLoop* loop,ezIoThread* io,int64_t userd,int32_t reconnect/*reconnect timeout,second*/);
     void SetIpPort(const std::string& ip,int port);
     virtual void ProcessEvent(ezThreadEvent& ev);
     virtual void HandleInEvent();
     virtual void HandleOutEvent();
+    virtual void HandleTimer();
+    void ConnectTo();
     int CheckAsyncError();
     void Reconnect();
     void CloseMe();
@@ -110,6 +116,7 @@ namespace net{
     int port_;
     int fd_;
     int64_t userdata_;
+    int32_t reconnect_;
   };
 }
 #endif
