@@ -1,43 +1,24 @@
 #ifndef _EVENT_H
 #define _EVENT_H
-#include "netpack.h"
-#include "../base/portable.h"
-#include "../base/thread.h"
-#include "../base/list.h"
-#include "../base/readerwriterqueue.h"
-#include "../base/notifyqueue.h"
-#include "../base/singleton.h"
 #include <vector>
 #include <string>
 #include <unordered_set>
+#include "../base/portable.h"
+#include "../base/thread.h"
+#include "../base/readerwriterqueue.h"
+#include "../base/notifyqueue.h"
+#include "../base/singleton.h"
+#include "netpack.h"
 
 namespace net
 {
-  enum ezNetEventType
-  {
-    ezNetNone=0,
-    ezNetRead=1,
-    ezNetWrite=2,
-    ezNetErr=4,
-    ezNetAll=ezNetRead|ezNetWrite,
-  };
-
-  enum ezCrossEventType
-  {
-    ezCrossNone=0,
-    ezCrossOpen=1,
-    ezCrossClose=2,
-    ezCrossError=3,
-    ezCrossData=4,
-    ezCrossPollout=5,
-  };
-
   class ezIoThread;
   class ezConnection;
   class ezIConnnectionHander;
   class ezIDecoder;
   class ezIEncoder;
   class ezThreadEventHander;
+  class ezPoller;
   struct ezThreadEvent
   {
     enum ThreadEventType
@@ -111,5 +92,7 @@ namespace net
     ezEventLoop* looper_;
     int tid_;
   };
+
+  ezPoller* CreatePoller();
 }
 #endif

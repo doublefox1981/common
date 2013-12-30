@@ -76,7 +76,7 @@ namespace net
     int    maxfd_;
     bool   willdelfd_;
   };
-  ezPoller* CreatePoller();
+
 #ifdef __linux__
 #include <sys/epoll.h>
 #include <unistd.h>

@@ -145,3 +145,12 @@ void net::ezThreadEventHander::OccurEvent(ezThreadEvent& ev)
   ev.hander_=this;
   looper_->OccerEvent(tid_,ev);
 }
+
+net::ezPoller* net::CreatePoller()
+{
+#ifdef __linux__
+  return new ezEpollPoller;
+#else
+  return new ezSelectPoller;
+#endif
+}

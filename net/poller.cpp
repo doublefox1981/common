@@ -138,15 +138,6 @@ void net::ezSelectPoller::DelTimer(ezPollerEventHander* hander,int32_t timerid)
   timer_.DelTimer(hander,timerid);
 }
 
-net::ezPoller* net::CreatePoller()
-{
-#ifdef __linux__
-  return new ezEpollPoller;
-#else
-  return new ezSelectPoller;
-#endif
-}
-
 #ifdef __linux__
 
 net::ezEpollPoller::ezEpollPoller():willdelfd_(false)

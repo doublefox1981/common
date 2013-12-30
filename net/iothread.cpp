@@ -11,7 +11,6 @@ net::ezIoThread::ezIoThread(ezEventLoop* loop,int tid)
   poller_=CreatePoller();
   poller_->AddFd(evqueue_->GetFd(),this);
   poller_->SetPollIn(evqueue_->GetFd());
-  iiii=0;
 }
 
 net::ezIoThread::~ezIoThread()
