@@ -6,7 +6,6 @@
 #include "../base/thread.h"
 #include "../base/util.h"
 #include "../base/logging.h"
-#include "../base/notifyqueue.h"
 
 #include "../net/net_interface.h"
 #include "../net/netpack.h"

@@ -155,7 +155,7 @@ void base::ezSignaler::send()
 void base::ezSignaler::recv()
 {
 #if defined __linux__
-#if defined ZMQ_HAVE_EVENTFD
+#if defined HAVE_EVENTFD
   uint64_t dummy;
   ssize_t sz=read(r_,&dummy,sizeof (dummy));
   if (dummy==2) 
