@@ -57,12 +57,6 @@ namespace net
     ezThreadEventHander* hander_;
   };
 
-  struct ezMsgWarper
-  {
-    uint64_t uuid_;
-    ezMsg    msg_;
-  };
-
   typedef base::ezNotifyQueue<ezThreadEvent> ThreadEvQueue;
   class ezEventLoop
   {

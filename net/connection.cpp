@@ -158,11 +158,6 @@ net::ezGameObject::~ezGameObject()
 		conn_->DetachGameObject();
 }
 
-void net::ezConnectToGameObject::Close()
-{
-	ezGameObject::Close();
-}
-
 void net::ezClientHander::OnOpen(ezConnection* conn)
 {
 }

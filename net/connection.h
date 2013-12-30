@@ -85,12 +85,6 @@ namespace net
     ezConnection* conn_;
   };
 
-  class ezConnectToGameObject:public ezGameObject
-  {
-  public:
-    virtual void Close();
-  };
-
   class ezConnection:public ezThreadEventHander
   {
   public:
@@ -114,16 +108,6 @@ namespace net
     std::string ip_;
     ezGameObject* gameObj_;
     int64_t userdata_;
-  };
-
-  struct ezConnectToInfo
-  {
-    ezConnectToInfo():uuid_(0),port_(0),connectOK_(false){}
-    ezConnectToInfo(uint64_t uuid,const char* ip,int port):uuid_(uuid),ip_(ip),port_(port),connectOK_(false){}
-    uint64_t uuid_;
-    std::string ip_;
-    int port_;
-    bool connectOK_;
   };
 }
 #endif
