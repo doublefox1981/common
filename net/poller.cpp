@@ -74,6 +74,7 @@ bool net::ezSelectPoller::AddFd(int fd,ezPollerEventHander* hander)
   FD_SET(fd,&efds_);
   if(fd>maxfd_)
     maxfd_=fd;
+  load_.Inc();
   return true;
 }
 
@@ -83,6 +84,7 @@ void net::ezSelectPoller::DelFd(int fd)
   {
     if (iter->fd_==fd)
     {
+      load_.Dec();
       willdelfd_=true;
       iter->fd_=INVALID_SOCKET;
       break;
@@ -171,6 +173,7 @@ bool net::ezEpollPoller::AddFd(int fd,ezPollerEventHander* hander)
   ee.data.ptr=entry;
   int rc=epoll_ctl(epollfd_,EPOLL_CTL_ADD,fd,&ee);
   assert(rc!=-1);
+  load_.Inc();
   return true;
 }
 
@@ -190,6 +193,7 @@ void net::ezEpollPoller::DelFd(int fd)
   ee.data.ptr=entry;
   int rc=epoll_ctl(epollfd_,EPOLL_CTL_DEL,fd,&ee);
   assert(rc!=-1);
+  load_.Dec();
 }
 
 void net::ezEpollPoller::SetPollIn(int fd)
@@ -344,4 +348,13 @@ int64_t net::ezPollTimer::InvokeTimer()
     iter=timers_.erase(iter);
   }
   return 0;
+}
+
+net::ezPoller* net::CreatePoller()
+{
+#ifdef __linux__
+  return new ezEpollPoller;
+#else
+  return new ezSelectPoller;
+#endif
 }

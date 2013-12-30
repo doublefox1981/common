@@ -1,4 +1,5 @@
 #include "event.h"
+#include "net_interface.h"
 #include "socket.h"
 #include "poller.h"
 #include "connection.h"
@@ -70,9 +71,11 @@ net::ezEventLoop::ezEventLoop()
 
 net::ezEventLoop::~ezEventLoop()
 {
+  /* 由应用层销毁,因hander,decoder,encoder可被应用继承
 	if(hander_) delete hander_;
   if(decoder_) delete decoder_;
   if(encoder_) delete encoder_;
+  */
   if(mainevqueue_) delete mainevqueue_; // TODO: clean
 }
 
@@ -146,11 +149,49 @@ void net::ezThreadEventHander::OccurEvent(ezThreadEvent& ev)
   looper_->OccerEvent(tid_,ev);
 }
 
-net::ezPoller* net::CreatePoller()
+void  net::EzNetInitialize()
 {
-#ifdef __linux__
-  return new ezEpollPoller;
-#else
-  return new ezSelectPoller;
-#endif
+  net::InitNetwork();
+}
+
+net::ezEventLoop* net::CreateEventLoop(ezIConnnectionHander* hander,ezIDecoder* decoder,ezIEncoder* encoder,int tnum)
+{
+  net::ezEventLoop* ev=new net::ezEventLoop;
+  ev->Initialize(hander,decoder,encoder,tnum);
+  return ev;
+}
+
+void net::DestroyEventLoop(ezEventLoop* ev)
+{
+  delete ev;
+}
+
+int net::ServeOnPort(ezEventLoop* ev,int port)
+{
+  return ev->ServeOnPort(port);
+}
+
+int net::Connect(ezEventLoop* ev,const char* ip,int port,int64_t userdata,int32_t reconnect)
+{
+  return ev->ConnectTo(ip,port,userdata,reconnect);
+}
+
+void net::EventProcess(net::ezEventLoop* ev)
+{
+  ev->Loop();
+}
+
+void net::CloseConnection(net::ezConnection* conn)
+{
+  conn->ActiveClose();
+}
+
+void net::MsgSend(ezConnection* conn,ezMsg* msg)
+{
+  conn->SendMsg(*msg);
+}
+
+int64_t net::ConnectionUserdata(ezConnection* conn)
+{
+  return conn->GetUserdata();
 }

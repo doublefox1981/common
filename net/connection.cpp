@@ -24,16 +24,20 @@ net::ezConnection::~ezConnection()
 
 void net::ezConnection::AttachGameObject(ezGameObject* obj)
 {
-	gameObj_=obj;
-	if(gameObj_)
-		gameObj_->SetConnection(this);
+  assert(obj);
+  if(gameObj_)
+    DetachGameObject();
+  gameObj_=obj;
+  gameObj_->SetConnection(this);
 }
 
 void net::ezConnection::DetachGameObject()
 {
-	if(gameObj_)
-		gameObj_->SetConnection(nullptr);
-	gameObj_=nullptr;
+  if(gameObj_)
+  {
+    gameObj_->SetConnection(nullptr);
+    gameObj_=nullptr;
+  }
 }
 
 void net::ezConnection::SendMsg(ezMsg& msg)
@@ -217,4 +221,19 @@ bool net::ezMsgEncoder::Encode(ezIMessagePuller* puller,ezBuffer* buffer)
     }
   }
   return true;
+}
+
+net::ezGameObject*  net::GetGameObject(net::ezConnection* conn)
+{
+  return conn->GetGameObject();
+}
+
+void net::AttachGameObject(net::ezConnection* conn,net::ezGameObject* obj)
+{
+  conn->AttachGameObject(obj);
+}
+
+void net::DetachGameObject(net::ezConnection* conn)
+{
+  conn->DetachGameObject();
 }

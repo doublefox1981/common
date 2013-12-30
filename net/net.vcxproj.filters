@@ -9,6 +9,7 @@
     <ClInclude Include="connection.h" />
     <ClInclude Include="fd.h" />
     <ClInclude Include="iothread.h" />
+    <ClInclude Include="net_interface.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="buffer.cpp" />

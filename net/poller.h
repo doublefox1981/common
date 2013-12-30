@@ -26,6 +26,7 @@ namespace net
     virtual void SetPollOut(int fd)=0;
     virtual void ResetPollOut(int fd)=0;
     virtual void Poll()=0;
+    virtual long  GetLoad()=0;
   };
 
   class ezPollTimer
@@ -57,6 +58,7 @@ namespace net
     virtual void SetPollOut(int fd);
     virtual void ResetPollOut(int fd);
     virtual void Poll();
+    virtual long  GetLoad(){return load_.Get();}
   private:
     struct ezSelectFdEntry
     {
@@ -75,8 +77,9 @@ namespace net
     fd_set uefds_;
     int    maxfd_;
     bool   willdelfd_;
+    base::AtomicNumber load_;
   };
-
+  ezPoller*   CreatePoller();
 #ifdef __linux__
 #include <sys/epoll.h>
 #include <unistd.h>
@@ -85,6 +88,7 @@ namespace net
   public:
     ezEpollPoller();
     virtual ~ezEpollPoller();
+
     virtual void AddTimer(int64_t timeout,ezPollerEventHander* hander,int32_t timerid);
     virtual void DelTimer(ezPollerEventHander* hander,int32_t timerid);
     virtual bool AddFd(int fd,ezPollerEventHander* hander);
@@ -94,6 +98,7 @@ namespace net
     virtual void SetPollOut(int fd);
     virtual void ResetPollOut(int fd);
     virtual void Poll();
+    virtual long  GetLoad(){return load_.Get();}
   private:
     struct ezEpollFdEntry
     {
@@ -108,6 +113,7 @@ namespace net
   private:
     int epollfd_;
     struct epoll_event epollevents_[1024];
+    base::AtomicNumber   load_;
   };
 #endif
 }

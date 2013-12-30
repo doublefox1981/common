@@ -17,6 +17,7 @@
     <ClInclude Include="fd.h" />
     <ClInclude Include="iothread.h" />
     <ClInclude Include="netpack.h" />
+    <ClInclude Include="net_interface.h" />
     <ClInclude Include="poller.h" />
     <ClInclude Include="socket.h" />
   </ItemGroup>

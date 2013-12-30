@@ -8,12 +8,9 @@
 #include "../base/logging.h"
 #include "../base/notifyqueue.h"
 
+#include "../net/net_interface.h"
 #include "../net/netpack.h"
-#include "../net/event.h"
-#include "../net/poller.h"
-#include "../net/iothread.h"
-#include "../net/connection.h"
-#include "../net/socket.h"
+
 #include <vector>
 #include <string>
 using namespace net;
@@ -35,15 +32,14 @@ struct ConnectToInfo
 };
 
 std::vector<ConnectToInfo> gConnSet;
-class TestClientHander:public net::ezClientHander
+class TestClientHander:public net::ezIConnnectionHander
 {
 public:
   virtual void OnOpen(ezConnection* conn)
   {
-    ezClientHander::OnOpen(conn);
     for(size_t i=0;i<gConnSet.size();++i)
     {
-      if(conn->GetUserdata()==gConnSet[i].id_)
+      if(ConnectionUserdata(conn)==gConnSet[i].id_)
       {
         gConnSet[i].status_=ECTS_CONNECTOK;
         gConnSet[i].conn_=conn;
@@ -52,16 +48,16 @@ public:
   }
   virtual void OnClose(ezConnection* conn)
   {
-    ezClientHander::OnClose(conn);
     for(size_t i=0;i<gConnSet.size();++i)
     {
-      if(conn->GetUserdata()==gConnSet[i].id_)
+      if(ConnectionUserdata(conn)==gConnSet[i].id_)
       {
         gConnSet[i].status_=ECTS_CONNECTOK;
         gConnSet[i].conn_=NULL;
       }
     }
   }
+  virtual void OnData(ezConnection* conn,ezMsg* msg){}
 };
 
 int main()
@@ -78,40 +74,38 @@ int main()
   }
   LOG_INFO("%s",format.c_str());
 
-  net::InitNetwork();
+  net::EzNetInitialize();
 #ifdef __linux__
-  ezEventLoop* ev=new ezEventLoop;
-  ev->Initialize(new ezServerHander,new ezMsgDecoder(20000),new ezMsgEncoder,4);
-  ev->ServeOnPort(10011);
+  net::ezIConnnectionHander* hander=new net::ezServerHander;
+  net::ezIDecoder* decoder=new net::ezMsgDecoder(20000);
+  net::ezIEncoder* encoder=new net::ezMsgEncoder;
+  ezEventLoop* ev=net::CreateEventLoop(hander,decoder,encoder,4);
+  net::ServeOnPort(ev,10011);
 #else
-  ezEventLoop* ev1=new ezEventLoop;
-  ev1->Initialize(new TestClientHander,new ezMsgDecoder(20000),new ezMsgEncoder,10);
+  net::ezIConnnectionHander* hander=new TestClientHander;
+  net::ezIDecoder* decoder=new net::ezMsgDecoder(20000);
+  net::ezIEncoder* encoder=new net::ezMsgEncoder;
+  ezEventLoop* ev1=net::CreateEventLoop(hander,decoder,encoder,4);
   for(int i=0;i<10;++i)
   {
-    ev1->ConnectTo("192.168.99.51",10011,i,10);
+    net::Connect(ev1,"192.168.99.51",10011,i,10);
     ConnectToInfo info={i,"192.168..99.51",10011,ECTS_CONNECTING,nullptr};
     gConnSet.push_back(info);
   }
 #endif
 
-  // 	base::ezTimer timer;
-  // 	base::ezTimerTask* task=new ezReconnectTimerTask(ev->getConnectionMgr());
-  // 	task->config(base::ezNowTick(),10*1000,base::ezTimerTask::TIMER_FOREVER);
-  // 	timer.addTimeTask(task);
 #ifdef __linux__
-  base::ScopeGuard guard([&](){delete ev;});
+  base::ScopeGuard guard([&](){net::DestroyEventLoop(ev); delete hander; delete decoder; delete encoder;});
 #else
-  base::ScopeGuard guard([&](){delete ev1;});
+  base::ScopeGuard guard([&](){net::DestroyEventLoop(ev1); delete hander; delete decoder; delete encoder;});
 #endif
   int seq=0;
   while(true)
   {
 #ifdef __linux__
-    ev->Loop();
+    net::EventProcess(ev);
 #else
-    ev1->Loop();
-    if((rand()%100)<10)
-      ev1->ConnectTo("192.168.99.51",10011,0,0);
+    net::EventProcess(ev1);
 #endif
     base::ezSleep(1);
     for(size_t s=0;s<gConnSet.size();++s)
@@ -119,11 +113,11 @@ int main()
       ezConnection* conn=gConnSet[s].conn_;
       if(!conn)
         continue;
-      if((rand()%100)>90)
-      {
-        conn->ActiveClose();
-        continue;
-      }
+//       if((rand()%100)>90)
+//       {
+//         net::CloseConnection(conn);
+//         continue;
+//       }
       for(int i=0;i<1;++i)
       {
         int ss=(rand()%15000+4);
@@ -131,7 +125,7 @@ int main()
         net::ezMsgInitSize(&msg,ss);
         base::ezBufferWriter writer((char*)net::ezMsgData(&msg),net::ezMsgSize(&msg));
         writer.Write(++seq);
-        conn->SendMsg(msg);
+        net::MsgSend(conn,&msg);
       }
     }
   }

@@ -93,6 +93,5 @@ namespace net
     int tid_;
   };
 
-  ezPoller* CreatePoller();
 }
 #endif

@@ -15,7 +15,7 @@ namespace net{
     virtual ~ezIoThread();
     ThreadEvQueue* GetEvQueue() {return evqueue_;}
     ezPoller* GetPoller() {return poller_;}
-    int GetLoad(){return load_;}
+    int GetLoad(){return poller_->GetLoad();}
     virtual void HandleInEvent();
     virtual void HandleOutEvent(){}
     virtual void HandleTimer(){}
