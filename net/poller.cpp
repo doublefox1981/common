@@ -274,7 +274,14 @@ void net::ezEpollPoller::Poll()
 {
   int timeout=(int)(timer_.InvokeTimer());
   int retval=0;
-  retval = epoll_wait(epollfd_,epollevents_,sizeof(epollevents_)/sizeof(struct epoll_event),timeout>0?timeout:-1);
+  retval = epoll_wait(epollfd_,epollevents_,sizeof(epollevents_)/sizeof(struct epoll_event),timeout>0?timeout:100);
+  if(retval<0&&errno!=EINTR)
+  {
+    char err[256];
+    strerror_r(errno,err,sizeof(err));
+    LOG_INFO("epoll_wait return errno=%d,'%s'",errno,err);
+    return;
+  }
   for (int j=0;j<retval;j++) 
   {
     struct epoll_event *e = &epollevents_[j];
