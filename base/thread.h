@@ -314,12 +314,16 @@ namespace base
 		virtual void Stop()
 		{
 			mbExit = true;
-#ifndef _WIN32
-			pthread_join(mthread,nullptr);
-#else
-			WaitForSingleObject(mthread,INFINITE);
-#endif
 		}
+
+    virtual void Join()
+    {
+#ifndef _WIN32
+      pthread_join(mthread,nullptr);
+#else
+      WaitForSingleObject(mthread,INFINITE);
+#endif
+    }
 
 	private:
 		int getPlatformPriority( ThreadPriority & priority );

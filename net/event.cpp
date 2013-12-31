@@ -40,6 +40,9 @@ net::ezEventLoop::~ezEventLoop()
   if(encoder_) delete encoder_;
   */
   if(closehander_) delete closehander_;
+  for(int i=0;i<threadnum_;++i)
+    delete threads_[i];
+  delete [] threads_;
   if(mainevqueue_) delete mainevqueue_; // TODO: clean
 }
 
@@ -91,8 +94,8 @@ int net::ezEventLoop::ConnectTo(const std::string& ip,int port,int64_t userdata,
 
 int net::ezEventLoop::Shutdown()
 {
+  shutdown_=true;
   hander_=closehander_;
-
   for(int i=0;i<threadnum_;++i)
   {
     ezThreadEvent ev;
@@ -115,7 +118,7 @@ int net::ezEventLoop::Shutdown()
     threads_[i]->OccurEvent(ev);
   }
   for(int i=0;i<threadnum_;++i)
-    threads_[i]->Stop();
+    threads_[i]->Join();
   return 1;
 }
 

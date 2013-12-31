@@ -58,10 +58,42 @@ public:
   }
   virtual void OnData(ezConnection* conn,ezMsg* msg){}
 };
+bool exit_=false;
+#ifndef __linux__
+BOOL CtrlHandler(DWORD CtrlType)
+{
+  switch(CtrlType)
+  {
+  case CTRL_BREAK_EVENT:
+    {
+      exit_=true;
+      return TRUE;
+    }
+    break;
+  case  CTRL_C_EVENT:
+    {
+      exit_=true;
+      return TRUE;
+    }
+    break;
+  default: break;
+  }
+  return FALSE;
+}
+#endif
+
+void ProcessSignal()
+{
+#ifdef __linux__
+#else
+  SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler,TRUE);
+#endif
+}
 
 #include "../base/readerwriterqueue.h"
 int main()
 {
+  ProcessSignal();
   moodycamel::ReaderWriterQueue<int> s;
   base::ezLogger::instance()->Start();
   const char* cc="hello world";
@@ -81,34 +113,34 @@ int main()
   net::ezIDecoder* decoder=new net::ezMsgDecoder(20000);
   net::ezIEncoder* encoder=new net::ezMsgEncoder;
   ezEventLoop* ev=net::CreateEventLoop(hander,decoder,encoder,4);
-  for(int i=0;i<10;++i)
-  {
-    net::Connect(ev,"192.168.99.51",10011,i,10);
-    ConnectToInfo info={i,"192.168..99.51",10011,ECTS_CONNECTING,nullptr};
-    gConnSet.push_back(info);
-  }
+//   for(int i=0;i<10;++i)
+//   {
+//     net::Connect(ev,"192.168.99.51",10011,i,10);
+//     ConnectToInfo info={i,"192.168..99.51",10011,ECTS_CONNECTING,nullptr};
+//     gConnSet.push_back(info);
+//   }
 
   base::ScopeGuard guard([&](){net::DestroyEventLoop(ev); delete hander; delete decoder; delete encoder;});
   int seq=0;
-  while(true)
+  while(!exit_)
   {
     net::EventProcess(ev);
     base::ezSleep(1);
-    if((rand()%100)>95)
-    {
-      net::Connect(ev,"192.168.99.51",10011,0,10);
-      continue;
-    }
+//     if((rand()%100)>95)
+//     {
+//       net::Connect(ev,"192.168.99.51",10011,0,10);
+//       continue;
+//     }
     for(size_t s=0;s<gConnSet.size();++s)
     {
       ezConnection* conn=gConnSet[s].conn_;
       if(!conn)
         continue;
-      if((rand()%100)>90)
-      {
-        net::CloseConnection(conn);
-        continue;
-      }
+//       if((rand()%100)>90)
+//       {
+//         net::CloseConnection(conn);
+//         continue;
+//       }
       for(int i=0;i<1;++i)
       {
         int ss=(rand()%15000+4);

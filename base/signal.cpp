@@ -232,7 +232,7 @@ base::ezSignaler::~ezSignaler()
   close(w_);
 #endif
 #else
-  _close(r_);
-  _close(w_);
+  closesocket(r_);
+  closesocket(w_);
 #endif
 }
