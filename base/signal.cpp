@@ -156,7 +156,7 @@ void base::ezSignaler::recv()
 {
 #if defined __linux__
 #if defined HAVE_EVENTFD
-  uint64_t dummy;
+  uint64_t dummy=0;
   ssize_t sz=read(r_,&dummy,sizeof (dummy));
   if (dummy==2) 
   {
@@ -167,7 +167,7 @@ void base::ezSignaler::recv()
   }
   //assert(dummy == 1);
 #else
-  unsigned char dummy;
+  unsigned char dummy=0;
   ssize_t nbytes=::recv(r_,&dummy,sizeof(dummy),0);
 //   assert(nbytes >= 0);
 //   assert(dummy==0);
