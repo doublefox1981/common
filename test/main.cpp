@@ -92,16 +92,21 @@ int main()
   {
     net::EventProcess(ev);
     base::ezSleep(1);
+    if((rand()%100)>95)
+    {
+      net::Connect(ev,"192.168.99.51",10011,0,10);
+      continue;
+    }
     for(size_t s=0;s<gConnSet.size();++s)
     {
       ezConnection* conn=gConnSet[s].conn_;
       if(!conn)
         continue;
-//       if((rand()%100)>90)
-//       {
-//         net::CloseConnection(conn);
-//         continue;
-//       }
+      if((rand()%100)>90)
+      {
+        net::CloseConnection(conn);
+        continue;
+      }
       for(int i=0;i<1;++i)
       {
         int ss=(rand()%15000+4);

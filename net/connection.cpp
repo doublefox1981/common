@@ -140,7 +140,11 @@ void net::ezServerHander::OnData(ezConnection* conn,ezMsg* msg)
 
 void net::ezGameObject::Close()
 {
-	if(conn_) conn_->ActiveClose();
+  if(conn_) 
+  {
+    conn_->ActiveClose();
+    conn_->DetachGameObject();
+  }
 }
 
 void net::ezGameObject::SendNetpack(ezMsg& msg)
