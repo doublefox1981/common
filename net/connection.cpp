@@ -241,3 +241,8 @@ void net::DetachGameObject(net::ezConnection* conn)
 {
   conn->DetachGameObject();
 }
+
+const char* net::GetIpAddr(net::ezConnection* conn)
+{
+  return conn->GetIpAddr().c_str();
+}

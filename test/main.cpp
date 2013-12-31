@@ -59,8 +59,10 @@ public:
   virtual void OnData(ezConnection* conn,ezMsg* msg){}
 };
 
+#include "../base/readerwriterqueue.h"
 int main()
 {
+  moodycamel::ReaderWriterQueue<int> s;
   base::ezLogger::instance()->Start();
   const char* cc="hello world";
   LOG_INFO("%08x ",cc);

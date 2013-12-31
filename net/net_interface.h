@@ -88,5 +88,6 @@ namespace net
   ezGameObject*  GetGameObject(ezConnection* conn);
   void           AttachGameObject(ezConnection* conn,ezGameObject* obj);
   void           DetachGameObject(ezConnection* conn);
+  const char*    GetIpAddr(ezConnection* conn);
 }
 #endif
