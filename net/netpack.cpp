@@ -1,11 +1,11 @@
-#include "netpack.h"
 #include <cstring>
 #include <limits>
 #include <cassert>
 #include <stdlib.h>
 #include <new>
+#include "netpack.h"
+#include "../base/thread.h"
 using namespace net;
-using namespace base;
 
 namespace net
 {

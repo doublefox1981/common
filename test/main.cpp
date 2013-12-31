@@ -74,38 +74,23 @@ int main()
   LOG_INFO("%s",format.c_str());
 
   net::EzNetInitialize();
-#ifdef __linux__
-  net::ezIConnnectionHander* hander=new net::ezServerHander;
-  net::ezIDecoder* decoder=new net::ezMsgDecoder(20000);
-  net::ezIEncoder* encoder=new net::ezMsgEncoder;
-  ezEventLoop* ev=net::CreateEventLoop(hander,decoder,encoder,4);
-  net::ServeOnPort(ev,10011);
-#else
+
   net::ezIConnnectionHander* hander=new TestClientHander;
   net::ezIDecoder* decoder=new net::ezMsgDecoder(20000);
   net::ezIEncoder* encoder=new net::ezMsgEncoder;
-  ezEventLoop* ev1=net::CreateEventLoop(hander,decoder,encoder,4);
+  ezEventLoop* ev=net::CreateEventLoop(hander,decoder,encoder,4);
   for(int i=0;i<10;++i)
   {
-    net::Connect(ev1,"192.168.99.51",10011,i,10);
+    net::Connect(ev,"192.168.99.51",10011,i,10);
     ConnectToInfo info={i,"192.168..99.51",10011,ECTS_CONNECTING,nullptr};
     gConnSet.push_back(info);
   }
-#endif
 
-#ifdef __linux__
   base::ScopeGuard guard([&](){net::DestroyEventLoop(ev); delete hander; delete decoder; delete encoder;});
-#else
-  base::ScopeGuard guard([&](){net::DestroyEventLoop(ev1); delete hander; delete decoder; delete encoder;});
-#endif
   int seq=0;
   while(true)
   {
-#ifdef __linux__
     net::EventProcess(ev);
-#else
-    net::EventProcess(ev1);
-#endif
     base::ezSleep(1);
     for(size_t s=0;s<gConnSet.size();++s)
     {

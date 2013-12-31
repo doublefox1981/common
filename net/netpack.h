@@ -1,7 +1,6 @@
 #ifndef _NETPACK_H
 #define _NETPACK_H
 #include "../base/portable.h"
-#include "../base/thread.h"
 
 // from 0mq
 extern "C"
