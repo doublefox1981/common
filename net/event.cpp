@@ -9,7 +9,39 @@
 #include "../base/thread.h"
 #include "../base/logging.h"
 #include "../base/util.h"
+#include "../base/eztime.h"
 #include <assert.h>
+
+namespace net
+{
+  class ezCloseHander:public ezIConnnectionHander
+  {
+  public:
+    virtual void OnOpen(ezConnection* conn){conn->ActiveClose();}
+    virtual void OnClose(ezConnection* conn){}
+    virtual void OnData(ezConnection* conn,ezMsg* msg){}
+  };
+}
+
+net::ezEventLoop::ezEventLoop()
+{
+  shutdown_=false;
+	hander_=nullptr;
+  closehander_=new ezCloseHander;
+  threadnum_=0;
+  mainevqueue_=new ThreadEvQueue;
+}
+
+net::ezEventLoop::~ezEventLoop()
+{
+  /* 由应用层销毁,因hander,decoder,encoder可被应用继承
+	if(hander_) delete hander_;
+  if(decoder_) delete decoder_;
+  if(encoder_) delete encoder_;
+  */
+  if(closehander_) delete closehander_;
+  if(mainevqueue_) delete mainevqueue_; // TODO: clean
+}
 
 int net::ezEventLoop::Initialize(ezIConnnectionHander* hander,ezIDecoder* decoder,ezIEncoder* encoder,int tnum)
 {
@@ -29,11 +61,6 @@ int net::ezEventLoop::Initialize(ezIConnnectionHander* hander,ezIDecoder* decode
   {
     evqueues_[i]=GetThread(i)->GetEvQueue();
   }
-	return 0;
-}
-
-int net::ezEventLoop::shutdown()
-{
 	return 0;
 }
 
@@ -62,21 +89,34 @@ int net::ezEventLoop::ConnectTo(const std::string& ip,int port,int64_t userdata,
   return 0;
 }
 
-net::ezEventLoop::ezEventLoop()
+int net::ezEventLoop::Shutdown()
 {
-	hander_=nullptr;
-  threadnum_=0;
-  mainevqueue_=new ThreadEvQueue;
-}
+  hander_=closehander_;
 
-net::ezEventLoop::~ezEventLoop()
-{
-  /* 由应用层销毁,因hander,decoder,encoder可被应用继承
-	if(hander_) delete hander_;
-  if(decoder_) delete decoder_;
-  if(encoder_) delete encoder_;
-  */
-  if(mainevqueue_) delete mainevqueue_; // TODO: clean
+  for(int i=0;i<threadnum_;++i)
+  {
+    ezThreadEvent ev;
+    ev.type_=ezThreadEvent::STOP_FLASHEDFD;
+    threads_[i]->OccurEvent(ev);
+  }
+  for(auto iter=conns_.begin();iter!=conns_.end();++iter)
+  {
+    (*iter)->ActiveClose();
+  }
+  while(!conns_.empty())
+  {
+    Loop();
+    base::ezSleep(1);
+  }
+  for(int i=0;i<threadnum_;++i)
+  {
+    ezThreadEvent ev;
+    ev.type_=ezThreadEvent::STOP_THREAD;
+    threads_[i]->OccurEvent(ev);
+  }
+  for(int i=0;i<threadnum_;++i)
+    threads_[i]->Stop();
+  return 1;
 }
 
 uint64_t net::ezUUID::uuid()
@@ -124,6 +164,8 @@ void net::ezEventLoop::Loop()
 
 void net::ezEventLoop::AddConnection(ezConnection* con)
 {
+  if(shutdown_)
+    return;
   assert(conns_.find(con)==conns_.end());
   conns_.insert(con);
 }
@@ -163,6 +205,7 @@ net::ezEventLoop* net::CreateEventLoop(ezIConnnectionHander* hander,ezIDecoder* 
 
 void net::DestroyEventLoop(ezEventLoop* ev)
 {
+  ev->Shutdown();
   delete ev;
 }
 

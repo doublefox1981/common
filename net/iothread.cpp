@@ -22,6 +22,22 @@ net::ezIoThread::~ezIoThread()
     delete evqueue_;
 }
 
+void net::ezIoThread::AddFlashedFd(ezIFlashedFd* ffd)
+{
+  flashedfd_.push_back(ffd);
+}
+
+void net::ezIoThread::DelFlashedFd(ezIFlashedFd* ffd)
+{
+  for(auto iter=flashedfd_.begin();iter!=flashedfd_.end();)
+  {
+    if(*iter=ffd)
+      iter=flashedfd_.erase(iter);
+    else
+      ++iter;
+  }
+}
+
 void net::ezIoThread::HandleInEvent()
 {
   ezThreadEvent ev;
@@ -42,5 +58,18 @@ void net::ezIoThread::Run()
 
 void net::ezIoThread::ProcessEvent(ezThreadEvent& ev)
 {
-
+  switch(ev.type_)
+  {
+  case ezThreadEvent::STOP_FLASHEDFD:
+    {
+      for(size_t i=0;i<flashedfd_.size();++i)
+        flashedfd_[i]->Close();
+      flashedfd_.clear();
+    }
+    break;
+  case ezThreadEvent::STOP_THREAD:
+    Stop();
+    break;
+  default: break;
+  }
 }

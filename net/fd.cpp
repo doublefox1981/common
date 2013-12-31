@@ -40,12 +40,21 @@ void net::ezListenerFd::ProcessEvent(ezThreadEvent& ev)
   {
   case ezThreadEvent::NEW_SERVICE:
     {
+      io_->AddFlashedFd(this);
       io_->GetPoller()->AddFd(fd_,this);
       io_->GetPoller()->SetPollIn(fd_);
     }
     break;
   default: break;
   }
+}
+
+void net::ezListenerFd::Close()
+{
+  io_->DelFlashedFd(this);
+  io_->GetPoller()->DelFd(fd_);
+  CloseSocket(fd_);
+  fd_=INVALID_SOCKET;
 }
 
 net::ezClientFd::ezClientFd(ezEventLoop* loop,ezIoThread* io,int fd,int64_t userdata)
@@ -68,6 +77,7 @@ net::ezClientFd::~ezClientFd()
 {
   net::CloseSocket(fd_);
   if(pusher_) delete pusher_;
+  if(puller_) delete puller_;
   if(inbuf_) delete inbuf_;
   if(outbuf_) delete outbuf_;
   ezMsg msg;

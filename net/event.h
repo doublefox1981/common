@@ -34,6 +34,8 @@ namespace net
       CLOSE_CONNECTTO,
       NEW_MESSAGE,
       ENABLE_POLLOUT,
+      STOP_FLASHEDFD,
+      STOP_THREAD,
     }type_;
     ezThreadEventHander* hander_;
   };
@@ -47,7 +49,7 @@ namespace net
     int Initialize(ezIConnnectionHander* hander,ezIDecoder* decoder,ezIEncoder* encoder,int tnum);
     int ServeOnPort(int port);
     int ConnectTo(const std::string& ip,int port,int64_t userdata,int32_t reconnect);
-    int shutdown();
+    int Shutdown();
     ezIConnnectionHander* GetHander() {return hander_;}
     ezIDecoder* GetDecoder() {return decoder_;}
     ezIEncoder* GetEncoder() {return encoder_;}
@@ -61,6 +63,7 @@ namespace net
     int GetConnectionNum();
   private:
     ezIConnnectionHander*             hander_;
+    ezIConnnectionHander*             closehander_;
     ezIDecoder*                       decoder_;
     ezIEncoder*                       encoder_;
     ezIoThread**                      threads_;
@@ -68,6 +71,7 @@ namespace net
     ThreadEvQueue**                   evqueues_;
     ThreadEvQueue*                    mainevqueue_;
     std::unordered_set<ezConnection*> conns_;
+    bool                              shutdown_;
   };
 
   class ezUUID:public base::ezSingleTon<ezUUID>

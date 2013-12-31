@@ -25,7 +25,18 @@ namespace net{
     virtual void Rollback(ezMsg* msg)=0;
   };
 
-  class ezListenerFd:public ezPollerEventHander,public ezThreadEventHander
+  // 可被监听套接字和连接套接字继承
+  class ezIFlashedFd
+  {
+  public:
+    virtual ~ezIFlashedFd(){}
+    virtual void Close()=0;
+  };
+
+  class ezListenerFd
+    :public ezPollerEventHander
+    ,public ezThreadEventHander
+    ,public ezIFlashedFd
   {
   public:
     ezListenerFd(ezEventLoop* loop,ezIoThread* io,int fd);
@@ -34,6 +45,7 @@ namespace net{
     virtual void HandleInEvent();
     virtual void HandleOutEvent(){}
     virtual void HandleTimer(){}
+    virtual void Close();
   private:
     int fd_;
     ezIoThread* io_;
