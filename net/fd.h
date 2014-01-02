@@ -106,7 +106,7 @@ namespace net{
     friend class ezClientMessagePuller;
   };
 
-  class ezConnectToFd:public ezPollerEventHander,public ezThreadEventHander
+  class ezConnectToFd:public ezPollerEventHander,public ezThreadEventHander,public ezIFlashedFd
   {
   public:
     static const int CONNECTTO_TIMER_ID=1;
@@ -117,6 +117,8 @@ namespace net{
     virtual void HandleInEvent();
     virtual void HandleOutEvent();
     virtual void HandleTimer();
+    virtual void Close();
+  private:
     void ConnectTo();
     int CheckAsyncError();
     void Reconnect();

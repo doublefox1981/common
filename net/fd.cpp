@@ -55,6 +55,7 @@ void net::ezListenerFd::Close()
   io_->GetPoller()->DelFd(fd_);
   CloseSocket(fd_);
   fd_=INVALID_SOCKET;
+  delete this;
 }
 
 net::ezClientFd::ezClientFd(ezEventLoop* loop,ezIoThread* io,int fd,int64_t userdata)
@@ -129,12 +130,16 @@ void net::ezClientFd::HandleOutEvent()
         PassiveClose();
         return;
       }
-      else if(retval==1)
+      else if(retval==1||(retval==0&&!encoderet))
         break;
     }
   }
   if(!encoderet)
+  {
+    io_->GetPoller()->ResetPollOut(fd_);
     ActiveClose();
+    return;
+  }
 }
 
 void net::ezClientFd::ProcessEvent(ezThreadEvent& ev)
@@ -274,6 +279,7 @@ void net::ezConnectToFd::ProcessEvent(ezThreadEvent& ev)
   {
   case ezThreadEvent::NEW_CONNECTTO:
     ConnectTo();
+    io_->AddFlashedFd(this);
     break;
   case ezThreadEvent::CLOSE_CONNECTTO:
     {
@@ -295,6 +301,7 @@ void net::ezConnectToFd::CloseMe()
     CloseSocket(fd_);
     fd_=INVALID_SOCKET;
   }
+  io_->DelFlashedFd(this);
   LOG_INFO("delete net::ezConnectToFd(%s:%d)",ip_.c_str(),port_);
   delete this;
 }
@@ -368,6 +375,11 @@ void net::ezConnectToFd::HandleOutEvent()
 void net::ezConnectToFd::HandleTimer()
 {
   ConnectTo();
+}
+
+void net::ezConnectToFd::Close()
+{
+  CloseMe();
 }
 
 net::ezClientMessagePuller::ezClientMessagePuller(ezClientFd* cli):client_(cli){}

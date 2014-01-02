@@ -23,6 +23,28 @@ namespace net
   };
 }
 
+namespace net
+{
+  // 关闭系统时使用
+  void static CleanThreadEvQueue(ThreadEvQueue* evq)
+  {
+    ezThreadEvent ev;
+    while(evq->Recv(ev))
+    {
+      switch(ev.type_)
+      {
+      case ezThreadEvent::NEW_SERVICE:
+      case ezThreadEvent::NEW_CONNECTTO:
+      case ezThreadEvent::NEW_FD:
+      case ezThreadEvent::NEW_CONNECTION:
+        delete ev.hander_;
+        break;
+      default: break;
+      }
+    }
+  }
+}
+
 net::ezEventLoop::ezEventLoop()
 {
   shutdown_=false;
@@ -40,10 +62,13 @@ net::ezEventLoop::~ezEventLoop()
   if(encoder_) delete encoder_;
   */
   if(closehander_) delete closehander_;
+  for(int i=0;i<=threadnum_;++i)
+    CleanThreadEvQueue(evqueues_[i]);
   for(int i=0;i<threadnum_;++i)
     delete threads_[i];
+  delete [] evqueues_;
   delete [] threads_;
-  if(mainevqueue_) delete mainevqueue_; // TODO: clean
+  if(mainevqueue_) delete mainevqueue_;
 }
 
 int net::ezEventLoop::Initialize(ezIConnnectionHander* hander,ezIDecoder* decoder,ezIEncoder* encoder,int tnum)

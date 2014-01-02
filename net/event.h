@@ -96,6 +96,5 @@ namespace net
     ezEventLoop* looper_;
     int tid_;
   };
-
 }
 #endif

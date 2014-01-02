@@ -10,6 +10,46 @@
 #include "../net/net_interface.h"
 #include "../net/netpack.h"
 
+bool exit_=false;
+#ifdef __linux__
+#include <signal.h>
+void SignalExit(int no)
+{
+  exit_=true;
+  signal(no,SIG_DFL);
+}
+#else
+BOOL CtrlHandler(DWORD CtrlType)
+{
+  switch(CtrlType)
+  {
+  case CTRL_BREAK_EVENT:
+    {
+      exit_=true;
+      return TRUE;
+    }
+    break;
+  case  CTRL_C_EVENT:
+    {
+      exit_=true;
+      return TRUE;
+    }
+    break;
+  default: break;
+  }
+  return FALSE;
+}
+#endif
+
+void ProcessSignal()
+{
+#ifdef __linux__
+  signal(SIGINT,SignalExit);
+#else
+  SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler,TRUE);
+#endif
+}
+
 int main()
 {
   base::ezLogger::instance()->Start();
@@ -28,7 +68,7 @@ int main()
   base::ScopeGuard guard([&](){net::DestroyEventLoop(ev); delete hander; delete decoder; delete encoder;});
 
   int seq=0;
-  while(true)
+  while(!exit_)
   {
 
     net::EventProcess(ev);

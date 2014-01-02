@@ -59,7 +59,14 @@ public:
   virtual void OnData(ezConnection* conn,ezMsg* msg){}
 };
 bool exit_=false;
-#ifndef __linux__
+#ifdef __linux__
+#include <signal.h>
+void SignalExit(int no)
+{
+  exit_=true;
+  signal(no,SIG_DFL);
+}
+#else
 BOOL CtrlHandler(DWORD CtrlType)
 {
   switch(CtrlType)
@@ -85,6 +92,7 @@ BOOL CtrlHandler(DWORD CtrlType)
 void ProcessSignal()
 {
 #ifdef __linux__
+  signal(SIGINT,SignalExit);
 #else
   SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler,TRUE);
 #endif
@@ -113,12 +121,12 @@ int main()
   net::ezIDecoder* decoder=new net::ezMsgDecoder(20000);
   net::ezIEncoder* encoder=new net::ezMsgEncoder;
   ezEventLoop* ev=net::CreateEventLoop(hander,decoder,encoder,4);
-//   for(int i=0;i<10;++i)
-//   {
-//     net::Connect(ev,"192.168.99.51",10011,i,10);
-//     ConnectToInfo info={i,"192.168..99.51",10011,ECTS_CONNECTING,nullptr};
-//     gConnSet.push_back(info);
-//   }
+  for(int i=0;i<10;++i)
+  {
+    net::Connect(ev,"192.168.99.51",10011,i,10);
+    ConnectToInfo info={i,"192.168..99.51",10011,ECTS_CONNECTING,nullptr};
+    gConnSet.push_back(info);
+  }
 
   base::ScopeGuard guard([&](){net::DestroyEventLoop(ev); delete hander; delete decoder; delete encoder;});
   int seq=0;

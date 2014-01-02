@@ -31,7 +31,7 @@ void net::ezIoThread::DelFlashedFd(ezIFlashedFd* ffd)
 {
   for(auto iter=flashedfd_.begin();iter!=flashedfd_.end();)
   {
-    if(*iter=ffd)
+    if(*iter==ffd)
       iter=flashedfd_.erase(iter);
     else
       ++iter;
