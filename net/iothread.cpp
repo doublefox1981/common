@@ -15,7 +15,6 @@ net::ezIoThread::ezIoThread(ezEventLoop* loop,int tid)
 
 net::ezIoThread::~ezIoThread()
 {
-  // clear evqueue_
   if(poller_)
     delete poller_;
   if(evqueue_)
