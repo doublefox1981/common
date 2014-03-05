@@ -10,6 +10,8 @@
 #include "../net/net_interface.h"
 #include "../net/netpack.h"
 
+#include "../framework/statemachine.h"
+
 bool exit_=false;
 #ifdef __linux__
 #include <signal.h>
@@ -50,8 +52,65 @@ void ProcessSignal()
 #endif
 }
 
+class Monster
+{
+public:
+  enum
+  {
+    IDLE,
+    STAND,
+    MOVE,
+    ATTACK,
+  };
+};
+
+using namespace framework;
+class IdleState:public State<Monster>
+{
+public:
+  virtual void OnEnter(const Monster* t){}
+  virtual void OnExit(const Monster* t){}
+  virtual void OnTick(const Monster* t){}
+};
+
+class StandState:public State<Monster>
+{
+public:
+  virtual void OnEnter(const Monster* t){}
+  virtual void OnExit(const Monster* t){}
+  virtual void OnTick(const Monster* t){}
+};
+
+class MoveState:public State<Monster>
+{
+public:
+  virtual void OnEnter(const Monster* t){}
+  virtual void OnExit(const Monster* t){}
+  virtual void OnTick(const Monster* t){}
+};
+
+class AttackState:public State<Monster>
+{
+public:
+  virtual void OnEnter(const Monster* t){}
+  virtual void OnExit(const Monster* t){}
+  virtual void OnTick(const Monster* t){}
+};
+
 int main()
 {
+  Monster m;
+  IdleState* idle=new IdleState;
+  StandState* stand=new StandState;
+  MoveState* mov=new MoveState;
+  AttackState* attack=new AttackState;
+  idle->AddTransition(Monster::MOVE,mov);
+  idle->AddTransition(Monster::ATTACK,attack);
+  attack->AddTransition(Monster::STAND,stand);
+  framework::StateMachine<Monster> sm;
+  sm.SetStartState(idle);
+  sm.Start(&m);
+  
   base::ezLogger::instance()->Start();
   net::EzNetInitialize();
   net::ezIConnnectionHander* hander=new net::ezServerHander;
@@ -70,7 +129,7 @@ int main()
   int seq=0;
   while(!exit_)
   {
-
+    sm.Tick(&m,0);
     net::EventProcess(ev);
     base::ezSleep(1);
   }
