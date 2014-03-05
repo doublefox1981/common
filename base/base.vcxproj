@@ -16,6 +16,7 @@
     <ClInclude Include="cmdline.h" />
     <ClInclude Include="eztime.h" />
     <ClInclude Include="eztimer.h" />
+    <ClInclude Include="likely.h" />
     <ClInclude Include="list.h" />
     <ClInclude Include="logging.h" />
     <ClInclude Include="notifyqueue.h" />
@@ -27,6 +28,7 @@
     <ClInclude Include="singleton.h" />
     <ClInclude Include="thread.h" />
     <ClInclude Include="util.h" />
+    <ClInclude Include="varint.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="eztime.cpp" />

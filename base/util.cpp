@@ -642,6 +642,28 @@ MSVC_POP_WARNING()
 #define vsnprintf portable_vsnprintf
 #endif
 
+int FloatToInt(float f)
+{
+  union
+  {
+    float f_;
+    int i_;
+  };
+  f_=f;
+  return i_;
+}
+
+float IntToFloat(int i)
+{
+  union
+  {
+    float f_;
+    int i_;
+  };
+  i_=i;
+  return f_;
+}
+
 void base::StringPrintfImpl(std::string& output, const char* format,va_list args) 
 {
   const auto write_point = output.size();
@@ -650,7 +672,7 @@ void base::StringPrintfImpl(std::string& output, const char* format,va_list args
 
   va_list args_copy;
   va_copy(args_copy, args);
-  int bytes_used = vsnprintf(const_cast<char*>(output.data())+write_point, remaining, format, args_copy);
+  int bytes_used = vsnprintf(StringAsArray(&output)+write_point, remaining, format, args_copy);
   va_end(args_copy);
   if (bytes_used < 0) return;
   else if ((size_t)bytes_used < remaining) {
@@ -679,7 +701,6 @@ std::string base::StringPrintf(const char* format, ...)
   va_end(ap);
   return ret;
 }
-
 
 std::string& base::StringAppendf(std::string* output, const char* format, ...) 
 {

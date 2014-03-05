@@ -17,6 +17,8 @@
     <ClInclude Include="signal.h" />
     <ClInclude Include="portable.h" />
     <ClInclude Include="notifyqueue.h" />
+    <ClInclude Include="likely.h" />
+    <ClInclude Include="varint.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="thread.cpp" />
