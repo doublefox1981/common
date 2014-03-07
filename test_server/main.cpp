@@ -97,8 +97,29 @@ public:
   virtual void OnTick(const Monster* t){}
 };
 
+struct SFuncArg
+{
+  int a;
+  std::string s;
+};
+void func(const SFuncArg& a)
+{
+
+}
+
+void func1()
+{
+
+}
+
+void stdfunc(std::function<void()>& func)
+{
+  func();
+}
+
 int main()
 {
+  stdfunc(std::function<void()>(func1));
   Monster m;
   IdleState* idle=new IdleState;
   StandState* stand=new StandState;
@@ -111,6 +132,13 @@ int main()
   sm.SetStartState(idle);
   sm.Start(&m);
   
+  base::ezTimer gTimer;
+  gTimer.runAfter(base::ezNowTick(),10000,std::function<void()>(func1));
+  SFuncArg arg;
+  arg.a=10;
+  arg.s="funcstruct";
+  gTimer.runAfter<SFuncArg>(base::ezNowTick(),10000,std::function<void(const SFuncArg&)>(func),arg);
+
   base::ezLogger::instance()->Start();
   net::EzNetInitialize();
   net::ezIConnnectionHander* hander=new net::ezServerHander;
@@ -129,6 +157,7 @@ int main()
   int seq=0;
   while(!exit_)
   {
+    gTimer.tick(base::ezNowTick());
     sm.Tick(&m,0);
     net::EventProcess(ev);
     base::ezSleep(1);
