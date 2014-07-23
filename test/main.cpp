@@ -182,8 +182,6 @@
  *  See: http://www.gnu.org/licenses
  */ 
 
-#include "stdafx.h"
-
 #include <stdio.h>
 #include <time.h>
 #include <intrin.h>

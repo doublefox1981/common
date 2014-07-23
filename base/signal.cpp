@@ -41,78 +41,71 @@ static int MakeSocketPair(fd_t& r,fd_t& w)
   return 0;
 #endif
 #else
-  SECURITY_DESCRIPTOR sd = {0};
-  SECURITY_ATTRIBUTES sa = {0};
-  InitializeSecurityDescriptor(&sd, SECURITY_DESCRIPTOR_REVISION);
-  SetSecurityDescriptorDacl(&sd, TRUE, 0, FALSE);
-  sa.nLength = sizeof(SECURITY_ATTRIBUTES);
-  sa.lpSecurityDescriptor = &sd;
-  HANDLE sync = CreateEvent (&sa, FALSE, TRUE, TEXT ("Global\\zmq-signaler-port-sync"));
-  if (sync == NULL && GetLastError () == ERROR_ACCESS_DENIED)
-    sync = OpenEvent (SYNCHRONIZE | EVENT_MODIFY_STATE, FALSE, TEXT ("Global\\zmq-signaler-port-sync"));
+  SECURITY_DESCRIPTOR sd={0};
+  SECURITY_ATTRIBUTES sa={0};
+  InitializeSecurityDescriptor(&sd,SECURITY_DESCRIPTOR_REVISION);
+  SetSecurityDescriptorDacl(&sd,TRUE,0,FALSE);
+  sa.nLength=sizeof(SECURITY_ATTRIBUTES);
+  sa.lpSecurityDescriptor=&sd;
+  HANDLE sync=CreateEvent(&sa,FALSE,TRUE,TEXT("Global\\zmq-signaler-port-sync"));
+  if (sync==NULL&&GetLastError()==ERROR_ACCESS_DENIED)
+    sync=OpenEvent(SYNCHRONIZE|EVENT_MODIFY_STATE,FALSE,TEXT("Global\\zmq-signaler-port-sync"));
 
-  assert(sync != NULL);
-  DWORD dwrc = WaitForSingleObject (sync, INFINITE);
-  assert (dwrc == WAIT_OBJECT_0);
-  w = INVALID_SOCKET;
-  r = INVALID_SOCKET;
+  assert(sync!=NULL);
+  DWORD dwrc=WaitForSingleObject(sync,INFINITE);
+  assert(dwrc==WAIT_OBJECT_0);
+  w=INVALID_SOCKET;
+  r=INVALID_SOCKET;
 
   SOCKET listener;
-  listener = socket(AF_INET, SOCK_STREAM, 0);
-  BOOL brc = SetHandleInformation ((HANDLE) listener, HANDLE_FLAG_INHERIT, 0);
+  listener=socket(AF_INET, SOCK_STREAM, 0);
+  BOOL brc=SetHandleInformation ((HANDLE) listener, HANDLE_FLAG_INHERIT, 0);
 
-  //  Set SO_REUSEADDR and TCP_NODELAY on listening socket.
-  BOOL so_reuseaddr = 1;
-  int rc = setsockopt (listener, SOL_SOCKET, SO_REUSEADDR,
-    (char *)&so_reuseaddr, sizeof (so_reuseaddr));
-  BOOL tcp_nodelay = 1;
-  rc = setsockopt (listener, IPPROTO_TCP, TCP_NODELAY,
-    (char *)&tcp_nodelay, sizeof (tcp_nodelay));
+  BOOL so_reuseaddr=1;
+  int rc=setsockopt(listener,SOL_SOCKET,SO_REUSEADDR,(char *)&so_reuseaddr,sizeof(so_reuseaddr));
+  BOOL tcp_nodelay=1;
+  rc=setsockopt(listener,IPPROTO_TCP,TCP_NODELAY,(char*)&tcp_nodelay,sizeof(tcp_nodelay));
 
   struct sockaddr_in addr;
-  memset (&addr, 0, sizeof (addr));
-  addr.sin_family = AF_INET;
-  addr.sin_addr.s_addr = htonl (INADDR_LOOPBACK);
-  addr.sin_port = htons (5905);
-  rc = bind (listener, (const struct sockaddr*) &addr, sizeof (addr));
-  rc = listen (listener, 1);
-
-  //  Create the writer socket.
+  memset(&addr,0,sizeof(addr));
+  addr.sin_family=AF_INET;
+  addr.sin_addr.s_addr=htonl (INADDR_LOOPBACK);
+  addr.sin_port=0;
+  rc=bind(listener,(const struct sockaddr*)&addr,sizeof(addr));
+  rc=listen(listener,1);
+  int len=sizeof(addr);
+  rc = getsockname(listener,(sockaddr*)&addr,&len);
   w = WSASocket (AF_INET, SOCK_STREAM, 0, NULL, 0,  0);
-
-  //  On Windows, preventing sockets to be inherited by child processes.
-  brc = SetHandleInformation ((HANDLE) w, HANDLE_FLAG_INHERIT, 0);
-
-  //  Set TCP_NODELAY on writer socket.
-  rc = setsockopt (w, IPPROTO_TCP, TCP_NODELAY,
-    (char *)&tcp_nodelay, sizeof (tcp_nodelay));
-
-  //  Connect writer to the listener.
-  rc = connect (w, (struct sockaddr*) &addr, sizeof (addr));
-
-  //  Save errno if connection fails
-  int conn_errno = 0;
-  if (rc == SOCKET_ERROR) {
-    conn_errno = WSAGetLastError ();
-  } else {
-    //  Accept connection from writer.
-    r = accept (listener, NULL, NULL);
-
-    if (r == INVALID_SOCKET) {
-      conn_errno = WSAGetLastError ();
+  brc=SetHandleInformation ((HANDLE) w, HANDLE_FLAG_INHERIT, 0);
+  rc=setsockopt(w,IPPROTO_TCP,TCP_NODELAY,(char*)&tcp_nodelay,sizeof(tcp_nodelay));
+  rc=connect(w,(struct sockaddr*)&addr,sizeof (addr));
+  int conn_errno=0;
+  if (rc==SOCKET_ERROR) 
+  {
+    conn_errno=WSAGetLastError();
+  } 
+  else 
+  {
+    r=accept(listener,NULL,NULL);
+    if(r==INVALID_SOCKET) 
+    {
+      conn_errno=WSAGetLastError ();
     }
   }
 
-  rc = closesocket (listener);
-  brc = SetEvent (sync);
-  brc = CloseHandle (sync);
+  rc=closesocket(listener);
+  brc=SetEvent(sync);
+  brc=CloseHandle(sync);
 
-  if (r != INVALID_SOCKET) {
-    brc = SetHandleInformation ((HANDLE) r, HANDLE_FLAG_INHERIT, 0);
+  if (r!=INVALID_SOCKET) 
+  {
+    brc=SetHandleInformation((HANDLE)r,HANDLE_FLAG_INHERIT,0);
     return 0;
-  } else {
-    rc = closesocket (w);
-    w = INVALID_SOCKET;
+  } 
+  else 
+  {
+    rc=closesocket(w);
+    w=INVALID_SOCKET;
     return -1;
   }
 #endif

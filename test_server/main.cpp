@@ -133,11 +133,11 @@ int main()
   sm.Start(&m);
   
   base::ezTimer gTimer;
-  gTimer.runAfter(base::ezNowTick(),10000,std::function<void()>(func1));
+  //gTimer.runAfter(base::ezNowTick(),10000,std::function<void()>(func1));
   SFuncArg arg;
   arg.a=10;
   arg.s="funcstruct";
-  gTimer.runAfter<SFuncArg>(base::ezNowTick(),10000,std::function<void(const SFuncArg&)>(func),arg);
+  //gTimer.runAfter<SFuncArg>(base::ezNowTick(),10000,std::function<void(const SFuncArg&)>(func),arg);
 
   base::ezLogger::instance()->Start();
   net::EzNetInitialize();

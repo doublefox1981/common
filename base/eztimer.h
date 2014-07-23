@@ -58,27 +58,22 @@ namespace base
   public:
     void addTimeTask(ezTimerTask* task);
     void tick(int64_t now);
-    void runAfter(int64_t now,int later,std::function<void()>& func);
+    void runAfter(int64_t now,int later,std::function<void()>& func)
+    {    
+      ezTimerTask* task=new ezVoidFunctorTimerTask(func);
+      task->config(now,later,0);
+      addTimeTask(task);
+    }
     template <typename ArgType>
-    void runAfter(int64_t now,int later,std::function<void(const ArgType&)>& func,const ArgType& args);
+    void runAfter(int64_t now,int later,std::function<void(const ArgType&)>& func,const ArgType& args)
+    {
+      ezTimerTask* task=new ezFunctorTimerTask<ArgType>(func,args);
+      task->config(now,later,0);
+      addTimeTask(task);
+    }
   private:
     std::priority_queue<ezTimerTask*,std::vector<ezTimerTask*>,std::greater<std::vector<ezTimerTask*>::value_type>> minHeap_;
   };
-
-  template <typename ArgType>
-  void ezTimer::runAfter(int64_t now,int later,std::function<void(const ArgType&)>& func,const ArgType& args)
-  {
-    ezTimerTask* task=new ezFunctorTimerTask<ArgType>(func,args);
-    task->config(now,later,0);
-    addTimeTask(task);
-  }
-
-  void ezTimer::runAfter(int64_t now,int later,std::function<void()>& func)
-  {
-    ezTimerTask* task=new ezVoidFunctorTimerTask(func);
-    task->config(now,later,0);
-    addTimeTask(task);
-  }
 }
 
 #endif

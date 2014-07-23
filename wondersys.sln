@@ -12,6 +12,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_client", "test\test.vc
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_server", "test_server\test_server.vcxproj", "{CF2B7D08-507F-4906-BFC7-01AA80EBE45B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3F6F593D-F6C3-43E4-A7FF-43557BF93569} = {3F6F593D-F6C3-43E4-A7FF-43557BF93569}
+		{3DB42270-F6A4-44C5-8BA6-7091C04F6061} = {3DB42270-F6A4-44C5-8BA6-7091C04F6061}
+		{A555CFDA-E59A-4FAC-A7F4-AA50F903C03F} = {A555CFDA-E59A-4FAC-A7F4-AA50F903C03F}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "framework", "framework\framework.vcxproj", "{3DB42270-F6A4-44C5-8BA6-7091C04F6061}"
 EndProject
