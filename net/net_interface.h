@@ -78,6 +78,7 @@ namespace net
 
   void           EzNetInitialize();
   ezEventLoop*   CreateEventLoop(ezIConnnectionHander* hander,ezIDecoder* decoder,ezIEncoder* encoder,int tnum);
+  void           SetMsgBufferSize(ezEventLoop* loop,int size);
   void           DestroyEventLoop(ezEventLoop* ev);
   int            ServeOnPort(ezEventLoop* ev,int port);
   int            Connect(ezEventLoop* ev,const char* ip,int port,int64_t userdata,int32_t reconnect);

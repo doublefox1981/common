@@ -52,6 +52,7 @@ net::ezEventLoop::ezEventLoop()
   closehander_=new ezCloseHander;
   threadnum_=0;
   mainevqueue_=new ThreadEvQueue;
+  buffersize_=16*1024;
 }
 
 net::ezEventLoop::~ezEventLoop()
@@ -210,6 +211,16 @@ int net::ezEventLoop::GetConnectionNum()
   return conns_.size();
 }
 
+int net::ezEventLoop::GetBufferSize()
+{
+  return buffersize_;
+}
+
+void net::ezEventLoop::SetBufferSize(int s)
+{
+  buffersize_=s;
+}
+
 net::ezThreadEventHander::ezThreadEventHander(ezEventLoop* loop,int tid):looper_(loop),tid_(tid)
 {}
 
@@ -229,6 +240,11 @@ net::ezEventLoop* net::CreateEventLoop(ezIConnnectionHander* hander,ezIDecoder* 
   net::ezEventLoop* ev=new net::ezEventLoop;
   ev->Initialize(hander,decoder,encoder,tnum);
   return ev;
+}
+
+void net::SetMsgBufferSize(ezEventLoop* loop,int size)
+{
+  loop->SetBufferSize(size);
 }
 
 void net::DestroyEventLoop(ezEventLoop* ev)

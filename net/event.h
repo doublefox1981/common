@@ -56,11 +56,13 @@ namespace net
     ezIoThread* ChooseThread();
     ezIoThread* GetThread(int idx);
     void OccerEvent(int tid,ezThreadEvent& ev);
-    int GetTid() {return 0;}
+    int  GetTid() {return 0;}
     void Loop();
     void AddConnection(ezConnection* con);
     void DelConnection(ezConnection* con);
-    int GetConnectionNum();
+    int  GetConnectionNum();
+    int  GetBufferSize();
+    void SetBufferSize(int s);
   private:
     ezIConnnectionHander*             hander_;
     ezIConnnectionHander*             closehander_;
@@ -72,6 +74,7 @@ namespace net
     ThreadEvQueue*                    mainevqueue_;
     std::unordered_set<ezConnection*> conns_;
     bool                              shutdown_;
+    int                               buffersize_;
   };
 
   class ezUUID:public base::ezSingleTon<ezUUID>

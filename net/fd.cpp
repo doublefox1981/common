@@ -68,8 +68,8 @@ net::ezClientFd::ezClientFd(ezEventLoop* loop,ezIoThread* io,int fd,int64_t user
   encoder_=GetLooper()->GetEncoder();
   pusher_=new ezClientMessagePusher(this);
   puller_=new ezClientMessagePuller(this);
-  inbuf_=new ezBuffer();
-  outbuf_=new ezBuffer();
+  inbuf_=new ezBuffer(loop->GetBufferSize());
+  outbuf_=new ezBuffer(loop->GetBufferSize());
   ezMsgInit(&cachemsg_);
   cached_=false;
 }

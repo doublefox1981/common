@@ -120,7 +120,7 @@ namespace net{
     virtual void Close();
   private:
     void ConnectTo();
-    int CheckAsyncError();
+    int  CheckAsyncError();
     void Reconnect();
     void CloseMe();
     void PostCloseMe();
