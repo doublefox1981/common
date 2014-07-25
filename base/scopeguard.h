@@ -7,22 +7,22 @@ namespace base
 	class ScopeGuard
 	{
 	public:
-		explicit ScopeGuard(std::function<void ()> onExitScope):_onExitScope(onExitScope),_dismissed(false)
+		explicit ScopeGuard(std::function<void ()> onExitScope):on_exit_scope_(onExitScope),dismissed_(false)
 		{}
 		~ScopeGuard()
 		{
-			if(!_dismissed)
+			if(!dismissed_)
 			{
-				_onExitScope();
+				on_exit_scope_();
 			}
 		}
-		void Dismiss()
+		void dismiss()
 		{
-			_dismissed=true;
+			dismissed_=true;
 		}
 	private:
-		std::function<void ()> _onExitScope;
-		bool _dismissed;
+		std::function<void ()> on_exit_scope_;
+		bool dismissed_;
 	private:
 		ScopeGuard(const ScopeGuard&);
 		ScopeGuard& operator=(const ScopeGuard&);

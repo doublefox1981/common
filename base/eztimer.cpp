@@ -38,7 +38,6 @@ void base::TimerTask::config(int64_t now,int64_t duration,int64_t repeat/*=TIMER
 	duration_=duration;
 }
 
-
 void base::Timer::add_timer_task(TimerTask* task)
 {
 	assert(task);
