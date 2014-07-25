@@ -12,17 +12,17 @@ namespace base
   public:
     ezLogger();
     virtual ~ezLogger();
-    void setLogLevel(int lvl){logLevel_=lvl;}
+    void set_log_level(int lvl){log_level_=lvl;}
     void info(const char* format,...);
     void warn(const char* format,...);
     void error(const char* format,...);
     void fatal(const char* format,...);
-    virtual void Run();
+    virtual void run();
   private:
     void print(int type,const char* format,va_list args);
     base::SpinLock mutex_;
     list_head lst_;
-    int logLevel_;
+    int log_level_;
   };
 }
 

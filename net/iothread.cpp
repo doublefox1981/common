@@ -3,7 +3,7 @@
 #include "../base/eztime.h"
 #include "iothread.h"
 
-net::ezIoThread::ezIoThread(ezEventLoop* loop,int tid)
+net::ezIoThread::ezIoThread(EventLoop* loop,int tid)
   :load_(0),
   ezThreadEventHander(loop,tid)
 {
@@ -46,12 +46,12 @@ void net::ezIoThread::HandleInEvent()
   }
 }
 
-void net::ezIoThread::Run()
+void net::ezIoThread::run()
 {
-  while(!mbExit)
+  while(!exit_)
   {
     poller_->Poll();
-    base::ezSleep(1);
+    base::sleep(1);
   }
 }
 
@@ -67,7 +67,7 @@ void net::ezIoThread::ProcessEvent(ezThreadEvent& ev)
     }
     break;
   case ezThreadEvent::STOP_THREAD:
-    Stop();
+    stop();
     break;
   default: break;
   }

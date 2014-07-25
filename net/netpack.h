@@ -10,25 +10,25 @@ extern "C"
 
 namespace net
 {
-  struct ezMsg
+  struct Msg
   {
     int8_t data_[64];
   };
-  void ezMsgInit(ezMsg* msg);
-  void ezMsgInitSize(ezMsg* msg,int size);
-  void ezMsgInitData(ezMsg* msg,int8_t* data,int size,msg_free_fn* ffn,void* hint);
-  void ezMsgInitDelimiter(ezMsg* msg);
+  void msg_init(Msg* msg);
+  void msg_init_size(Msg* msg,int size);
+  void msg_init_data(Msg* msg,int8_t* data,int size,msg_free_fn* ffn,void* hint);
+  void msg_init_delimiter(Msg* msg);
 
-  int  ezMsgSize(ezMsg* msg);
-  int  ezMsgCapcity(ezMsg* msg);
-  int8_t* ezMsgData(ezMsg* msg);
-  bool ezMsgIsDelimiter(ezMsg* msg);
+  int  msg_size(Msg* msg);
+  int  msg_capcity(Msg* msg);
+  bool msg_is_delimiter(Msg* msg);
+  int8_t* msg_data(Msg* msg);
 
-  void ezMsgMove(ezMsg* src,ezMsg* dst);
-  void ezMsgCopy(ezMsg* src,ezMsg* dst);
-  void ezMsgAddRef(ezMsg* msg,int ref);
-  void ezMsgSubRef(ezMsg* msg,int ref);
-  void ezMsgFree(ezMsg* msg);
+  void msg_move(Msg* src,Msg* dst);
+  void msg_copy(Msg* src,Msg* dst);
+  void msg_add_ref(Msg* msg,int ref);
+  void msg_sub_ref(Msg* msg,int ref);
+  void msg_free(Msg* msg);
 }
 
 #endif

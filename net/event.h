@@ -13,10 +13,10 @@
 namespace net
 {
   class ezIoThread;
-  class ezConnection;
-  class ezIConnnectionHander;
-  class ezIDecoder;
-  class ezIEncoder;
+  class Connection;
+  class IConnnectionHander;
+  class IDecoder;
+  class IEncoder;
   class ezThreadEventHander;
   class ezPoller;
   struct ezThreadEvent
@@ -41,38 +41,38 @@ namespace net
   };
 
   typedef base::ezNotifyQueue<ezThreadEvent> ThreadEvQueue;
-  class ezEventLoop
+  class EventLoop
   {
   public:
-    ezEventLoop();
-    ~ezEventLoop();
-    int Initialize(ezIConnnectionHander* hander,ezIDecoder* decoder,ezIEncoder* encoder,int tnum);
-    int ServeOnPort(int port);
+    EventLoop();
+    ~EventLoop();
+    int Initialize(IConnnectionHander* hander,IDecoder* decoder,IEncoder* encoder,int tnum);
+    int serve_on_port(int port);
     int ConnectTo(const std::string& ip,int port,int64_t userdata,int32_t reconnect);
     int Shutdown();
-    ezIConnnectionHander* GetHander() {return hander_;}
-    ezIDecoder* GetDecoder() {return decoder_;}
-    ezIEncoder* GetEncoder() {return encoder_;}
+    IConnnectionHander* GetHander() {return hander_;}
+    IDecoder* GetDecoder() {return decoder_;}
+    IEncoder* GetEncoder() {return encoder_;}
     ezIoThread* ChooseThread();
     ezIoThread* GetThread(int idx);
     void OccerEvent(int tid,ezThreadEvent& ev);
     int  GetTid() {return 0;}
     void Loop();
-    void AddConnection(ezConnection* con);
-    void DelConnection(ezConnection* con);
+    void AddConnection(Connection* con);
+    void DelConnection(Connection* con);
     int  GetConnectionNum();
     int  GetBufferSize();
     void SetBufferSize(int s);
   private:
-    ezIConnnectionHander*             hander_;
-    ezIConnnectionHander*             closehander_;
-    ezIDecoder*                       decoder_;
-    ezIEncoder*                       encoder_;
+    IConnnectionHander*             hander_;
+    IConnnectionHander*             closehander_;
+    IDecoder*                       decoder_;
+    IEncoder*                       encoder_;
     ezIoThread**                      threads_;
     int                               threadnum_;
     ThreadEvQueue**                   evqueues_;
     ThreadEvQueue*                    mainevqueue_;
-    std::unordered_set<ezConnection*> conns_;
+    std::unordered_set<Connection*> conns_;
     bool                              shutdown_;
     int                               buffersize_;
   };
@@ -89,14 +89,14 @@ namespace net
   class ezThreadEventHander
   {
   public:
-    ezThreadEventHander(ezEventLoop* loop,int tid);
+    ezThreadEventHander(EventLoop* loop,int tid);
     virtual ~ezThreadEventHander(){}
-    ezEventLoop* GetLooper(){return looper_;}
+    EventLoop* GetLooper(){return looper_;}
     int GetTid(){return tid_;}
     void OccurEvent(ezThreadEvent& ev);
     virtual void ProcessEvent(ezThreadEvent& ev)=0;
   private:
-    ezEventLoop* looper_;
+    EventLoop* looper_;
     int tid_;
   };
 }

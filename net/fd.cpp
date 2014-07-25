@@ -14,7 +14,7 @@
 #include "iothread.h"
 #include "../base/logging.h"
 
-net::ezListenerFd::ezListenerFd(ezEventLoop* loop,ezIoThread* io,int fd)
+net::ezListenerFd::ezListenerFd(EventLoop* loop,ezIoThread* io,int fd)
   :fd_(fd),
   io_(io),
   ezThreadEventHander(loop,io->GetTid())
@@ -58,7 +58,7 @@ void net::ezListenerFd::Close()
   delete this;
 }
 
-net::ezClientFd::ezClientFd(ezEventLoop* loop,ezIoThread* io,int fd,int64_t userdata)
+net::ezClientFd::ezClientFd(EventLoop* loop,ezIoThread* io,int fd,int64_t userdata)
   :io_(io)
   ,fd_(fd)
   ,userdata_(userdata)
@@ -68,9 +68,9 @@ net::ezClientFd::ezClientFd(ezEventLoop* loop,ezIoThread* io,int fd,int64_t user
   encoder_=GetLooper()->GetEncoder();
   pusher_=new ezClientMessagePusher(this);
   puller_=new ezClientMessagePuller(this);
-  inbuf_=new ezBuffer(loop->GetBufferSize());
-  outbuf_=new ezBuffer(loop->GetBufferSize());
-  ezMsgInit(&cachemsg_);
+  inbuf_=new Buffer(loop->GetBufferSize());
+  outbuf_=new Buffer(loop->GetBufferSize());
+  msg_init(&cachemsg_);
   cached_=false;
 }
 
@@ -81,9 +81,9 @@ net::ezClientFd::~ezClientFd()
   if(puller_) delete puller_;
   if(inbuf_) delete inbuf_;
   if(outbuf_) delete outbuf_;
-  ezMsg msg;
+  Msg msg;
   while(sendqueue_.try_dequeue(msg))
-    ezMsgFree(&msg);
+    msg_free(&msg);
 }
 
 void net::ezClientFd::HandleInEvent()
@@ -98,7 +98,7 @@ void net::ezClientFd::HandleInEvent()
   int rs=inbuf_->readable(rbuf);
   if(rs>0)
   {
-    int rets=decoder_->Decode(pusher_,rbuf,rs);
+    int rets=decoder_->decode(pusher_,rbuf,rs);
     if(rets>0)
       inbuf_->drain(rets);
     else if(rets<0)
@@ -114,7 +114,7 @@ void net::ezClientFd::HandleOutEvent()
   bool encoderet=true;
   while(true)
   {
-    encoderet=encoder_->Encode(puller_,outbuf_);
+    encoderet=encoder_->encode(puller_,outbuf_);
     char* pbuf=nullptr;
     int s=outbuf_->readable(pbuf);
     if(s<=0)
@@ -155,7 +155,7 @@ void net::ezClientFd::ProcessEvent(ezThreadEvent& ev)
         return;
       }
       poller->SetPollIn(fd_);
-      conn_=new ezConnection(GetLooper(),this,GetLooper()->GetTid(),userdata_);
+      conn_=new Connection(GetLooper(),this,GetLooper()->GetTid(),userdata_);
       char ipport[128];
       net::ToIpPort(ipport,sizeof(ipport),net::GetPeerAddr(fd_));
       conn_->SetIpAddr(ipport);
@@ -167,11 +167,11 @@ void net::ezClientFd::ProcessEvent(ezThreadEvent& ev)
   case ezThreadEvent::CLOSE_FD:
     {
       io_->GetPoller()->DelFd(fd_);
-      ezMsg msg;
+      Msg msg;
       while(recvqueue_.try_dequeue(msg))
-        ezMsgFree(&msg);
+        msg_free(&msg);
       while(sendqueue_.try_dequeue(msg))
-        ezMsgFree(&msg);
+        msg_free(&msg);
       ezThreadEvent ev;
       ev.type_=ezThreadEvent::CLOSE_CONNECTION;
       conn_->OccurEvent(ev);
@@ -189,12 +189,12 @@ void net::ezClientFd::ProcessEvent(ezThreadEvent& ev)
   }
 }
 
-void net::ezClientFd::SendMsg(ezMsg& msg)
+void net::ezClientFd::SendMsg(Msg& msg)
 {
   sendqueue_.enqueue(msg);
 }
 
-bool net::ezClientFd::RecvMsg(ezMsg& msg)
+bool net::ezClientFd::RecvMsg(Msg& msg)
 {
   return recvqueue_.try_dequeue(msg);
 }
@@ -218,7 +218,7 @@ void net::ezClientFd::PassiveClose()
 net::ezClientMessagePusher::ezClientMessagePusher(ezClientFd* cli) :client_(cli)
 {}
 
-inline bool net::ezClientMessagePusher::PushMsg(ezMsg* msg)
+inline bool net::ezClientMessagePusher::PushMsg(Msg* msg)
 {
   client_->recvqueue_.enqueue(*msg);
   ezThreadEvent ev;
@@ -227,7 +227,7 @@ inline bool net::ezClientMessagePusher::PushMsg(ezMsg* msg)
   return true;
 }
 
-net::ezConnectToFd::ezConnectToFd(ezEventLoop* loop,ezIoThread* io,int64_t userd,int32_t reconnect)
+net::ezConnectToFd::ezConnectToFd(EventLoop* loop,ezIoThread* io,int64_t userd,int32_t reconnect)
   :fd_(0)
   ,io_(io)
   ,userdata_(userd)
@@ -384,24 +384,24 @@ void net::ezConnectToFd::Close()
 
 net::ezClientMessagePuller::ezClientMessagePuller(ezClientFd* cli):client_(cli){}
 
-bool net::ezClientMessagePuller::PullMsg(ezMsg* msg)
+bool net::ezClientMessagePuller::PullMsg(Msg* msg)
 {
   if(client_->cached_)
   {
     client_->cached_=false;
-    ezMsgCopy(&client_->cachemsg_,msg);
+    msg_copy(&client_->cachemsg_,msg);
     return true;
   }
   else
     return client_->sendqueue_.try_dequeue(*msg);
 }
 
-void net::ezClientMessagePuller::Rollback(ezMsg* msg)
+void net::ezClientMessagePuller::Rollback(Msg* msg)
 {
   assert(!client_->cached_);
   if(!client_->cached_)
   {
     client_->cached_=true;
-    ezMsgCopy(msg,&client_->cachemsg_);
+    msg_copy(msg,&client_->cachemsg_);
   }
 }

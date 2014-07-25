@@ -3,92 +3,92 @@
 
 namespace net
 {
-  struct ezMsg;
-  class ezIMessagePusher;
-  class ezIMessagePuller;
-  class ezBuffer;
-  class ezConnection;
-  class ezEventLoop;
+  struct Msg;
+  class IMessagePusher;
+  class IMessagePuller;
+  class Buffer;
+  class Connection;
+  class EventLoop;
 
-  class ezIDecoder
+  class IDecoder
   {
   public:
-    virtual ~ezIDecoder(){}
-    virtual int Decode(ezIMessagePusher* pusher,char* buf,size_t s)=0;
+    virtual ~IDecoder(){}
+    virtual int decode(IMessagePusher* pusher,char* buf,size_t s)=0;
   };
 
-  class ezIEncoder
+  class IEncoder
   {
   public:
-    virtual ~ezIEncoder(){}
-    virtual bool Encode(ezIMessagePuller* puller,ezBuffer* buff)=0;
+    virtual ~IEncoder(){}
+    virtual bool encode(IMessagePuller* puller,Buffer* buff)=0;
   };
 
-  class ezMsgDecoder:public ezIDecoder
+  class MsgDecoder:public IDecoder
   {
   public:
-    explicit ezMsgDecoder(uint16_t maxsize):maxMsgSize_(maxsize){}
-    virtual int Decode(ezIMessagePusher* pusher,char* buf,size_t s);
+    explicit MsgDecoder(uint16_t maxsize):maxMsgSize_(maxsize){}
+    virtual int decode(IMessagePusher* pusher,char* buf,size_t s);
   private:
     uint16_t maxMsgSize_;
   };
 
-  class ezMsgEncoder:public ezIEncoder
+  class MsgEncoder:public IEncoder
   {
   public:
-    virtual bool Encode(ezIMessagePuller* puller,ezBuffer* buffer);
+    virtual bool encode(IMessagePuller* puller,Buffer* buffer);
   };
 
-  class ezGameObject
+  class GameObject
   {
   public:
-    ezGameObject();
-    virtual ~ezGameObject();
-    void SetConnection(ezConnection* conn) {conn_=conn;}
-    ezConnection* GetConnection(){return conn_;}
-    void SendNetpack(ezMsg& msg);
+    GameObject();
+    virtual ~GameObject();
+    void SetConnection(Connection* conn) {conn_=conn;}
+    Connection* GetConnection(){return conn_;}
+    void SendNetpack(Msg& msg);
     virtual void Close();
   private:
-    ezConnection* conn_;
+    Connection* conn_;
   };
 
-  class ezIConnnectionHander
+  class IConnnectionHander
   {
   public:
-    virtual void OnOpen(ezConnection* conn)=0;
-    virtual void OnClose(ezConnection* conn)=0;
-    virtual void OnData(ezConnection* conn,ezMsg* msg)=0;
+    virtual void on_open(Connection* conn)=0;
+    virtual void on_close(Connection* conn)=0;
+    virtual void on_data(Connection* conn,Msg* msg)=0;
   };
 
-  class ezServerHander:public ezIConnnectionHander
+  class ServerHander:public IConnnectionHander
   {
   public:
-    virtual void OnOpen(ezConnection* conn);
-    virtual void OnClose(ezConnection* conn);
-    virtual void OnData(ezConnection* conn,ezMsg* msg);
+    virtual void on_open(Connection* conn);
+    virtual void on_close(Connection* conn);
+    virtual void on_data(Connection* conn,Msg* msg);
   };
 
-  class ezClientHander:public ezIConnnectionHander
+  class ClientHander:public IConnnectionHander
   {
   public:
-    virtual void OnOpen(ezConnection* conn);
-    virtual void OnClose(ezConnection* conn);
-    virtual void OnData(ezConnection* conn,ezMsg* msg);
+    virtual void on_open(Connection* conn);
+    virtual void on_close(Connection* conn);
+    virtual void on_data(Connection* conn,Msg* msg);
   };
 
-  void           EzNetInitialize();
-  ezEventLoop*   CreateEventLoop(ezIConnnectionHander* hander,ezIDecoder* decoder,ezIEncoder* encoder,int tnum);
-  void           SetMsgBufferSize(ezEventLoop* loop,int size);
-  void           DestroyEventLoop(ezEventLoop* ev);
-  int            ServeOnPort(ezEventLoop* ev,int port);
-  int            Connect(ezEventLoop* ev,const char* ip,int port,int64_t userdata,int32_t reconnect);
-  void           EventProcess(ezEventLoop* ev);
-  void           CloseConnection(ezConnection* conn);
-  void           MsgSend(ezConnection* conn,ezMsg* msg);
-  int64_t        ConnectionUserdata(ezConnection* conn);
-  ezGameObject*  GetGameObject(ezConnection* conn);
-  void           AttachGameObject(ezConnection* conn,ezGameObject* obj);
-  void           DetachGameObject(ezConnection* conn);
-  const char*    GetIpAddr(ezConnection* conn);
+  void         net_initialize();
+  EventLoop*   create_event_loop(IConnnectionHander* hander,IDecoder* decoder,IEncoder* encoder,int tnum);
+  void         set_msg_buffer_size(EventLoop* loop,int size);
+  void         destroy_event_loop(EventLoop* ev);
+  int          serve_on_port(EventLoop* ev,int port);
+  int          connect(EventLoop* ev,const char* ip,int port,int64_t userdata,int32_t reconnect);
+  void         event_process(EventLoop* ev);
+  void         close_connection(Connection* conn);
+  void         msg_send(Connection* conn,Msg* msg);
+  int64_t      conection_user_data(Connection* conn);
+  GameObject*  get_game_object(Connection* conn);
+  void         attach_game_object(Connection* conn,GameObject* obj);
+  void         dettach_game_object(Connection* conn);
+  const char*  get_ip_addr(Connection* conn);
 }
 #endif

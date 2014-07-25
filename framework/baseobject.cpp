@@ -75,13 +75,13 @@ BaseObject* BaseObjectManager::FindBaseObject(uint64_t uuid)
 
 namespace
 {
-  class DelayCommandTimer:public ezTimerTask
+  class DelayCommandTimer:public TimerTask
   {
   public:
-    DelayCommandTimer(uint64_t uuid,Command* cmd):uuid_(uuid),cmd_(cmd){}
+    DelayCommandTimer(int64_t tid,uint64_t obj_uuid,Command* cmd):TimerTask(tid),obj_uuid_(obj_uuid),cmd_(cmd){}
     virtual void run()
     {
-      BaseObject* o=BaseObjectManager::Instance()->FindBaseObject(uuid_);
+      BaseObject* o=BaseObjectManager::Instance()->FindBaseObject(obj_uuid_);
       if(o)
         cmd_->OnCommand(o);
       else
@@ -90,14 +90,14 @@ namespace
       cmd_=NULL;
     }
   private:
-    uint64_t uuid_;
+    uint64_t obj_uuid_;
     Command* cmd_;
   };
 }
 
 void BaseObjectManager::PushDelayCommand(int64_t now,uint64_t uuid,Command* cmd,int delay)
 {
-  ezTimerTask* t=new DelayCommandTimer(uuid,cmd);
+  TimerTask* t=new DelayCommandTimer(timer_.gen_timer_uuid(),uuid,cmd);
   t->config(now,delay,0);
-  timer_.addTimeTask(t);
+  timer_.add_timer_task(t);
 }

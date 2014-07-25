@@ -325,15 +325,15 @@ void net::ezEpollPoller::DelTimer(ezPollerEventHander* hander,int32_t timerid)
 
 void net::ezPollTimer::AddTimer(int64_t timeout,ezPollerEventHander* hander,int32_t timerid)
 {
-  ezTimerEntry entry={timerid,hander};
-  timers_.insert(std::multimap<int64_t,ezTimerEntry>::value_type(timeout+base::ezNowTick(),entry));
+  TimerEntry entry={timerid,hander};
+  timers_.insert(std::multimap<int64_t,TimerEntry>::value_type(timeout+base::now_tick(),entry));
 }
 
 void net::ezPollTimer::DelTimer(ezPollerEventHander* hander,int32_t timerid)
 {
   for(auto iter=timers_.begin();iter!=timers_.end();)
   {
-    ezTimerEntry& entry=iter->second;
+    TimerEntry& entry=iter->second;
     if(entry.hander_==hander&&entry.timerid_==timerid)
       iter=timers_.erase(iter);
     else
@@ -345,10 +345,10 @@ int64_t net::ezPollTimer::InvokeTimer()
 {
   if(timers_.empty())
     return 0;
-  int64_t cur=base::ezNowTick();
+  int64_t cur=base::now_tick();
   for(auto iter=timers_.begin();iter!=timers_.end();)
   {
-    ezTimerEntry& entry=iter->second;
+    TimerEntry& entry=iter->second;
     if(iter->first>cur)
       return iter->first-cur;
     entry.hander_->HandleTimer();

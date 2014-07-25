@@ -8,19 +8,19 @@
 
 namespace
 {
-	bool TimeInitialized=false;
+	bool time_initialized=false;
 }
 #ifdef __linux__
 namespace {timeval ls;}
-static void InitTime()
+static void init_time()
 {
-	TimeInitialized=true;
+	time_initialized=true;
 	gettimeofday(&ls,0);
 }
-int64_t base::ezNowTick()
+int64_t base::now_tick()
 {
-	if(!TimeInitialized)
-		InitTime();
+	if(!time_initialized)
+		init_time();
 	timeval le;
 	gettimeofday(&le,0);
 	return ((int64_t)le.tv_sec*1000+le.tv_usec/1000)-((int64_t)ls.tv_sec*1000+ls.tv_usec/1000);
@@ -31,24 +31,24 @@ namespace
 	LARGE_INTEGER l;
 	LARGE_INTEGER ls;
 }
-static void InitTime()
+static void init_time()
 {
-	TimeInitialized=true;
+	time_initialized=true;
 	QueryPerformanceFrequency(&l);
 	QueryPerformanceCounter(&ls);
 }
 
-int64_t base::ezNowTick()
+int64_t base::now_tick()
 {
-	if(!TimeInitialized)
-		InitTime();
+	if(!time_initialized)
+		init_time();
 	LARGE_INTEGER le;
 	QueryPerformanceCounter(&le);
 	return (int64_t)((double(le.QuadPart-ls.QuadPart))/double(l.QuadPart)*1000);
 }
 #endif
 
-void base::ezSleep(int millisec)
+void base::sleep(int millisec)
 {
 #ifdef __linux__
 	usleep(millisec*1000);
@@ -57,7 +57,7 @@ void base::ezSleep(int millisec)
 #endif
 }
 
-void base::ezFormatTime(std::time_t t,std::string& str)
+void base::format_time(std::time_t t,std::string& str)
 {
 	tm* timeinfo=NULL;
 	char timestring[128];

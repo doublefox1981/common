@@ -3,12 +3,12 @@
 
 namespace net
 {
-	class ezBuffer
+	class Buffer
 	{
 	public:
 		static const size_t ezInitSize=128*1024;
-		explicit ezBuffer(size_t initSize=ezInitSize);
-		~ezBuffer();
+		explicit Buffer(size_t initSize=ezInitSize);
+		~Buffer();
 		void drain(size_t len);
 		int remove(void* data,size_t datlen);
 		void align();

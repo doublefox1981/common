@@ -3,48 +3,49 @@
 #include <stdint.h>
 #include <queue>
 #include <limits>
+#include <unordered_map>
 #include <functional>
 
 namespace base
 {
-  class ezTimerTask
+  class TimerTask
   {
   public:
     static const int64_t TIMER_FOREVER=0x7fffffffffffffff;
-    ezTimerTask();
-    virtual ~ezTimerTask(){}
-    void config(int64_t now,int64_t duration,int64_t repeat=0);
-    bool willFire(int64_t now);
-    bool afterFire(int64_t now);
+    explicit TimerTask(int64_t tid);
+    virtual ~TimerTask(){}
+    void config(int64_t now,int64_t duration,int64_t repeat=TIMER_FOREVER);
+    bool will_fire(int64_t now);
+    bool after_fire(int64_t now);
     void cancel(){cancel_=true;}
     bool canceled(){return cancel_;}
     virtual void run(){}
   private:
     bool cancel_;
-    int64_t firedtime_;
+    int64_t fired_time_;
     int64_t repeats_;
     int64_t duration_;
-
-    friend class ezTimer;
+    int64_t id_;
+    friend class Timer;
   };
 
   template <typename ArgType>
-  class ezFunctorTimerTask:public ezTimerTask
+  class FunctorTimerTask:public TimerTask
   {
   public:
     typedef std::function<void(const ArgType&)> FUNC_TYPE;
-    ezFunctorTimerTask(FUNC_TYPE& func,const ArgType& arg):functor_(func),arg_(arg){}
+    FunctorTimerTask(int64_t tid,FUNC_TYPE& func,const ArgType& arg):TimerTask(tid),functor_(func),arg_(arg){}
     virtual void run(){functor_(arg_);}
   private:
     ArgType arg_;
     FUNC_TYPE functor_;
   };
 
-  class ezVoidFunctorTimerTask:public ezTimerTask
+  class VoidFunctorTimerTask:public TimerTask
   {
   public:
     typedef std::function<void()> FUNC_TYPE;
-    ezVoidFunctorTimerTask(FUNC_TYPE& func):functor_(func){}
+    VoidFunctorTimerTask(int64_t tid,FUNC_TYPE& func):TimerTask(tid),functor_(func){}
     virtual void run(){functor_();}
   private:
     FUNC_TYPE functor_;
@@ -53,26 +54,36 @@ namespace base
   *** 常用定时器分为时间轮算法(用于linux内核)，以及小顶堆(优先队列)
   *** 此处使用优先队列 lg(n)的时间复杂度
   **/
-  class ezTimer
+  typedef std::priority_queue<TimerTask*,std::vector<TimerTask*>,std::greater<std::vector<TimerTask*>::value_type>> TIMER_HEAP;
+  typedef std::unordered_map<int64_t,TimerTask*> TIMER_MAP;
+  class Timer
   {
   public:
-    void addTimeTask(ezTimerTask* task);
+    Timer();
+    virtual ~Timer();
+    void add_timer_task(TimerTask* task);
+    void del_timer_task(uint64_t id);
     void tick(int64_t now);
-    void runAfter(int64_t now,int later,std::function<void()>& func)
+    int64_t gen_timer_uuid();
+    int64_t run_after(int64_t now,int later,std::function<void()>& func)
     {    
-      ezTimerTask* task=new ezVoidFunctorTimerTask(func);
+      TimerTask* task=new VoidFunctorTimerTask(gen_timer_uuid(),func);
       task->config(now,later,0);
-      addTimeTask(task);
+      add_timer_task(task);
     }
     template <typename ArgType>
-    void runAfter(int64_t now,int later,std::function<void(const ArgType&)>& func,const ArgType& args)
+    int64_t run_after(int64_t now,int later,std::function<void(const ArgType&)>& func,const ArgType& args)
     {
-      ezTimerTask* task=new ezFunctorTimerTask<ArgType>(func,args);
+      TimerTask* task=new FunctorTimerTask<ArgType>(gen_timer_uuid(),func,args);
+      task->id_=++s_timer_id_;
       task->config(now,later,0);
-      addTimeTask(task);
+      add_timer_task(task);
     }
   private:
-    std::priority_queue<ezTimerTask*,std::vector<ezTimerTask*>,std::greater<std::vector<ezTimerTask*>::value_type>> minHeap_;
+    void remove_timer_task(int64_t id);
+    TIMER_HEAP min_heap_;
+    TIMER_MAP  timer_map_;
+    int64_t    s_timer_id_;
   };
 }
 

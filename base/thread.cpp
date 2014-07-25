@@ -8,18 +8,21 @@ namespace base
 #endif
 
 
-	void Threads::setCurrentPriority( ThreadPriority priority ) {
+	void Threads::set_current_priority(ThreadPriority priority)
+  {
 #ifdef _WIN32
-		SetThreadPriority( GetCurrentThread( ), getPlatformPriority( priority ) );
+		SetThreadPriority(GetCurrentThread( ),get_platform_priority(priority));
 #else
 		sched_param schedparams;
-		schedparams.sched_priority = getPlatformPriority( priority );
-		pthread_setschedparam( pthread_self( ), SCHED_OTHER, &schedparams );
+		schedparams.sched_priority=get_platform_priority(priority);
+		pthread_setschedparam(pthread_self(),SCHED_OTHER,&schedparams);
 #endif
 	}
 
-	int Threads::getPlatformPriority( ThreadPriority &priority ) {
-		switch( priority ) {
+	int Threads::get_platform_priority(ThreadPriority& priority) 
+  {
+		switch(priority) 
+    {
 #ifdef _WIN32
 		case TP_IDLE:
 			return THREAD_PRIORITY_IDLE;
@@ -59,31 +62,66 @@ namespace base
 		}
 	}
 
-	unsigned long Threads::getTick()
+	unsigned long Threads::get_tick()
 	{
 #ifdef _WIN32
-		return GetTickCount() - mStartTick;
+		return GetTickCount()-start_tick_;
 #else
 		timeval tv;
 		gettimeofday(&tv,nullptr);
-		return (tv.tv_sec*1000 + tv.tv_usec/1000) - mStartTick;
+		return (tv.tv_sec*1000+tv.tv_usec/1000)-start_tick_;
 #endif
 	}
 
+#ifdef _WIN32
+  static DWORD WINAPI thread_func(void *data) 
+  {
+#else
+  static void* thread_func(void *data) 
+  {
+#endif	
+    Threads *thread = (Threads *)data;
+    thread->run();
+    return 0;
+  }
 
-	void Threads::Start()
+	void Threads::start()
 	{
 #ifdef _WIN32
-		mthread = CreateThread( nullptr, 0, (LPTHREAD_START_ROUTINE)thread_func, (void*)this, 0, 0 ) ;
-		mStartTick = GetTickCount();
+		thread_=CreateThread( nullptr, 0, (LPTHREAD_START_ROUTINE)thread_func, (void*)this, 0, 0 ) ;
+		start_tick_=GetTickCount();
 #else
 		timeval tv;
 		gettimeofday(&tv,nullptr);
-		mStartTick = tv.tv_sec*1000 + tv.tv_usec/1000;
+		start_tick_ = tv.tv_sec*1000 + tv.tv_usec/1000;
 		pthread_t thread;
 		pthread_attr_t threadattributes;
 		pthread_attr_init( &threadattributes );
-		pthread_create( &mthread, &threadattributes, thread_func, (void*)this );
+		pthread_create( &thread_, &threadattributes, thread_func, (void*)this );
 #endif
 	}
+
+  Threads::Threads()
+  {
+    exit_=false;
+  }
+
+  Threads::~Threads()
+  {
+  }
+
+  void Threads::stop()
+  {
+    exit_=true;
+  }
+
+  void Threads::join()
+  {
+#ifndef _WIN32
+    pthread_join(thread_,nullptr);
+#else
+    WaitForSingleObject(thread_,INFINITE);
+#endif
+  }
+
 }

@@ -3,10 +3,9 @@
 #include <vector>
 #include <unordered_map>
 #include <stdint.h>
-
 #include "../base/eztimer.h"
-using base::ezTimer;
-using base::ezTimerTask;
+using base::Timer;
+using base::TimerTask;
 
 namespace framework
 {
@@ -51,7 +50,7 @@ namespace framework
     };
     std::unordered_map<uint64_t,BaseObject*> objmap_;
     std::vector<CommandHelper>               cmdqueue_;
-    ezTimer                                  timer_;
+    Timer                                  timer_;
     static BaseObjectManager*                sinstance_;
   };
 

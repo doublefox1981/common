@@ -14,12 +14,12 @@
 
 namespace net
 {
-  class ezCloseHander:public ezIConnnectionHander
+  class ezCloseHander:public IConnnectionHander
   {
   public:
-    virtual void OnOpen(ezConnection* conn){conn->ActiveClose();}
-    virtual void OnClose(ezConnection* conn){}
-    virtual void OnData(ezConnection* conn,ezMsg* msg){}
+    virtual void on_open(Connection* conn){conn->ActiveClose();}
+    virtual void on_close(Connection* conn){}
+    virtual void on_data(Connection* conn,Msg* msg){}
   };
 }
 
@@ -45,7 +45,7 @@ namespace net
   }
 }
 
-net::ezEventLoop::ezEventLoop()
+net::EventLoop::EventLoop()
 {
   shutdown_=false;
 	hander_=nullptr;
@@ -55,7 +55,7 @@ net::ezEventLoop::ezEventLoop()
   buffersize_=16*1024;
 }
 
-net::ezEventLoop::~ezEventLoop()
+net::EventLoop::~EventLoop()
 {
   /* 由应用层销毁,因hander,decoder,encoder可被应用继承
 	if(hander_) delete hander_;
@@ -72,7 +72,7 @@ net::ezEventLoop::~ezEventLoop()
   if(mainevqueue_) delete mainevqueue_;
 }
 
-int net::ezEventLoop::Initialize(ezIConnnectionHander* hander,ezIDecoder* decoder,ezIEncoder* encoder,int tnum)
+int net::EventLoop::Initialize(IConnnectionHander* hander,IDecoder* decoder,IEncoder* encoder,int tnum)
 {
 	hander_=hander;
   decoder_=decoder;
@@ -82,7 +82,7 @@ int net::ezEventLoop::Initialize(ezIConnnectionHander* hander,ezIDecoder* decode
   for(int i=0;i<tnum;++i)
   {
     threads_[i]=new ezIoThread(this,i+1);
-    threads_[i]->Start();
+    threads_[i]->start();
   }
   evqueues_=new ThreadEvQueue*[tnum+1];
   evqueues_[0]=mainevqueue_;
@@ -93,7 +93,7 @@ int net::ezEventLoop::Initialize(ezIConnnectionHander* hander,ezIDecoder* decode
 	return 0;
 }
 
-int net::ezEventLoop::ServeOnPort(int port)
+int net::EventLoop::serve_on_port(int port)
 {
   SOCKET s=CreateTcpServer(port,nullptr);
   if(s==INVALID_SOCKET)
@@ -106,7 +106,7 @@ int net::ezEventLoop::ServeOnPort(int port)
   return 0;
 }
 
-int net::ezEventLoop::ConnectTo(const std::string& ip,int port,int64_t userdata,int32_t reconnect)
+int net::EventLoop::ConnectTo(const std::string& ip,int port,int64_t userdata,int32_t reconnect)
 {
   ezIoThread* thread=ChooseThread();
   ezThreadEvent ev;
@@ -118,7 +118,7 @@ int net::ezEventLoop::ConnectTo(const std::string& ip,int port,int64_t userdata,
   return 0;
 }
 
-int net::ezEventLoop::Shutdown()
+int net::EventLoop::Shutdown()
 {
   shutdown_=true;
   hander_=closehander_;
@@ -135,7 +135,7 @@ int net::ezEventLoop::Shutdown()
   while(!conns_.empty())
   {
     Loop();
-    base::ezSleep(1);
+    base::sleep(1);
   }
   for(int i=0;i<threadnum_;++i)
   {
@@ -144,7 +144,7 @@ int net::ezEventLoop::Shutdown()
     threads_[i]->OccurEvent(ev);
   }
   for(int i=0;i<threadnum_;++i)
-    threads_[i]->Join();
+    threads_[i]->join();
   return 1;
 }
 
@@ -153,13 +153,13 @@ uint64_t net::ezUUID::uuid()
 	return suuid_.Add(1);
 }
 
-void net::ezEventLoop::OccerEvent(int tid,ezThreadEvent& ev)
+void net::EventLoop::OccerEvent(int tid,ezThreadEvent& ev)
 {
   assert(tid<=threadnum_);
   evqueues_[tid]->Send(ev);
 }
 
-net::ezIoThread* net::ezEventLoop::GetThread(int idx)
+net::ezIoThread* net::EventLoop::GetThread(int idx)
 {
   if(idx>0&&idx<=threadnum_)
     return threads_[idx-1];
@@ -167,7 +167,7 @@ net::ezIoThread* net::ezEventLoop::GetThread(int idx)
     return NULL;
 }
 
-net::ezIoThread* net::ezEventLoop::ChooseThread()
+net::ezIoThread* net::EventLoop::ChooseThread()
 {
   int idx=0;
   int minload=threads_[idx]->GetLoad();
@@ -182,7 +182,7 @@ net::ezIoThread* net::ezEventLoop::ChooseThread()
   return threads_[idx];
 }
 
-void net::ezEventLoop::Loop()
+void net::EventLoop::Loop()
 {
   ezThreadEvent ev;
   while(mainevqueue_->Recv(ev))
@@ -191,7 +191,7 @@ void net::ezEventLoop::Loop()
   }
 }
 
-void net::ezEventLoop::AddConnection(ezConnection* con)
+void net::EventLoop::AddConnection(Connection* con)
 {
   if(shutdown_)
     return;
@@ -199,29 +199,29 @@ void net::ezEventLoop::AddConnection(ezConnection* con)
   conns_.insert(con);
 }
 
-void net::ezEventLoop::DelConnection(ezConnection* con)
+void net::EventLoop::DelConnection(Connection* con)
 {
   auto iter=conns_.find(con);
   assert(iter!=conns_.end());
   conns_.erase(iter);
 }
 
-int net::ezEventLoop::GetConnectionNum()
+int net::EventLoop::GetConnectionNum()
 {
   return conns_.size();
 }
 
-int net::ezEventLoop::GetBufferSize()
+int net::EventLoop::GetBufferSize()
 {
   return buffersize_;
 }
 
-void net::ezEventLoop::SetBufferSize(int s)
+void net::EventLoop::SetBufferSize(int s)
 {
   buffersize_=s;
 }
 
-net::ezThreadEventHander::ezThreadEventHander(ezEventLoop* loop,int tid):looper_(loop),tid_(tid)
+net::ezThreadEventHander::ezThreadEventHander(EventLoop* loop,int tid):looper_(loop),tid_(tid)
 {}
 
 void net::ezThreadEventHander::OccurEvent(ezThreadEvent& ev)
@@ -230,55 +230,55 @@ void net::ezThreadEventHander::OccurEvent(ezThreadEvent& ev)
   looper_->OccerEvent(tid_,ev);
 }
 
-void  net::EzNetInitialize()
+void  net::net_initialize()
 {
   net::InitNetwork();
 }
 
-net::ezEventLoop* net::CreateEventLoop(ezIConnnectionHander* hander,ezIDecoder* decoder,ezIEncoder* encoder,int tnum)
+net::EventLoop* net::create_event_loop(IConnnectionHander* hander,IDecoder* decoder,IEncoder* encoder,int tnum)
 {
-  net::ezEventLoop* ev=new net::ezEventLoop;
+  net::EventLoop* ev=new net::EventLoop;
   ev->Initialize(hander,decoder,encoder,tnum);
   return ev;
 }
 
-void net::SetMsgBufferSize(ezEventLoop* loop,int size)
+void net::set_msg_buffer_size(EventLoop* loop,int size)
 {
   loop->SetBufferSize(size);
 }
 
-void net::DestroyEventLoop(ezEventLoop* ev)
+void net::destroy_event_loop(EventLoop* ev)
 {
   ev->Shutdown();
   delete ev;
 }
 
-int net::ServeOnPort(ezEventLoop* ev,int port)
+int net::serve_on_port(EventLoop* ev,int port)
 {
-  return ev->ServeOnPort(port);
+  return ev->serve_on_port(port);
 }
 
-int net::Connect(ezEventLoop* ev,const char* ip,int port,int64_t userdata,int32_t reconnect)
+int net::connect(EventLoop* ev,const char* ip,int port,int64_t userdata,int32_t reconnect)
 {
   return ev->ConnectTo(ip,port,userdata,reconnect);
 }
 
-void net::EventProcess(net::ezEventLoop* ev)
+void net::event_process(net::EventLoop* ev)
 {
   ev->Loop();
 }
 
-void net::CloseConnection(net::ezConnection* conn)
+void net::close_connection(net::Connection* conn)
 {
   conn->ActiveClose();
 }
 
-void net::MsgSend(ezConnection* conn,ezMsg* msg)
+void net::msg_send(Connection* conn,Msg* msg)
 {
   conn->SendMsg(*msg);
 }
 
-int64_t net::ConnectionUserdata(ezConnection* conn)
+int64_t net::conection_user_data(Connection* conn)
 {
   return conn->GetUserdata();
 }

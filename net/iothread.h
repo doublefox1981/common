@@ -13,7 +13,7 @@ namespace net{
   class ezIoThread:public ezPollerEventHander,public base::Threads,public ezThreadEventHander
   {
   public:
-    ezIoThread(ezEventLoop* loop,int tid);
+    ezIoThread(EventLoop* loop,int tid);
     virtual ~ezIoThread();
     ThreadEvQueue* GetEvQueue() {return evqueue_;}
     ezPoller* GetPoller() {return poller_;}
@@ -24,7 +24,7 @@ namespace net{
     virtual void HandleOutEvent(){}
     virtual void HandleTimer(){}
     virtual void ProcessEvent(ezThreadEvent& ev);
-    virtual void Run();
+    virtual void run();
   private:
     int                     load_;
     ezPoller*               poller_;

@@ -20,11 +20,11 @@ namespace base
     std::string    str_;
     time_t time_;
   };
-  LogMessage* CreateLogMessage()
+  LogMessage* create_log_message()
   {
     return new LogMessage;
   }
-  void DestroyLogMessage(LogMessage* msg)
+  void destroy_log_message(LogMessage* msg)
   {
     delete msg;
   }
@@ -32,7 +32,7 @@ namespace base
 
 void base::ezLogger::print(int type,const char* format,va_list args)
 {
-  LogMessage* msg=base::CreateLogMessage();
+  LogMessage* msg=base::create_log_message();
   if(!msg)
     return;
   msg->time_=time(NULL);
@@ -81,11 +81,11 @@ base::ezLogger::~ezLogger()
   list_for_each_safe(iter,next,&lst_)
   {
     LogMessage* log=list_entry(iter,LogMessage,next_);
-    DestroyLogMessage(log);
+    destroy_log_message(log);
   }
 }
 
-base::ezLogger::ezLogger() :logLevel_(0)
+base::ezLogger::ezLogger() :log_level_(0)
 {
   INIT_LIST_HEAD(&lst_);
 }
@@ -98,9 +98,9 @@ static inline struct tm* localtime_r(const time_t* timep, struct tm* result) {
 #define snprintf _snprintf
 #endif
 #endif
-void base::ezLogger::Run()
+void base::ezLogger::run()
 {
-  while(!mbExit)
+  while(!exit_)
   {
     LIST_HEAD(tmpqueue);
     {
@@ -115,7 +115,7 @@ void base::ezLogger::Run()
     list_for_each_safe(iter,next,&tmpqueue)
     {
       LogMessage* log=list_entry(iter,LogMessage,next_);
-      if(log->type_>=logLevel_)
+      if(log->type_>=log_level_)
       {
         EPrintColor color;
         switch(log->type_)
@@ -164,9 +164,9 @@ void base::ezLogger::Run()
         printf("%s\n",log->str_.c_str());
         fflush(stdout);
       }
-      DestroyLogMessage(log);
+      destroy_log_message(log);
     }
-    base::ezSleep(20);
+    base::sleep(20);
   }
 }
 #undef snprintf

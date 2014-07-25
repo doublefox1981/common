@@ -10,19 +10,19 @@
 namespace net{
   class ezIoThread;
 
-  class ezIMessagePusher
+  class IMessagePusher
   {
   public:
-    virtual ~ezIMessagePusher(){}
-    virtual bool PushMsg(ezMsg* msg)=0;
+    virtual ~IMessagePusher(){}
+    virtual bool PushMsg(Msg* msg)=0;
   };
 
-  class ezIMessagePuller
+  class IMessagePuller
   {
   public:
-    virtual ~ezIMessagePuller(){}
-    virtual bool PullMsg(ezMsg* msg)=0;
-    virtual void Rollback(ezMsg* msg)=0;
+    virtual ~IMessagePuller(){}
+    virtual bool PullMsg(Msg* msg)=0;
+    virtual void Rollback(Msg* msg)=0;
   };
 
   // 可被监听套接字和连接套接字继承
@@ -39,7 +39,7 @@ namespace net{
     ,public ezIFlashedFd
   {
   public:
-    ezListenerFd(ezEventLoop* loop,ezIoThread* io,int fd);
+    ezListenerFd(EventLoop* loop,ezIoThread* io,int fd);
     virtual ~ezListenerFd(){}
     virtual void ProcessEvent(ezThreadEvent& ev);
     virtual void HandleInEvent();
@@ -52,55 +52,55 @@ namespace net{
   };
 
   class ezClientFd;
-  class ezClientMessagePusher:public ezIMessagePusher
+  class ezClientMessagePusher:public IMessagePusher
   {
   public:
     explicit ezClientMessagePusher(ezClientFd* cli);
-    virtual bool PushMsg(ezMsg* msg);
+    virtual bool PushMsg(Msg* msg);
   private:
     ezClientFd* client_;
   };
 
-  class ezClientMessagePuller:public ezIMessagePuller
+  class ezClientMessagePuller:public IMessagePuller
   {
   public:
     explicit ezClientMessagePuller(ezClientFd* cli);
-    virtual bool PullMsg(ezMsg* msg);
-    virtual void Rollback(ezMsg*  msg);
+    virtual bool PullMsg(Msg* msg);
+    virtual void Rollback(Msg*  msg);
   private:
     ezClientFd* client_;
   };
 
-  typedef moodycamel::ReaderWriterQueue<ezMsg> MsgQueue;
+  typedef moodycamel::ReaderWriterQueue<Msg> MsgQueue;
   class ezClientFd:public ezPollerEventHander,public ezThreadEventHander
   {
   public:
-    ezClientFd(ezEventLoop* loop,ezIoThread* io,int fd,int64_t userdata);
+    ezClientFd(EventLoop* loop,ezIoThread* io,int fd,int64_t userdata);
     virtual ~ezClientFd();
     virtual void HandleInEvent();
     virtual void HandleOutEvent();
     virtual void HandleTimer(){}
     virtual void ProcessEvent(ezThreadEvent& ev);
-    void SendMsg(ezMsg& msg);
-    bool RecvMsg(ezMsg& msg);
+    void SendMsg(Msg& msg);
+    bool RecvMsg(Msg& msg);
     void ActiveClose();
     void PassiveClose();
     int64_t GetUserData(){return userdata_;}
   private:
-    ezIDecoder*       decoder_;
-    ezIEncoder*       encoder_;
-    ezIMessagePusher* pusher_;
-    ezIMessagePuller* puller_;
+    IDecoder*       decoder_;
+    IEncoder*       encoder_;
+    IMessagePusher* pusher_;
+    IMessagePuller* puller_;
     ezIoThread* io_;
     int         fd_;
     int64_t     userdata_;
-    ezBuffer*   inbuf_;
-    ezBuffer*   outbuf_;
+    Buffer*   inbuf_;
+    Buffer*   outbuf_;
     MsgQueue    sendqueue_;
     MsgQueue    recvqueue_;
-    ezMsg       cachemsg_;
+    Msg       cachemsg_;
     bool        cached_;
-    ezConnection* conn_;
+    Connection* conn_;
 
     friend class ezClientMessagePusher;
     friend class ezClientMessagePuller;
@@ -111,7 +111,7 @@ namespace net{
   public:
     static const int CONNECTTO_TIMER_ID=1;
   public:
-    ezConnectToFd(ezEventLoop* loop,ezIoThread* io,int64_t userd,int32_t reconnect/*reconnect timeout,second*/);
+    ezConnectToFd(EventLoop* loop,ezIoThread* io,int64_t userd,int32_t reconnect/*reconnect timeout,second*/);
     void SetIpPort(const std::string& ip,int port);
     virtual void ProcessEvent(ezThreadEvent& ev);
     virtual void HandleInEvent();

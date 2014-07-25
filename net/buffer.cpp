@@ -12,7 +12,7 @@
 ***2:使用固定大小块的队列，比如每次接收8K，存放于队列，这种方式是高效，解析时可以减少内存拷贝，但是结构更复杂，
 ***权衡后觉得这一步骤不会成为瓶颈，故采用方式1
 **/
-net::ezBuffer::ezBuffer(size_t initSize/*=ezInitSize*/)
+net::Buffer::Buffer(size_t initSize/*=ezInitSize*/)
 {
 	orig_buffer_=new char[initSize];
 	buffer_=orig_buffer_;
@@ -21,13 +21,13 @@ net::ezBuffer::ezBuffer(size_t initSize/*=ezInitSize*/)
 	off_=0;
 }
 
-net::ezBuffer::~ezBuffer()
+net::Buffer::~Buffer()
 {
 	if(orig_buffer_)
 		delete [] orig_buffer_;
 }
 
-void net::ezBuffer::drain(size_t len)
+void net::Buffer::drain(size_t len)
 {
 	size_t oldoff=off_;
 	if(len>=off_)
@@ -43,7 +43,7 @@ void net::ezBuffer::drain(size_t len)
 	off_-=len;
 }
 
-int net::ezBuffer::remove(void* data,size_t datlen)
+int net::Buffer::remove(void* data,size_t datlen)
 {
 	size_t nread=datlen;
 	if (nread>=off_)
@@ -53,24 +53,24 @@ int net::ezBuffer::remove(void* data,size_t datlen)
 	return (nread);
 }
 
-void net::ezBuffer::align()
+void net::Buffer::align()
 {
 	memmove(orig_buffer_,buffer_,off_);
 	buffer_=orig_buffer_;
 	misalign_=0;
 }
 
-int net::ezBuffer::maxadd()
+int net::Buffer::maxadd()
 {
 	return (totallen_-off_);
 }
 
-int net::ezBuffer::fastadd()
+int net::Buffer::fastadd()
 {
 	return (totallen_-off_-misalign_);
 }
 
-int net::ezBuffer::expand(size_t datlen)
+int net::Buffer::expand(size_t datlen)
 {
 	size_t space=totallen_-misalign_-off_;
 	if(space>=datlen)
@@ -84,7 +84,7 @@ int net::ezBuffer::expand(size_t datlen)
 		return -1;
 }
 
-int net::ezBuffer::add(const void* data,size_t datlen)
+int net::Buffer::add(const void* data,size_t datlen)
 {
 	if(expand(datlen)<0)
 		return -1;
@@ -93,7 +93,7 @@ int net::ezBuffer::add(const void* data,size_t datlen)
 	return 0;
 }
 
-int net::ezBuffer::readfd(int fd)
+int net::Buffer::readfd(int fd)
 {
 	int canread=fastadd();
 	if(canread<=0)
@@ -110,7 +110,7 @@ int net::ezBuffer::readfd(int fd)
 	return retn;
 }
 
-int net::ezBuffer::writefd(int fd)
+int net::Buffer::writefd(int fd)
 {
 	while(off_>0)
 	{
@@ -127,7 +127,7 @@ int net::ezBuffer::writefd(int fd)
 	return 0;
 }
 
-int net::ezBuffer::readable(char*& pbuf)
+int net::Buffer::readable(char*& pbuf)
 {
 	pbuf=buffer_;
 	return off_;

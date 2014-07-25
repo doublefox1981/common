@@ -2,7 +2,7 @@
 // #include "../base/memorystream.h"
 // #include "../base/scopeguard.h"
 // #include "../base/eztime.h"
-// #include "../base/eztimer.h"
+// #include "../base/Timer.h"
 // #include "../base/thread.h"
 // #include "../base/util.h"
 // #include "../base/logging.h"
@@ -27,36 +27,36 @@
 //   std::string ip_;
 //   int port_;
 //   int status_;
-//   ezConnection* conn_;
+//   Connection* conn_;
 // };
 // 
 // std::vector<ConnectToInfo> gConnSet;
-// class TestClientHander:public net::ezIConnnectionHander
+// class TestClientHander:public net::IConnnectionHander
 // {
 // public:
-//   virtual void OnOpen(ezConnection* conn)
+//   virtual void on_open(Connection* conn)
 //   {
 //     for(size_t i=0;i<gConnSet.size();++i)
 //     {
-//       if(ConnectionUserdata(conn)==gConnSet[i].id_)
+//       if(conection_user_data(conn)==gConnSet[i].id_)
 //       {
 //         gConnSet[i].status_=ECTS_CONNECTOK;
 //         gConnSet[i].conn_=conn;
 //       }
 //     }
 //   }
-//   virtual void OnClose(ezConnection* conn)
+//   virtual void on_close(Connection* conn)
 //   {
 //     for(size_t i=0;i<gConnSet.size();++i)
 //     {
-//       if(ConnectionUserdata(conn)==gConnSet[i].id_)
+//       if(conection_user_data(conn)==gConnSet[i].id_)
 //       {
 //         gConnSet[i].status_=ECTS_DISCONNECT;
 //         gConnSet[i].conn_=NULL;
 //       }
 //     }
 //   }
-//   virtual void OnData(ezConnection* conn,ezMsg* msg){}
+//   virtual void on_data(Connection* conn,Msg* msg){}
 // };
 // bool exit_=false;
 // #ifdef __linux__
@@ -127,12 +127,12 @@
 //   }
 //   LOG_INFO("%s",format.c_str());
 // 
-//   net::EzNetInitialize();
+//   net::net_initialize();
 // 
-//   net::ezIConnnectionHander* hander=new TestClientHander;
-//   net::ezIDecoder* decoder=new net::ezMsgDecoder(20000);
-//   net::ezIEncoder* encoder=new net::ezMsgEncoder;
-//   ezEventLoop* ev=net::CreateEventLoop(hander,decoder,encoder,4);
+//   net::IConnnectionHander* hander=new TestClientHander;
+//   net::IDecoder* decoder=new net::MsgDecoder(20000);
+//   net::IEncoder* encoder=new net::MsgEncoder;
+//   EventLoop* ev=net::create_event_loop(hander,decoder,encoder,4);
 //   for(int i=0;i<10;++i)
 //   {
 //     net::Connect(ev,"192.168.99.51",10011,i,10);
@@ -140,12 +140,12 @@
 //     gConnSet.push_back(info);
 //   }
 // 
-//   base::ScopeGuard guard([&](){net::DestroyEventLoop(ev); delete hander; delete decoder; delete encoder;});
+//   base::ScopeGuard guard([&](){net::destroy_event_loop(ev); delete hander; delete decoder; delete encoder;});
 //   int seq=0;
 //   while(!exit_)
 //   {
-//     net::EventProcess(ev);
-//     base::ezSleep(1);
+//     net::event_process(ev);
+//     base::sleep(1);
 //     if((rand()%100)>95)
 //     {
 //       net::Connect(ev,"192.168.99.51",10011,0,10);
@@ -153,22 +153,22 @@
 //     }
 //     for(size_t s=0;s<gConnSet.size();++s)
 //     {
-//       ezConnection* conn=gConnSet[s].conn_;
+//       Connection* conn=gConnSet[s].conn_;
 //       if(!conn)
 //         continue;
 //       if((rand()%100)>90)
 //       {
-//         net::CloseConnection(conn);
+//         net::close_connection(conn);
 //         continue;
 //       }
 //       for(int i=0;i<1;++i)
 //       {
 //         int ss=(rand()%15000+4);
-//         ezMsg msg;
-//         net::ezMsgInitSize(&msg,ss);
-//         base::ezBufferWriter writer((char*)net::ezMsgData(&msg),net::ezMsgSize(&msg));
+//         Msg msg;
+//         net::msg_init_size(&msg,ss);
+//         base::BufferWriter writer((char*)net::msg_data(&msg),net::msg_size(&msg));
 //         writer.Write(++seq);
-//         net::MsgSend(conn,&msg);
+//         net::msg_send(conn,&msg);
 //       }
 //     }
 //   }
@@ -189,6 +189,7 @@
 #include <process.h>
 #include <iostream>
 #include <string>
+#include <assert.h>
 
 
 enum memory_order

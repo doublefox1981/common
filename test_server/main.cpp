@@ -132,35 +132,35 @@ int main()
   sm.SetStartState(idle);
   sm.Start(&m);
   
-  base::ezTimer gTimer;
-  //gTimer.runAfter(base::ezNowTick(),10000,std::function<void()>(func1));
+  base::Timer gTimer;
+  //gTimer.runAfter(base::now_tick(),10000,std::function<void()>(func1));
   SFuncArg arg;
   arg.a=10;
   arg.s="funcstruct";
-  //gTimer.runAfter<SFuncArg>(base::ezNowTick(),10000,std::function<void(const SFuncArg&)>(func),arg);
+  //gTimer.runAfter<SFuncArg>(base::now_tick(),10000,std::function<void(const SFuncArg&)>(func),arg);
 
-  base::ezLogger::instance()->Start();
-  net::EzNetInitialize();
-  net::ezIConnnectionHander* hander=new net::ezServerHander;
-  net::ezIDecoder* decoder=new net::ezMsgDecoder(20000);
-  net::ezIEncoder* encoder=new net::ezMsgEncoder;
-  net::ezEventLoop* ev=net::CreateEventLoop(hander,decoder,encoder,4);
-  if(net::ServeOnPort(ev,10011)!=0)
+  base::ezLogger::instance()->start();
+  net::net_initialize();
+  net::IConnnectionHander* hander=new net::ServerHander;
+  net::IDecoder* decoder=new net::MsgDecoder(20000);
+  net::IEncoder* encoder=new net::MsgEncoder;
+  net::EventLoop* ev=net::create_event_loop(hander,decoder,encoder,4);
+  if(net::serve_on_port(ev,10011)!=0)
   {
     LOG_ERROR("bind on port %d fail",10011);
     return -1;
   }
   else
     LOG_INFO("bind on port %d ok",10011);
-  base::ScopeGuard guard([&](){net::DestroyEventLoop(ev); delete hander; delete decoder; delete encoder;});
+  base::ScopeGuard guard([&](){net::destroy_event_loop(ev); delete hander; delete decoder; delete encoder;});
 
   int seq=0;
   while(!exit_)
   {
-    gTimer.tick(base::ezNowTick());
+    gTimer.tick(base::now_tick());
     sm.Tick(&m,0);
-    net::EventProcess(ev);
-    base::ezSleep(1);
+    net::event_process(ev);
+    base::sleep(1);
   }
   return 0;
 }

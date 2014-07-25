@@ -5,7 +5,7 @@
 #include <vector>
 #include "../base/portable.h"
 #include "../base/singleton.h"
-#include "../base/eztimer.h"
+
 #include "event.h"
 #include "net_interface.h"
 
@@ -13,27 +13,27 @@ namespace net
 {
   class ezClientFd;
 
-  class ezConnection:public ezThreadEventHander
+  class Connection:public ezThreadEventHander
   {
   public:
-    ezConnection(ezEventLoop* looper,ezClientFd* client,int tid,int64_t userdata);
-    virtual ~ezConnection();
-    void AttachGameObject(ezGameObject* obj);
-    void DetachGameObject();
-    ezGameObject* GetGameObject(){return gameObj_;}
+    Connection(EventLoop* looper,ezClientFd* client,int tid,int64_t userdata);
+    virtual ~Connection();
+    void attach_game_object(GameObject* obj);
+    void dettach_game_object();
+    GameObject* get_game_object(){return gameObj_;}
     void ActiveClose();
     void SetIpAddr(const char* ip){ip_=ip;}
-    const std::string& GetIpAddr() {return ip_;}
+    const std::string& get_ip_addr() {return ip_;}
     int64_t GetUserdata();
-    void SendMsg(ezMsg& msg);
-    bool RecvMsg(ezMsg& msg);
+    void SendMsg(Msg& msg);
+    bool RecvMsg(Msg& msg);
     virtual void ProcessEvent(ezThreadEvent& ev);
   private:
     void CloseClient();
   private:
     ezClientFd* client_;
     std::string ip_;
-    ezGameObject* gameObj_;
+    GameObject* gameObj_;
     int64_t userdata_;
   };
 }

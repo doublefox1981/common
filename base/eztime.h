@@ -7,8 +7,8 @@
 
 namespace base
 {
-	void ezSleep(int millisec);
-	int64_t ezNowTick();
-	void ezFormatTime(std::time_t t,std::string& str);	
+	void sleep(int millisec);
+	int64_t now_tick();
+	void format_time(std::time_t t,std::string& str);	
 }
 #endif

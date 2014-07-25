@@ -26,9 +26,9 @@ namespace net
   };
   /*
     不单独构造和析构，方便moodycamel.ReaderWriterQueue 快速出入队列
-    使用ezMsgInit等和ezMsgFree,进行初始化和释放资源
+    使用msg_init等和msg_free,进行初始化和释放资源
   */
-  struct ezBigMsg
+  struct BigMsg
   {
     int8_t*          data_;
     uint16_t         capcity_;
@@ -36,7 +36,7 @@ namespace net
     void*            hint_;
     base::AtomicNumber refcnt_;
   };
-  struct ezInnerMsg
+  struct InnerMsg
   {
     union
     {
@@ -49,8 +49,8 @@ namespace net
       }stack_;
       struct
       {
-        ezBigMsg* ptr_;
-        int8_t    pad_[max_vsm_size-sizeof(ezBigMsg*)];
+        BigMsg*   ptr_;
+        int8_t    pad_[max_vsm_size-sizeof(BigMsg*)];
         uint16_t  size_;
         int8_t    type_;
         int8_t    flags_;
@@ -59,17 +59,17 @@ namespace net
   };
 }
 
-void net::ezMsgInit(ezMsg* msg)
+void net::msg_init(Msg* msg)
 {
-  ezInnerMsg* inmsg=(ezInnerMsg*)msg;
+  InnerMsg* inmsg=(InnerMsg*)msg;
   inmsg->u_.stack_.type_=type_vsm;
   inmsg->u_.stack_.size_=0;
   inmsg->u_.stack_.flags_=0;
 }
 
-void net::ezMsgInitSize(ezMsg* msg,int size)
+void net::msg_init_size(Msg* msg,int size)
 {
-  ezInnerMsg* inmsg=(ezInnerMsg*)msg;
+  InnerMsg* inmsg=(InnerMsg*)msg;
   if (size<=max_vsm_size) 
   {
     inmsg->u_.stack_.type_=type_vsm;
@@ -81,7 +81,7 @@ void net::ezMsgInitSize(ezMsg* msg,int size)
     inmsg->u_.heap_.type_=type_lmsg;
     inmsg->u_.heap_.flags_=0;
     inmsg->u_.heap_.size_=(uint16_t)size;
-    inmsg->u_.heap_.ptr_=(ezBigMsg*)malloc(sizeof(ezBigMsg)+size);
+    inmsg->u_.heap_.ptr_=(BigMsg*)malloc(sizeof(BigMsg)+size);
     inmsg->u_.heap_.ptr_->data_=(int8_t*)(inmsg->u_.heap_.ptr_+1);
     inmsg->u_.heap_.ptr_->capcity_=size;
     inmsg->u_.heap_.ptr_->ffn_=nullptr;
@@ -91,13 +91,13 @@ void net::ezMsgInitSize(ezMsg* msg,int size)
   else {assert(false);}
 }
 
-void net::ezMsgInitData(ezMsg* msg,int8_t* data,int size,msg_free_fn* ffn,void* hint)
+void net::msg_init_data(Msg* msg,int8_t* data,int size,msg_free_fn* ffn,void* hint)
 {
-  ezInnerMsg* inmsg=(ezInnerMsg*)msg;
+  InnerMsg* inmsg=(InnerMsg*)msg;
   inmsg->u_.heap_.type_=type_lmsg;
   inmsg->u_.heap_.flags_=0;
   inmsg->u_.heap_.size_=size;
-  inmsg->u_.heap_.ptr_=(ezBigMsg*)malloc(sizeof(ezBigMsg));
+  inmsg->u_.heap_.ptr_=(BigMsg*)malloc(sizeof(BigMsg));
   inmsg->u_.heap_.ptr_->data_=data;
   inmsg->u_.heap_.ptr_->capcity_=size;
   inmsg->u_.heap_.ptr_->ffn_=ffn;
@@ -105,29 +105,29 @@ void net::ezMsgInitData(ezMsg* msg,int8_t* data,int size,msg_free_fn* ffn,void* 
   new(&inmsg->u_.heap_.ptr_->refcnt_) base::AtomicNumber();
 }
 
-void net::ezMsgInitDelimiter(ezMsg* msg)
+void net::msg_init_delimiter(Msg* msg)
 {
-  ezInnerMsg* inmsg=(ezInnerMsg*)msg;
+  InnerMsg* inmsg=(InnerMsg*)msg;
   inmsg->u_.stack_.type_=type_delimiter;
   inmsg->u_.stack_.flags_=0;
   inmsg->u_.stack_.size_=0;
 }
 
-bool net::ezMsgIsDelimiter(ezMsg* msg)
+bool net::msg_is_delimiter(Msg* msg)
 {
-  ezInnerMsg* inmsg=(ezInnerMsg*)msg;
+  InnerMsg* inmsg=(InnerMsg*)msg;
   return inmsg->u_.stack_.type_==type_delimiter;
 }
 
-int  net::ezMsgSize(ezMsg* msg)
+int  net::msg_size(Msg* msg)
 {
-  ezInnerMsg* inmsg=(ezInnerMsg*)msg;
+  InnerMsg* inmsg=(InnerMsg*)msg;
   return inmsg->u_.stack_.size_;
 }
 
-int net::ezMsgCapcity(ezMsg* msg)
+int net::msg_capcity(Msg* msg)
 {
-  ezInnerMsg* inmsg=(ezInnerMsg*)msg;
+  InnerMsg* inmsg=(InnerMsg*)msg;
   switch(inmsg->u_.stack_.type_)
   {
   case type_vsm:
@@ -139,9 +139,9 @@ int net::ezMsgCapcity(ezMsg* msg)
   }
 }
 
-int8_t* net::ezMsgData(ezMsg* msg)
+int8_t* net::msg_data(Msg* msg)
 {
-  ezInnerMsg* inmsg=(ezInnerMsg*)msg;
+  InnerMsg* inmsg=(InnerMsg*)msg;
   switch(inmsg->u_.stack_.type_)
   {
   case type_vsm:
@@ -153,9 +153,9 @@ int8_t* net::ezMsgData(ezMsg* msg)
   }
 }
 
-void net::ezMsgAddRef(ezMsg* msg,int ref)
+void net::msg_add_ref(Msg* msg,int ref)
 {
-  ezInnerMsg* inmsg=(ezInnerMsg*)msg;
+  InnerMsg* inmsg=(InnerMsg*)msg;
   if(ref<=0)
     return;
   if(inmsg->u_.stack_.type_==type_lmsg)
@@ -170,17 +170,17 @@ void net::ezMsgAddRef(ezMsg* msg,int ref)
   }
 }
 
-void net::ezMsgSubRef(ezMsg* msg,int ref)
+void net::msg_sub_ref(Msg* msg,int ref)
 {
-  ezInnerMsg* inmsg=(ezInnerMsg*)msg;
+  InnerMsg* inmsg=(InnerMsg*)msg;
   if(ref<=0)
     return;
   if(inmsg->u_.stack_.type_!=type_lmsg||!(inmsg->u_.stack_.flags_&shared))
   {
-    ezMsgFree(msg);
+    msg_free(msg);
     return;
   }
-  ezBigMsg* big=inmsg->u_.heap_.ptr_;
+  BigMsg* big=inmsg->u_.heap_.ptr_;
   if(!big->refcnt_.Sub(ref)) 
   {
     big->refcnt_.~AtomicNumber();
@@ -190,28 +190,28 @@ void net::ezMsgSubRef(ezMsg* msg,int ref)
   }
 }
 
-void net::ezMsgFree(ezMsg* msg)
+void net::msg_free(Msg* msg)
 {
-  ezInnerMsg* inmsg=(ezInnerMsg*)msg;
+  InnerMsg* inmsg=(InnerMsg*)msg;
   if(inmsg->u_.heap_.type_==type_lmsg)
   {
-    ezBigMsg* big=inmsg->u_.heap_.ptr_;
+    BigMsg* big=inmsg->u_.heap_.ptr_;
     if(!(inmsg->u_.heap_.flags_&shared) || !big->refcnt_.Sub(1)) 
     {
       big->refcnt_.~AtomicNumber();
       if(big->ffn_)
         big->ffn_(big->data_,big->hint_);
-      free (big);
+      free(big);
     }
   }
   inmsg->u_.heap_.type_=0;
 }
 
-void net::ezMsgCopy(ezMsg* src,ezMsg* dst)
+void net::msg_copy(Msg* src,Msg* dst)
 {  
-  ezInnerMsg* inmsg_s=(ezInnerMsg*)src;
-  ezInnerMsg* inmsg_d=(ezInnerMsg*)dst;
-  ezMsgFree(dst);
+  InnerMsg* inmsg_s=(InnerMsg*)src;
+  InnerMsg* inmsg_d=(InnerMsg*)dst;
+  msg_free(dst);
   if(inmsg_s->u_.heap_.type_==type_lmsg)
   {
     if(inmsg_s->u_.heap_.flags_&shared)
@@ -225,9 +225,9 @@ void net::ezMsgCopy(ezMsg* src,ezMsg* dst)
   *dst=*src;
 }
 
-void net::ezMsgMove(ezMsg* src,ezMsg* dst)
+void net::msg_move(Msg* src,Msg* dst)
 {
-  ezMsgFree(dst);
+  msg_free(dst);
   *dst=*src;
-  ezMsgInit(src);
+  msg_init(src);
 }

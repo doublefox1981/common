@@ -283,58 +283,27 @@ namespace base
 	}
 #endif
 
+#ifdef _WIN32
+  typedef HANDLE pthread_t;
+#endif
+
 	class Threads
 	{
 	public:
-		virtual void Start();
-		void setCurrentPriority( ThreadPriority priority );
-		unsigned long getTick();
-
-#ifdef _WIN32
-		static DWORD WINAPI thread_func(void *data) 
-		{
-#else
-		static void * thread_func(void *data) 
-		{
-#endif	
-			Threads *thread = (Threads *)data;
-			thread->Run();
-			return 0;
-		}
-		virtual void Run() {}
-
-		Threads()
-		{
-			mbExit = false;
-		}
-		virtual ~Threads()
-		{
-		}
-
-		virtual void Stop()
-		{
-			mbExit = true;
-		}
-
-    virtual void Join()
-    {
-#ifndef _WIN32
-      pthread_join(mthread,nullptr);
-#else
-      WaitForSingleObject(mthread,INFINITE);
-#endif
-    }
-
-	private:
-		int getPlatformPriority( ThreadPriority & priority );
-		unsigned long mStartTick;
-	protected:
-		bool  mbExit;
-#ifndef _WIN32
-		pthread_t mthread;
-#else
-		HANDLE mthread;
-#endif
+    Threads();
+    virtual ~Threads();
+		virtual void  start();
+    virtual void  run(){}
+		void          set_current_priority(ThreadPriority priority);
+		unsigned long get_tick();
+		virtual void  stop();
+    virtual void  join();
+  protected:
+    bool      exit_;
+    pthread_t thread_;
+  private:
+    int get_platform_priority(ThreadPriority& priority);
+    unsigned long start_tick_;
 	};
 }
 #endif

@@ -36,12 +36,12 @@ namespace net
     void DelTimer(ezPollerEventHander* hander,int32_t timerid);
     int64_t InvokeTimer();
   private:
-    struct ezTimerEntry
+    struct TimerEntry
     {
       int32_t timerid_;
       ezPollerEventHander* hander_;
     };
-    std::multimap<int64_t,ezTimerEntry> timers_;
+    std::multimap<int64_t,TimerEntry> timers_;
   };
 
   class ezSelectPoller:public ezPoller
