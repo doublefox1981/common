@@ -104,12 +104,12 @@ struct SFuncArg
 };
 void func(const SFuncArg& a)
 {
-
+ LOG_INFO("func,a=%d,s=%s",a.a,a.s.c_str());
 }
 
 void func1()
 {
-
+  LOG_INFO("func1");
 }
 
 void stdfunc(std::function<void()>& func)
@@ -133,11 +133,11 @@ int main()
   sm.Start(&m);
   
   base::Timer gTimer;
-  //gTimer.runAfter(base::now_tick(),10000,std::function<void()>(func1));
+  gTimer.run_after(std::function<void()>(func1),base::now_tick(),2000);
   SFuncArg arg;
   arg.a=10;
   arg.s="funcstruct";
-  //gTimer.runAfter<SFuncArg>(base::now_tick(),10000,std::function<void(const SFuncArg&)>(func),arg);
+  gTimer.run_after<SFuncArg>(std::function<void(const SFuncArg&)>(func),arg,base::now_tick(),4000);
 
   base::ezLogger::instance()->start();
   net::net_initialize();

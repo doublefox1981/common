@@ -5,13 +5,14 @@
 #include <limits>
 #include <unordered_map>
 #include <functional>
+#include <stdint.h>
 
 namespace base
 {
+  static const int64_t TIMER_FOREVER=INT64_MAX;
   class TimerTask
   {
   public:
-    static const int64_t TIMER_FOREVER=0x7fffffffffffffff;
     explicit TimerTask(int64_t tid);
     virtual ~TimerTask(){}
     void config(int64_t now,int64_t duration,int64_t repeat=TIMER_FOREVER);
@@ -21,12 +22,13 @@ namespace base
     bool canceled(){return cancel_;}
     virtual void run(){}
   private:
-    bool cancel_;
+    bool    cancel_;
     int64_t fired_time_;
     int64_t repeats_;
     int64_t duration_;
     int64_t id_;
     friend class Timer;
+    friend struct cmp;
   };
 
   template <typename ArgType>
@@ -54,7 +56,14 @@ namespace base
   *** 常用定时器分为时间轮算法(用于linux内核)，以及小顶堆(优先队列)
   *** 此处使用优先队列 lg(n)的时间复杂度
   **/
-  typedef std::priority_queue<TimerTask*,std::vector<TimerTask*>,std::greater<std::vector<TimerTask*>::value_type>> TIMER_HEAP;
+  struct cmp
+  {
+    bool operator()(const TimerTask* a,const TimerTask* b)
+    {
+      return a->fired_time_>b->fired_time_;
+    }
+  };
+  typedef std::priority_queue<TimerTask*,std::vector<TimerTask*>,cmp> TIMER_HEAP;
   typedef std::unordered_map<int64_t,TimerTask*> TIMER_MAP;
   class Timer
   {
@@ -65,19 +74,20 @@ namespace base
     void del_timer_task(uint64_t id);
     void tick(int64_t now);
     int64_t gen_timer_uuid();
-    int64_t run_after(int64_t now,int later,std::function<void()>& func)
+    int64_t run_after(std::function<void()>& func,int64_t now,int later,int64_t repeat=TIMER_FOREVER)
     {    
       TimerTask* task=new VoidFunctorTimerTask(gen_timer_uuid(),func);
-      task->config(now,later,0);
+      task->config(now,later,repeat);
       add_timer_task(task);
+      return task->id_;
     }
     template <typename ArgType>
-    int64_t run_after(int64_t now,int later,std::function<void(const ArgType&)>& func,const ArgType& args)
+    int64_t run_after(std::function<void(const ArgType&)>& func,const ArgType& args,int64_t now,int later,int64_t repeat=TIMER_FOREVER)
     {
       TimerTask* task=new FunctorTimerTask<ArgType>(gen_timer_uuid(),func,args);
-      task->id_=++s_timer_id_;
-      task->config(now,later,0);
+      task->config(now,later,repeat);
       add_timer_task(task);
+      return task->id_;
     }
   private:
     void remove_timer_task(int64_t id);

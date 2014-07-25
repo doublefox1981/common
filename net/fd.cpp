@@ -148,7 +148,7 @@ void net::ezClientFd::ProcessEvent(ezThreadEvent& ev)
   {
   case ezThreadEvent::NEW_FD:
     {
-      ezPoller* poller=io_->GetPoller();
+      Poller* poller=io_->GetPoller();
       if(!poller->AddFd(fd_,this))
       {
         delete this;
@@ -294,7 +294,7 @@ void net::ezConnectToFd::ProcessEvent(ezThreadEvent& ev)
 
 void net::ezConnectToFd::CloseMe()
 {
-  io_->GetPoller()->DelTimer(this,CONNECTTO_TIMER_ID);
+  io_->GetPoller()->DelTimer(this);
   if(fd_!=INVALID_SOCKET)
   {
     io_->GetPoller()->DelFd(fd_);
@@ -309,7 +309,7 @@ void net::ezConnectToFd::CloseMe()
 void net::ezConnectToFd::Reconnect()
 {
   if(reconnect_>0)
-    io_->GetPoller()->AddTimer(reconnect_,this,CONNECTTO_TIMER_ID);
+    io_->GetPoller()->AddTimer(reconnect_,this);
   else
     PostCloseMe();
 }

@@ -18,7 +18,7 @@ namespace net
   class IDecoder;
   class IEncoder;
   class ezThreadEventHander;
-  class ezPoller;
+  class Poller;
   struct ezThreadEvent
   {
     enum ThreadEventType

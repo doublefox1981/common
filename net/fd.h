@@ -34,7 +34,7 @@ namespace net{
   };
 
   class ezListenerFd
-    :public ezPollerEventHander
+    :public IPollerEventHander
     ,public ezThreadEventHander
     ,public ezIFlashedFd
   {
@@ -72,7 +72,7 @@ namespace net{
   };
 
   typedef moodycamel::ReaderWriterQueue<Msg> MsgQueue;
-  class ezClientFd:public ezPollerEventHander,public ezThreadEventHander
+  class ezClientFd:public IPollerEventHander,public ezThreadEventHander
   {
   public:
     ezClientFd(EventLoop* loop,ezIoThread* io,int fd,int64_t userdata);
@@ -106,7 +106,7 @@ namespace net{
     friend class ezClientMessagePuller;
   };
 
-  class ezConnectToFd:public ezPollerEventHander,public ezThreadEventHander,public ezIFlashedFd
+  class ezConnectToFd:public IPollerEventHander,public ezThreadEventHander,public ezIFlashedFd
   {
   public:
     static const int CONNECTTO_TIMER_ID=1;
