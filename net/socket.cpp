@@ -264,10 +264,10 @@ namespace net
     SOCKET s=::socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
     if(s==INVALID_SOCKET)
       return INVALID_SOCKET;
-    char on=1;
-    if(setsockopt(s,SOL_SOCKET,SO_REUSEADDR,&on,sizeof(on))==-1) 
+    int on=1;
+    if(setsockopt(s,SOL_SOCKET,SO_REUSEADDR,(char*)&on,sizeof(on))==-1) 
       ezSocketError("setsockopt SO_REUSEADDR");
-    if(setsockopt(s,IPPROTO_TCP,TCP_NODELAY,&on,sizeof(on))==-1)
+    if(setsockopt(s,IPPROTO_TCP,TCP_NODELAY,(char*)&on,sizeof(on))==-1)
       ezSocketError("setsockopt TCP_NODELAY");
     NonBlock(s);
     return s;
