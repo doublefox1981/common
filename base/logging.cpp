@@ -30,19 +30,19 @@ namespace base
   }
 }
 
-void base::ezLogger::print(int type,const char* format,va_list args)
+void base::Logger::print(int type,const char* format,va_list args)
 {
   LogMessage* msg=base::create_log_message();
   if(!msg)
     return;
   msg->time_=time(NULL);
   msg->type_=type;
-  base::StringPrintfImpl(msg->str_,format,args);
+  base::string_printf_impl(msg->str_,format,args);
   base::Locker locker(&mutex_);
   list_add_tail(&msg->next_,&lst_);
 }
 
-void base::ezLogger::info(const char* format,...)
+void base::Logger::info(const char* format,...)
 {
   va_list va;
   va_start(va,format);
@@ -50,7 +50,7 @@ void base::ezLogger::info(const char* format,...)
   va_end(va);
 }
 
-void base::ezLogger::warn(const char* format,...)
+void base::Logger::warn(const char* format,...)
 {
   va_list va;
   va_start(va,format);
@@ -58,7 +58,7 @@ void base::ezLogger::warn(const char* format,...)
   va_end(va);
 }
 
-void base::ezLogger::error(const char* format,...)
+void base::Logger::error(const char* format,...)
 {
   va_list va;
   va_start(va,format);
@@ -66,7 +66,7 @@ void base::ezLogger::error(const char* format,...)
   va_end(va);
 }
 
-void base::ezLogger::fatal(const char* format,...)
+void base::Logger::fatal(const char* format,...)
 {
   va_list va;
   va_start(va,format);
@@ -74,7 +74,7 @@ void base::ezLogger::fatal(const char* format,...)
   va_end(va);
 }
 
-base::ezLogger::~ezLogger()
+base::Logger::~Logger()
 {
   list_head* iter;
   list_head* next;
@@ -85,7 +85,7 @@ base::ezLogger::~ezLogger()
   }
 }
 
-base::ezLogger::ezLogger() :log_level_(0)
+base::Logger::Logger() :log_level_(0)
 {
   INIT_LIST_HEAD(&lst_);
 }
@@ -98,7 +98,7 @@ static inline struct tm* localtime_r(const time_t* timep, struct tm* result) {
 #define snprintf _snprintf
 #endif
 #endif
-void base::ezLogger::run()
+void base::Logger::run()
 {
   while(!exit_)
   {
@@ -160,7 +160,7 @@ void base::ezLogger::run()
         tm_time.tm_min,
         tm_time.tm_sec);
         printf("%s",timeprefix);
-        ColoredPrintf(color,"%s",prefix);
+        colored_printf(color,"%s",prefix);
         printf("%s\n",log->str_.c_str());
         fflush(stdout);
       }

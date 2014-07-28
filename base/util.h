@@ -76,21 +76,21 @@ namespace base
     COLOR_YELLOW
   };
 
-  extern int FloatToInt(float);
-  extern float IntToFloat(int);
-  extern void ColoredPrintf(EPrintColor color,const char* fmt,...);
-  extern void StringPrintfImpl(std::string& output, const char* format,va_list args); 
-  extern std::string StringPrintf(const char* format, ...);
-  extern std::string& StringAppendf(std::string* output, const char* format, ...);
-  extern void StringPrintf(std::string* output, const char* format, ...);
+  extern int float_to_int(float);
+  extern float int_to_float(int);
+  extern void colored_printf(EPrintColor color,const char* fmt,...);
+  extern void string_printf_impl(std::string& output, const char* format,va_list args); 
+  extern std::string string_printf(const char* format, ...);
+  extern std::string& string_appendf(std::string* output, const char* format, ...);
+  extern void string_printf(std::string* output, const char* format, ...);
 
-  inline char* StringAsArray(std::string* str)
+  inline char* string_as_array(std::string* str)
   {
     return str->empty()?NULL:&*str->begin();
   }
 
   template <class ForwardIterator>
-  void STLDeleteContainerPointers(ForwardIterator begin,ForwardIterator end) 
+  void stl_delete_container_pointers(ForwardIterator begin,ForwardIterator end) 
   {
     while (begin!=end) 
     {
@@ -100,21 +100,21 @@ namespace base
     }
   }
 
-  inline void STLStringResizeUninitialized(std::string* s,size_t new_size)
+  inline void stl_string_resize_uninitialized(std::string* s,size_t new_size)
   {
     s->resize(new_size);
   }
 
   template <class T>
-  void STLDeleteElements(T *container) 
+  void stl_delete_elements(T *container) 
   {
     if(!container) return;
-    STLDeleteContainerPointers(container->begin(),container->end());
+    stl_delete_container_pointers(container->begin(),container->end());
     container->clear();
   }
 
   template <class T>
-  void STLDeleteValues(T *v) 
+  void stl_delete_values(T *v) 
   {
     if(!v) return;
     for(typename T::iterator i = v->begin();i != v->end();++i) 

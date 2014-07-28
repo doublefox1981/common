@@ -115,15 +115,15 @@
 //   size_t s1=std::alignment_of<A>::value;
 //   moodycamel::ReaderWriterQueue<int> s;
 //   s.enqueue(1);
-//   base::ezLogger::instance()->Start();
+//   base::Logger::instance()->Start();
 //   const char* cc="hello world";
 //   LOG_INFO("%08x ",cc);
 //   std::string format;
-//   base::StringPrintf(&format,"%08x",cc);
+//   base::string_printf(&format,"%08x",cc);
 //   for(size_t len=0;len<strlen(cc);++len)
 //   {
 //     format+=" ";
-//     base::StringAppendf(&format,"%02x",char(cc[len]));
+//     base::string_appendf(&format,"%02x",char(cc[len]));
 //   }
 //   LOG_INFO("%s",format.c_str());
 // 

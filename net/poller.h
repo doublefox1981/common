@@ -9,25 +9,25 @@ namespace net
   {
   public:
     virtual ~IPollerEventHander(){}
-    virtual void HandleInEvent()=0;
-    virtual void HandleOutEvent()=0;
-    virtual void HandleTimer()=0;
+    virtual void handle_in_event()=0;
+    virtual void handle_out_event()=0;
+    virtual void handle_timer()=0;
   };
 
   class Poller
   {
   public:
     virtual ~Poller(){}
-    virtual void AddTimer(int64_t timeout,IPollerEventHander* hander)=0;
-    virtual void DelTimer(IPollerEventHander* hander)=0;
-    virtual bool AddFd(int fd,IPollerEventHander* hander)=0;
-    virtual void DelFd(int fd)=0;
-    virtual void SetPollIn(int fd)=0;
-    virtual void ResetPollIn(int fd)=0;
-    virtual void SetPollOut(int fd)=0;
-    virtual void ResetPollOut(int fd)=0;
-    virtual void Poll()=0;
-    virtual long GetLoad()=0;
+    virtual void add_timer(int64_t timeout,IPollerEventHander* hander)=0;
+    virtual void del_timer(IPollerEventHander* hander)=0;
+    virtual bool add_fd(int fd,IPollerEventHander* hander)=0;
+    virtual void del_fd(int fd)=0;
+    virtual void set_poll_in(int fd)=0;
+    virtual void reset_poll_in(int fd)=0;
+    virtual void set_poll_out(int fd)=0;
+    virtual void reset_poll_out(int fd)=0;
+    virtual void poll()=0;
+    virtual long get_load()=0;
   };
 
   struct PollTimerEntry
@@ -49,9 +49,9 @@ namespace net
   class PollTimer
   {
   public:
-    void AddTimer(IPollerEventHander* hander,int64_t timeout);
-    void DelTimer(IPollerEventHander* hander);
-    int64_t InvokeTimer();
+    void add_timer(IPollerEventHander* hander,int64_t timeout);
+    void del_timer(IPollerEventHander* hander);
+    int64_t invoke_timer();
   private:
     POLL_TIMER_HEAP heap_;
     POLL_TIMER_MAP  map_;
@@ -62,23 +62,23 @@ namespace net
   public:
     SelectPoller();
     virtual ~SelectPoller(){}
-    virtual void AddTimer(int64_t timeout,IPollerEventHander* hander);
-    virtual void DelTimer(IPollerEventHander* hander);
-    virtual bool AddFd(int fd,IPollerEventHander* hander);
-    virtual void DelFd(int fd);
-    virtual void SetPollIn(int fd);
-    virtual void ResetPollIn(int fd);
-    virtual void SetPollOut(int fd);
-    virtual void ResetPollOut(int fd);
-    virtual void Poll();
-    virtual long  GetLoad(){return load_.Get();}
+    virtual void add_timer(int64_t timeout,IPollerEventHander* hander);
+    virtual void del_timer(IPollerEventHander* hander);
+    virtual bool add_fd(int fd,IPollerEventHander* hander);
+    virtual void del_fd(int fd);
+    virtual void set_poll_in(int fd);
+    virtual void reset_poll_in(int fd);
+    virtual void set_poll_out(int fd);
+    virtual void reset_poll_out(int fd);
+    virtual void poll();
+    virtual long  get_load(){return load_.Get();}
   private:
     struct SelectFdEntry
     {
       int fd_;
       IPollerEventHander* hander_;
     };
-    static bool WillDelete(const SelectFdEntry& entry);
+    static bool will_delete(const SelectFdEntry& entry);
   private:
     std::vector<SelectFdEntry> fdarray_;
     PollTimer timer_;
@@ -92,7 +92,7 @@ namespace net
     bool   willdelfd_;
     base::AtomicNumber load_;
   };
-  Poller*   CreatePoller();
+  Poller*   create_poller();
 #ifdef __linux__
 #include <sys/epoll.h>
 #include <unistd.h>
@@ -102,16 +102,16 @@ namespace net
     EpollPoller();
     virtual ~EpollPoller();
 
-    virtual void AddTimer(int64_t timeout,IPollerEventHander* hander);
-    virtual void DelTimer(IPollerEventHander* hander);
-    virtual bool AddFd(int fd,IPollerEventHander* hander);
-    virtual void DelFd(int fd);
-    virtual void SetPollIn(int fd);
-    virtual void ResetPollIn(int fd);
-    virtual void SetPollOut(int fd);
-    virtual void ResetPollOut(int fd);
-    virtual void Poll();
-    virtual long  GetLoad(){return load_.Get();}
+    virtual void add_timer(int64_t timeout,IPollerEventHander* hander);
+    virtual void del_timer(IPollerEventHander* hander);
+    virtual bool add_fd(int fd,IPollerEventHander* hander);
+    virtual void del_fd(int fd);
+    virtual void set_poll_in(int fd);
+    virtual void reset_poll_in(int fd);
+    virtual void set_poll_out(int fd);
+    virtual void reset_poll_out(int fd);
+    virtual void poll();
+    virtual long  get_load(){return load_.Get();}
   private:
     struct EpollFdEntry
     {

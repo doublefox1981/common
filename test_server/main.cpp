@@ -139,7 +139,7 @@ int main()
   arg.s="funcstruct";
   gTimer.run_after<SFuncArg>(std::function<void(const SFuncArg&)>(func),arg,base::now_tick(),4000);
 
-  base::ezLogger::instance()->start();
+  base::Logger::instance()->start();
   net::net_initialize();
   net::IConnnectionHander* hander=new net::ServerHander;
   net::IDecoder* decoder=new net::MsgDecoder(20000);

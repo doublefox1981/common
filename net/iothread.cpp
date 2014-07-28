@@ -3,17 +3,17 @@
 #include "../base/eztime.h"
 #include "iothread.h"
 
-net::ezIoThread::ezIoThread(EventLoop* loop,int tid)
+net::IoThread::IoThread(EventLoop* loop,int tid)
   :load_(0),
-  ezThreadEventHander(loop,tid)
+  ThreadEventHander(loop,tid)
 {
   evqueue_=new ThreadEvQueue;
-  poller_=CreatePoller();
-  poller_->AddFd(evqueue_->GetFd(),this);
-  poller_->SetPollIn(evqueue_->GetFd());
+  poller_=create_poller();
+  poller_->add_fd(evqueue_->get_fd(),this);
+  poller_->set_poll_in(evqueue_->get_fd());
 }
 
-net::ezIoThread::~ezIoThread()
+net::IoThread::~IoThread()
 {
   if(poller_)
     delete poller_;
@@ -21,12 +21,12 @@ net::ezIoThread::~ezIoThread()
     delete evqueue_;
 }
 
-void net::ezIoThread::AddFlashedFd(ezIFlashedFd* ffd)
+void net::IoThread::AddFlashedFd(ezIFlashedFd* ffd)
 {
   flashedfd_.push_back(ffd);
 }
 
-void net::ezIoThread::DelFlashedFd(ezIFlashedFd* ffd)
+void net::IoThread::DelFlashedFd(ezIFlashedFd* ffd)
 {
   for(auto iter=flashedfd_.begin();iter!=flashedfd_.end();)
   {
@@ -37,36 +37,36 @@ void net::ezIoThread::DelFlashedFd(ezIFlashedFd* ffd)
   }
 }
 
-void net::ezIoThread::HandleInEvent()
+void net::IoThread::handle_in_event()
 {
-  ezThreadEvent ev;
-  while(evqueue_->Recv(ev))
+  ThreadEvent ev;
+  while(evqueue_->recv(ev))
   {
-    ev.hander_->ProcessEvent(ev);
+    ev.hander_->process_event(ev);
   }
 }
 
-void net::ezIoThread::run()
+void net::IoThread::run()
 {
   while(!exit_)
   {
-    poller_->Poll();
+    poller_->poll();
     base::sleep(1);
   }
 }
 
-void net::ezIoThread::ProcessEvent(ezThreadEvent& ev)
+void net::IoThread::process_event(ThreadEvent& ev)
 {
   switch(ev.type_)
   {
-  case ezThreadEvent::STOP_FLASHEDFD:
+  case ThreadEvent::STOP_FLASHEDFD:
     {
       for(size_t i=0;i<flashedfd_.size();++i)
-        flashedfd_[i]->Close();
+        flashedfd_[i]->close();
       flashedfd_.clear();
     }
     break;
-  case ezThreadEvent::STOP_THREAD:
+  case ThreadEvent::STOP_THREAD:
     stop();
     break;
   default: break;

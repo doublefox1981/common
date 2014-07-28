@@ -47,7 +47,7 @@ namespace net
     void SetConnection(Connection* conn) {conn_=conn;}
     Connection* GetConnection(){return conn_;}
     void SendNetpack(Msg& msg);
-    virtual void Close();
+    virtual void close();
   private:
     Connection* conn_;
   };

@@ -59,7 +59,7 @@ bool ShouldUseColor(bool stdout_is_tty)
 #endif 
 }
 
-void base::ColoredPrintf(EPrintColor color, const char* fmt, ...) 
+void base::colored_printf(EPrintColor color, const char* fmt, ...) 
 {
   va_list args;
   va_start(args, fmt);
@@ -642,7 +642,7 @@ MSVC_POP_WARNING()
 #define vsnprintf portable_vsnprintf
 #endif
 
-int FloatToInt(float f)
+int float_to_int(float f)
 {
   union
   {
@@ -653,7 +653,7 @@ int FloatToInt(float f)
   return i_;
 }
 
-float IntToFloat(int i)
+float int_to_float(int i)
 {
   union
   {
@@ -664,7 +664,7 @@ float IntToFloat(int i)
   return f_;
 }
 
-void base::StringPrintfImpl(std::string& output, const char* format,va_list args) 
+void base::string_printf_impl(std::string& output, const char* format,va_list args) 
 {
   const auto write_point = output.size();
   auto remaining = output.capacity() - write_point;
@@ -672,7 +672,7 @@ void base::StringPrintfImpl(std::string& output, const char* format,va_list args
 
   va_list args_copy;
   va_copy(args_copy, args);
-  int bytes_used = vsnprintf(StringAsArray(&output)+write_point, remaining, format, args_copy);
+  int bytes_used = vsnprintf(string_as_array(&output)+write_point, remaining, format, args_copy);
   va_end(args_copy);
   if (bytes_used < 0) return;
   else if ((size_t)bytes_used < remaining) {
@@ -690,31 +690,31 @@ void base::StringPrintfImpl(std::string& output, const char* format,va_list args
   }
 }
 
-std::string base::StringPrintf(const char* format, ...) 
+std::string base::string_printf(const char* format, ...) 
 {
   std::string ret(32UL>strlen(format)*2 ? 32UL:strlen(format)*2, '\0');
   ret.resize(0);
 
   va_list ap;
   va_start(ap, format);
-  base::StringPrintfImpl(ret, format, ap);
+  base::string_printf_impl(ret, format, ap);
   va_end(ap);
   return ret;
 }
 
-std::string& base::StringAppendf(std::string* output, const char* format, ...) 
+std::string& base::string_appendf(std::string* output, const char* format, ...) 
 {
   va_list ap;
   va_start(ap, format);
-  base::StringPrintfImpl(*output, format, ap);
+  base::string_printf_impl(*output, format, ap);
   va_end(ap);
   return *output;
 }
 
-void base::StringPrintf(std::string* output, const char* format, ...) 
+void base::string_printf(std::string* output, const char* format, ...) 
 {
   va_list ap;
   va_start(ap, format);
-  base::StringPrintfImpl(*output, format, ap);
+  base::string_printf_impl(*output, format, ap);
   va_end(ap);
 };

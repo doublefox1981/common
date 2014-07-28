@@ -3,11 +3,11 @@
 
 // from 0MQ signaler_t
 namespace base{
-  class ezSignaler
+  class Signaler
   {
   public:
-    ezSignaler();
-    ~ezSignaler();
+    Signaler();
+    ~Signaler();
     fd_t getfd();
     void send();
     void recv();
@@ -15,8 +15,8 @@ namespace base{
   private:
     fd_t r_;
     fd_t w_;
-    ezSignaler(const ezSignaler& s);
-    const ezSignaler& operator=(const ezSignaler& s);
+    Signaler(const Signaler& s);
+    const Signaler& operator=(const Signaler& s);
   };
 }
 

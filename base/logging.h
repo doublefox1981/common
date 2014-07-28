@@ -7,11 +7,11 @@
 
 namespace base
 {
-  class ezLogger:public Threads,public ezSingleTon<ezLogger> 
+  class Logger:public Threads,public SingleTon<Logger> 
   {
   public:
-    ezLogger();
-    virtual ~ezLogger();
+    Logger();
+    virtual ~Logger();
     void set_log_level(int lvl){log_level_=lvl;}
     void info(const char* format,...);
     void warn(const char* format,...);
@@ -26,8 +26,8 @@ namespace base
   };
 }
 
-#define LOG_INFO  base::ezLogger::instance()->info
-#define LOG_WARN  base::ezLogger::instance()->warn
-#define LOG_ERROR base::ezLogger::instance()->error
-#define LOG_FATAL base::ezLogger::instance()->fatal
+#define LOG_INFO  base::Logger::instance()->info
+#define LOG_WARN  base::Logger::instance()->warn
+#define LOG_ERROR base::Logger::instance()->error
+#define LOG_FATAL base::Logger::instance()->fatal
 #endif

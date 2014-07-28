@@ -11,27 +11,27 @@
 
 namespace net
 {
-  class ezClientFd;
+  class ClientFd;
 
-  class Connection:public ezThreadEventHander
+  class Connection:public ThreadEventHander
   {
   public:
-    Connection(EventLoop* looper,ezClientFd* client,int tid,int64_t userdata);
+    Connection(EventLoop* looper,ClientFd* client,int tid,int64_t userdata);
     virtual ~Connection();
     void attach_game_object(GameObject* obj);
     void dettach_game_object();
     GameObject* get_game_object(){return gameObj_;}
-    void ActiveClose();
-    void SetIpAddr(const char* ip){ip_=ip;}
+    void active_close();
+    void set_ip_addr(const char* ip){ip_=ip;}
     const std::string& get_ip_addr() {return ip_;}
-    int64_t GetUserdata();
-    void SendMsg(Msg& msg);
-    bool RecvMsg(Msg& msg);
-    virtual void ProcessEvent(ezThreadEvent& ev);
+    int64_t get_user_data();
+    void send_msg(Msg& msg);
+    bool recv_msg(Msg& msg);
+    virtual void process_event(ThreadEvent& ev);
   private:
-    void CloseClient();
+    void close_client();
   private:
-    ezClientFd* client_;
+    ClientFd* client_;
     std::string ip_;
     GameObject* gameObj_;
     int64_t userdata_;

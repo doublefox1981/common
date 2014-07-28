@@ -6,18 +6,18 @@
 
 namespace base{
   template<typename T>
-  class ezNotifyQueue
+  class NotifyQueue
   {
   public:
-    fd_t GetFd(){return notify_.getfd();}
-    void Send(const T& t)
+    fd_t get_fd(){return notify_.getfd();}
+    void send(const T& t)
     {
       mutex_.Lock();
       pipe_.enqueue(t);
       notify_.send();
       mutex_.Unlock();
     }
-    bool Recv(T& t)
+    bool recv(T& t)
     {
       notify_.recv();
       return pipe_.try_dequeue(t);
@@ -25,7 +25,7 @@ namespace base{
   private:
     typedef moodycamel::ReaderWriterQueue<T> pipe_t;
     pipe_t pipe_;
-    ezSignaler notify_;
+    Signaler notify_;
     base::SpinLock mutex_;
   };
 } 

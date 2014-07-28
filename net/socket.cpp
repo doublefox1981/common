@@ -447,7 +447,7 @@ namespace net
     return s;
   }
 
-  int ConnectTo(const char* ip,int port,int& s)
+  int connect_to(const char* ip,int port,int& s)
   {
     s=::socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
     if(s==INVALID_SOCKET)

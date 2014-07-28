@@ -14,67 +14,67 @@
 #include "iothread.h"
 #include "../base/logging.h"
 
-net::ezListenerFd::ezListenerFd(EventLoop* loop,ezIoThread* io,int fd)
+net::ezListenerFd::ezListenerFd(EventLoop* loop,IoThread* io,int fd)
   :fd_(fd),
   io_(io),
-  ezThreadEventHander(loop,io->GetTid())
+  ThreadEventHander(loop,io->get_tid())
 {}
 
-void net::ezListenerFd::HandleInEvent()
+void net::ezListenerFd::handle_in_event()
 {
   struct sockaddr_in si;
   SOCKET s=net::Accept(fd_,&si);
   if(s==INVALID_SOCKET)
     return;
-  ezIoThread* newio=GetLooper()->ChooseThread();
+  IoThread* newio=get_looper()->choose_thread();
   assert(newio);
-  ezClientFd* clifd=new ezClientFd(GetLooper(),newio,s,0);
-  ezThreadEvent ev;
-  ev.type_=ezThreadEvent::NEW_FD;
-  clifd->OccurEvent(ev);
+  ClientFd* clifd=new ClientFd(get_looper(),newio,s,0);
+  ThreadEvent ev;
+  ev.type_=ThreadEvent::NEW_FD;
+  clifd->occur_event(ev);
 }
 
-void net::ezListenerFd::ProcessEvent(ezThreadEvent& ev)
+void net::ezListenerFd::process_event(ThreadEvent& ev)
 {
   switch(ev.type_)
   {
-  case ezThreadEvent::NEW_SERVICE:
+  case ThreadEvent::NEW_SERVICE:
     {
       io_->AddFlashedFd(this);
-      io_->GetPoller()->AddFd(fd_,this);
-      io_->GetPoller()->SetPollIn(fd_);
+      io_->GetPoller()->add_fd(fd_,this);
+      io_->GetPoller()->set_poll_in(fd_);
     }
     break;
   default: break;
   }
 }
 
-void net::ezListenerFd::Close()
+void net::ezListenerFd::close()
 {
   io_->DelFlashedFd(this);
-  io_->GetPoller()->DelFd(fd_);
+  io_->GetPoller()->del_fd(fd_);
   CloseSocket(fd_);
   fd_=INVALID_SOCKET;
   delete this;
 }
 
-net::ezClientFd::ezClientFd(EventLoop* loop,ezIoThread* io,int fd,int64_t userdata)
+net::ClientFd::ClientFd(EventLoop* loop,IoThread* io,int fd,int64_t userdata)
   :io_(io)
   ,fd_(fd)
   ,userdata_(userdata)
-  ,ezThreadEventHander(loop,io->GetTid())
+  ,ThreadEventHander(loop,io->get_tid())
 {
-  decoder_=GetLooper()->GetDecoder();
-  encoder_=GetLooper()->GetEncoder();
+  decoder_=get_looper()->get_decoder();
+  encoder_=get_looper()->get_encoder();
   pusher_=new ezClientMessagePusher(this);
   puller_=new ezClientMessagePuller(this);
-  inbuf_=new Buffer(loop->GetBufferSize());
-  outbuf_=new Buffer(loop->GetBufferSize());
+  inbuf_=new Buffer(loop->get_buffer_size());
+  outbuf_=new Buffer(loop->get_buffer_size());
   msg_init(&cachemsg_);
   cached_=false;
 }
 
-net::ezClientFd::~ezClientFd()
+net::ClientFd::~ClientFd()
 {
   net::CloseSocket(fd_);
   if(pusher_) delete pusher_;
@@ -86,7 +86,7 @@ net::ezClientFd::~ezClientFd()
     msg_free(&msg);
 }
 
-void net::ezClientFd::HandleInEvent()
+void net::ClientFd::handle_in_event()
 {
   int retval=inbuf_->readfd(fd_);
   if((retval==0)||(retval<0&&errno!=EAGAIN&&errno!=EINTR))
@@ -109,7 +109,7 @@ void net::ezClientFd::HandleInEvent()
   }
 }
 
-void net::ezClientFd::HandleOutEvent()
+void net::ClientFd::handle_out_event()
 {
   bool encoderet=true;
   while(true)
@@ -119,7 +119,7 @@ void net::ezClientFd::HandleOutEvent()
     int s=outbuf_->readable(pbuf);
     if(s<=0)
     {
-      io_->GetPoller()->ResetPollOut(fd_);
+      io_->GetPoller()->reset_poll_out(fd_);
       break;
     }
     else
@@ -136,52 +136,52 @@ void net::ezClientFd::HandleOutEvent()
   }
   if(!encoderet)
   {
-    io_->GetPoller()->ResetPollOut(fd_);
-    ActiveClose();
+    io_->GetPoller()->reset_poll_out(fd_);
+    active_close();
     return;
   }
 }
 
-void net::ezClientFd::ProcessEvent(ezThreadEvent& ev)
+void net::ClientFd::process_event(ThreadEvent& ev)
 {
   switch(ev.type_)
   {
-  case ezThreadEvent::NEW_FD:
+  case ThreadEvent::NEW_FD:
     {
       Poller* poller=io_->GetPoller();
-      if(!poller->AddFd(fd_,this))
+      if(!poller->add_fd(fd_,this))
       {
         delete this;
         return;
       }
-      poller->SetPollIn(fd_);
-      conn_=new Connection(GetLooper(),this,GetLooper()->GetTid(),userdata_);
+      poller->set_poll_in(fd_);
+      conn_=new Connection(get_looper(),this,get_looper()->get_tid(),userdata_);
       char ipport[128];
       net::ToIpPort(ipport,sizeof(ipport),net::GetPeerAddr(fd_));
-      conn_->SetIpAddr(ipport);
-      ezThreadEvent newev;
-      newev.type_=ezThreadEvent::NEW_CONNECTION;
-      conn_->OccurEvent(newev);
+      conn_->set_ip_addr(ipport);
+      ThreadEvent newev;
+      newev.type_=ThreadEvent::NEW_CONNECTION;
+      conn_->occur_event(newev);
     }
     break;
-  case ezThreadEvent::CLOSE_FD:
+  case ThreadEvent::CLOSE_FD:
     {
-      io_->GetPoller()->DelFd(fd_);
+      io_->GetPoller()->del_fd(fd_);
       Msg msg;
       while(recvqueue_.try_dequeue(msg))
         msg_free(&msg);
       while(sendqueue_.try_dequeue(msg))
         msg_free(&msg);
-      ezThreadEvent ev;
-      ev.type_=ezThreadEvent::CLOSE_CONNECTION;
-      conn_->OccurEvent(ev);
+      ThreadEvent ev;
+      ev.type_=ThreadEvent::CLOSE_CONNECTION;
+      conn_->occur_event(ev);
       delete this;
     }
     break;
-  case ezThreadEvent::ENABLE_POLLOUT:
+  case ThreadEvent::ENABLE_POLLOUT:
     {
-      io_->GetPoller()->SetPollOut(fd_);
-      HandleOutEvent();
+      io_->GetPoller()->set_poll_out(fd_);
+      handle_out_event();
     }
     break;
   default:
@@ -189,50 +189,50 @@ void net::ezClientFd::ProcessEvent(ezThreadEvent& ev)
   }
 }
 
-void net::ezClientFd::SendMsg(Msg& msg)
+void net::ClientFd::send_msg(Msg& msg)
 {
   sendqueue_.enqueue(msg);
 }
 
-bool net::ezClientFd::RecvMsg(Msg& msg)
+bool net::ClientFd::recv_msg(Msg& msg)
 {
   return recvqueue_.try_dequeue(msg);
 }
 
-void net::ezClientFd::ActiveClose()
+void net::ClientFd::active_close()
 {
-  io_->GetPoller()->DelFd(fd_);
-  ezThreadEvent ev;
-  ev.type_=ezThreadEvent::CLOSE_ACTIVE;
-  conn_->OccurEvent(ev);
+  io_->GetPoller()->del_fd(fd_);
+  ThreadEvent ev;
+  ev.type_=ThreadEvent::CLOSE_ACTIVE;
+  conn_->occur_event(ev);
 }
 
-void net::ezClientFd::PassiveClose()
+void net::ClientFd::PassiveClose()
 {
-  io_->GetPoller()->DelFd(fd_);
-  ezThreadEvent ev;
-  ev.type_=ezThreadEvent::CLOSE_PASSIVE;
-  conn_->OccurEvent(ev);
+  io_->GetPoller()->del_fd(fd_);
+  ThreadEvent ev;
+  ev.type_=ThreadEvent::CLOSE_PASSIVE;
+  conn_->occur_event(ev);
 }
 
-net::ezClientMessagePusher::ezClientMessagePusher(ezClientFd* cli) :client_(cli)
+net::ezClientMessagePusher::ezClientMessagePusher(ClientFd* cli) :client_(cli)
 {}
 
-inline bool net::ezClientMessagePusher::PushMsg(Msg* msg)
+inline bool net::ezClientMessagePusher::push_msg(Msg* msg)
 {
   client_->recvqueue_.enqueue(*msg);
-  ezThreadEvent ev;
-  ev.type_=ezThreadEvent::NEW_MESSAGE;
-  client_->conn_->OccurEvent(ev);
+  ThreadEvent ev;
+  ev.type_=ThreadEvent::NEW_MESSAGE;
+  client_->conn_->occur_event(ev);
   return true;
 }
 
-net::ezConnectToFd::ezConnectToFd(EventLoop* loop,ezIoThread* io,int64_t userd,int32_t reconnect)
+net::ezConnectToFd::ezConnectToFd(EventLoop* loop,IoThread* io,int64_t userd,int32_t reconnect)
   :fd_(0)
   ,io_(io)
   ,userdata_(userd)
   ,reconnect_(reconnect*1000)
-  ,ezThreadEventHander(loop,io->GetTid())
+  ,ThreadEventHander(loop,io->get_tid())
 {}
 
 void net::ezConnectToFd::SetIpPort(const std::string& ip,int port)
@@ -241,26 +241,26 @@ void net::ezConnectToFd::SetIpPort(const std::string& ip,int port)
   port_=port;
 }
 
-void net::ezConnectToFd::ConnectTo()
+void net::ezConnectToFd::connect_to()
 {
-  int retval=net::ConnectTo(ip_.c_str(),port_,fd_);
+  int retval=net::connect_to(ip_.c_str(),port_,fd_);
   LOG_INFO("connecting %s:%d",ip_.c_str(),port_);
   if(retval==0)
   {
-    if(io_->GetPoller()->AddFd(fd_,this))
-      HandleOutEvent();
+    if(io_->GetPoller()->add_fd(fd_,this))
+      handle_out_event();
     else
-      PostCloseMe();
+      post_close_me();
   }
   else if(retval==-1&&errno==EINPROGRESS)
   {
-    if(io_->GetPoller()->AddFd(fd_,this))
+    if(io_->GetPoller()->add_fd(fd_,this))
     {
-      io_->GetPoller()->SetPollIn(fd_);
-      io_->GetPoller()->SetPollOut(fd_);
+      io_->GetPoller()->set_poll_in(fd_);
+      io_->GetPoller()->set_poll_out(fd_);
     }
     else
-      PostCloseMe();
+      post_close_me();
   }
   else
   {
@@ -269,21 +269,21 @@ void net::ezConnectToFd::ConnectTo()
       CloseSocket(fd_);
       fd_=INVALID_SOCKET;
     }
-    Reconnect();
+    reconnect();
   }
 }
 
-void net::ezConnectToFd::ProcessEvent(ezThreadEvent& ev)
+void net::ezConnectToFd::process_event(ThreadEvent& ev)
 {
   switch(ev.type_)
   {
-  case ezThreadEvent::NEW_CONNECTTO:
-    ConnectTo();
+  case ThreadEvent::NEW_CONNECTTO:
+    connect_to();
     io_->AddFlashedFd(this);
     break;
-  case ezThreadEvent::CLOSE_CONNECTTO:
+  case ThreadEvent::CLOSE_CONNECTTO:
     {
-      CloseMe();
+      close_me();
       return;
     }
     break;
@@ -292,12 +292,12 @@ void net::ezConnectToFd::ProcessEvent(ezThreadEvent& ev)
   }
 }
 
-void net::ezConnectToFd::CloseMe()
+void net::ezConnectToFd::close_me()
 {
-  io_->GetPoller()->DelTimer(this);
+  io_->GetPoller()->del_timer(this);
   if(fd_!=INVALID_SOCKET)
   {
-    io_->GetPoller()->DelFd(fd_);
+    io_->GetPoller()->del_fd(fd_);
     CloseSocket(fd_);
     fd_=INVALID_SOCKET;
   }
@@ -306,22 +306,22 @@ void net::ezConnectToFd::CloseMe()
   delete this;
 }
 
-void net::ezConnectToFd::Reconnect()
+void net::ezConnectToFd::reconnect()
 {
   if(reconnect_>0)
-    io_->GetPoller()->AddTimer(reconnect_,this);
+    io_->GetPoller()->add_timer(reconnect_,this);
   else
-    PostCloseMe();
+    post_close_me();
 }
 
-void net::ezConnectToFd::PostCloseMe()
+void net::ezConnectToFd::post_close_me()
 {
-  ezThreadEvent ev;
-  ev.type_=ezThreadEvent::CLOSE_CONNECTTO;
-  OccurEvent(ev);
+  ThreadEvent ev;
+  ev.type_=ThreadEvent::CLOSE_CONNECTTO;
+  occur_event(ev);
 }
 
-int net::ezConnectToFd::CheckAsyncError()
+int net::ezConnectToFd::check_async_error()
 {
   int err=0;
   socklen_t len=sizeof(err);
@@ -344,47 +344,47 @@ int net::ezConnectToFd::CheckAsyncError()
   return fd_;
 }
 
-void net::ezConnectToFd::HandleInEvent()
+void net::ezConnectToFd::handle_in_event()
 {
-  HandleOutEvent();
+  handle_out_event();
 }
 
-void net::ezConnectToFd::HandleOutEvent()
+void net::ezConnectToFd::handle_out_event()
 {
-  int result=CheckAsyncError();
-  io_->GetPoller()->DelFd(fd_);
+  int result=check_async_error();
+  io_->GetPoller()->del_fd(fd_);
   fd_=INVALID_SOCKET;
   if(result==INVALID_SOCKET)
   {
     LOG_INFO("connect to %s:%d fail",ip_.c_str(),port_);
     CloseSocket(result);
-    Reconnect();
+    reconnect();
     return;
   }
   else
   {
     LOG_INFO("connect to %s:%d ok",ip_.c_str(),port_);
-    ezClientFd* clifd=new ezClientFd(GetLooper(),io_,result,userdata_);
-    ezThreadEvent ev;
-    ev.type_=ezThreadEvent::NEW_FD;
-    clifd->OccurEvent(ev);
-    PostCloseMe();
+    ClientFd* clifd=new ClientFd(get_looper(),io_,result,userdata_);
+    ThreadEvent ev;
+    ev.type_=ThreadEvent::NEW_FD;
+    clifd->occur_event(ev);
+    post_close_me();
   }
 }
 
-void net::ezConnectToFd::HandleTimer()
+void net::ezConnectToFd::handle_timer()
 {
-  ConnectTo();
+  connect_to();
 }
 
-void net::ezConnectToFd::Close()
+void net::ezConnectToFd::close()
 {
-  CloseMe();
+  close_me();
 }
 
-net::ezClientMessagePuller::ezClientMessagePuller(ezClientFd* cli):client_(cli){}
+net::ezClientMessagePuller::ezClientMessagePuller(ClientFd* cli):client_(cli){}
 
-bool net::ezClientMessagePuller::PullMsg(Msg* msg)
+bool net::ezClientMessagePuller::pull_msg(Msg* msg)
 {
   if(client_->cached_)
   {
@@ -396,7 +396,7 @@ bool net::ezClientMessagePuller::PullMsg(Msg* msg)
     return client_->sendqueue_.try_dequeue(*msg);
 }
 
-void net::ezClientMessagePuller::Rollback(Msg* msg)
+void net::ezClientMessagePuller::rollback(Msg* msg)
 {
   assert(!client_->cached_);
   if(!client_->cached_)

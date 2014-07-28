@@ -12,14 +12,14 @@
 #include "iothread.h"
 #include <algorithm>
 
-bool net::SelectPoller::WillDelete(const SelectFdEntry& entry)
+bool net::SelectPoller::will_delete(const SelectFdEntry& entry)
 {
   return entry.fd_==INVALID_SOCKET;
 }
 
-void net::SelectPoller::Poll()
+void net::SelectPoller::poll()
 {
-  int64_t timeout=timer_.InvokeTimer();
+  int64_t timeout=timer_.invoke_timer();
   struct timeval tm={(long)(timeout/1000),(long)(timeout%1000*1000)};
   memcpy(&urfds_,&rfds_,sizeof(fd_set));
   memcpy(&uwfds_,&wfds_,sizeof(fd_set));
@@ -33,11 +33,11 @@ void net::SelectPoller::Poll()
       if(entry.fd_==INVALID_SOCKET)
         continue;
       if(FD_ISSET(entry.fd_,&urfds_))
-        entry.hander_->HandleInEvent();
+        entry.hander_->handle_in_event();
       if(FD_ISSET(entry.fd_,&uwfds_))
-        entry.hander_->HandleOutEvent();
+        entry.hander_->handle_out_event();
       if(FD_ISSET(entry.fd_,&uefds_))
-        entry.hander_->HandleInEvent();
+        entry.hander_->handle_in_event();
     }
   }
   else if(retval<0)
@@ -48,7 +48,7 @@ void net::SelectPoller::Poll()
   }
   if(willdelfd_)
   {
-    fdarray_.erase(std::remove_if(fdarray_.begin(),fdarray_.end(),SelectPoller::WillDelete),fdarray_.end());
+    fdarray_.erase(std::remove_if(fdarray_.begin(),fdarray_.end(),SelectPoller::will_delete),fdarray_.end());
     willdelfd_ = false;
   }
 }
@@ -65,7 +65,7 @@ net::SelectPoller::SelectPoller()
   willdelfd_=false;
 }
 
-bool net::SelectPoller::AddFd(int fd,IPollerEventHander* hander)
+bool net::SelectPoller::add_fd(int fd,IPollerEventHander* hander)
 {
   if(fdarray_.size()>=FD_SETSIZE)
     return false;
@@ -78,7 +78,7 @@ bool net::SelectPoller::AddFd(int fd,IPollerEventHander* hander)
   return true;
 }
 
-void net::SelectPoller::DelFd(int fd)
+void net::SelectPoller::del_fd(int fd)
 {
   for (auto iter=fdarray_.begin ();iter!=fdarray_.end ();++iter)
   {
@@ -110,34 +110,34 @@ void net::SelectPoller::DelFd(int fd)
   }
 }
 
-void net::SelectPoller::SetPollIn(int fd)
+void net::SelectPoller::set_poll_in(int fd)
 {
   FD_SET(fd,&rfds_);
 }
 
-void net::SelectPoller::ResetPollIn(int fd)
+void net::SelectPoller::reset_poll_in(int fd)
 {
   FD_CLR(fd,&rfds_);
 }
 
-void net::SelectPoller::SetPollOut(int fd)
+void net::SelectPoller::set_poll_out(int fd)
 {
   FD_SET(fd,&wfds_);
 }
 
-void net::SelectPoller::ResetPollOut(int fd)
+void net::SelectPoller::reset_poll_out(int fd)
 {
   FD_CLR(fd,&uwfds_);
 }
 
-void net::SelectPoller::AddTimer(int64_t timeout,IPollerEventHander* hander)
+void net::SelectPoller::add_timer(int64_t timeout,IPollerEventHander* hander)
 {
-  timer_.AddTimer(hander,timeout);
+  timer_.add_timer(hander,timeout);
 }
 
-void net::SelectPoller::DelTimer(IPollerEventHander* hander)
+void net::SelectPoller::del_timer(IPollerEventHander* hander)
 {
-  timer_.DelTimer(hander);
+  timer_.del_timer(hander);
 }
 
 #ifdef __linux__
@@ -152,7 +152,7 @@ net::EpollPoller::~EpollPoller()
   // fdarray_ clear
 }
 
-bool net::EpollPoller::AddFd(int fd,IPollerEventHander* hander)
+bool net::EpollPoller::add_fd(int fd,IPollerEventHander* hander)
 {
   assert(fd>0);
   if(fdarray_.size()<=fd)
@@ -176,7 +176,7 @@ bool net::EpollPoller::AddFd(int fd,IPollerEventHander* hander)
   return true;
 }
 
-void net::EpollPoller::DelFd(int fd)
+void net::EpollPoller::del_fd(int fd)
 {
   assert(fd>0&&fd<fdarray_.size());
   if(fd<=0||fd>=fdarray_.size())
@@ -195,7 +195,7 @@ void net::EpollPoller::DelFd(int fd)
   load_.Dec();
 }
 
-void net::EpollPoller::SetPollIn(int fd)
+void net::EpollPoller::set_poll_in(int fd)
 {
   assert(fd>0&&fd<fdarray_.size());
   if(fd<=0||fd>=fdarray_.size())
@@ -213,7 +213,7 @@ void net::EpollPoller::SetPollIn(int fd)
   assert(rc!=-1);
 }
 
-void net::EpollPoller::ResetPollIn( int fd )
+void net::EpollPoller::reset_poll_in( int fd )
 {
   assert(fd>0&&fd<fdarray_.size());
   if(fd<=0||fd>=fdarray_.size())
@@ -232,7 +232,7 @@ void net::EpollPoller::ResetPollIn( int fd )
   }
 }
 
-void net::EpollPoller::SetPollOut( int fd )
+void net::EpollPoller::set_poll_out( int fd )
 {
   assert(fd>0&&fd<fdarray_.size());
   if(fd<=0||fd>=fdarray_.size())
@@ -250,7 +250,7 @@ void net::EpollPoller::SetPollOut( int fd )
   assert(rc!=-1);
 }
 
-void net::EpollPoller::ResetPollOut( int fd )
+void net::EpollPoller::reset_poll_out( int fd )
 {
   assert(fd>0&&fd<fdarray_.size());
   if(fd<=0||fd>=fdarray_.size())
@@ -269,9 +269,9 @@ void net::EpollPoller::ResetPollOut( int fd )
   }
 }
 
-void net::EpollPoller::Poll()
+void net::EpollPoller::poll()
 {
-  int timeout=(int)(timer_.InvokeTimer());
+  int timeout=(int)(timer_.invoke_timer());
   int retval=0;
   retval = epoll_wait(epollfd_,epollevents_,sizeof(epollevents_)/sizeof(struct epoll_event),timeout>0?timeout:100);
   if(retval<0&&errno!=EINTR)
@@ -288,15 +288,15 @@ void net::EpollPoller::Poll()
     if(entry->fd_==INVALID_SOCKET)
       continue;
     if(e->events&(EPOLLERR|EPOLLHUP))
-      entry->hander_->HandleInEvent();
+      entry->hander_->handle_in_event();
     if(entry->fd_==INVALID_SOCKET)
       continue;
     if(e->events&EPOLLOUT)
-      entry->hander_->HandleOutEvent();
+      entry->hander_->handle_out_event();
     if(entry->fd_==INVALID_SOCKET)
       continue;
     if(e->events&EPOLLIN)
-      entry->hander_->HandleInEvent();
+      entry->hander_->handle_in_event();
   }
   if(willdelfd_)
   {
@@ -310,18 +310,18 @@ void net::EpollPoller::Poll()
   }
 }
 
-void net::EpollPoller::AddTimer(int64_t timeout,IPollerEventHander* hander)
+void net::EpollPoller::add_timer(int64_t timeout,IPollerEventHander* hander)
 {
-  timer_.AddTimer(hander,timeout);
+  timer_.add_timer(hander,timeout);
 }
 
-void net::EpollPoller::DelTimer(IPollerEventHander* hander)
+void net::EpollPoller::del_timer(IPollerEventHander* hander)
 {
-  timer_.DelTimer(hander,timerid);
+  timer_.del_timer(hander,timerid);
 }
 #endif
 
-void net::PollTimer::AddTimer(IPollerEventHander* hander,int64_t timeout)
+void net::PollTimer::add_timer(IPollerEventHander* hander,int64_t timeout)
 {
   if(map_.find(hander)!=map_.end())
     return;
@@ -332,14 +332,14 @@ void net::PollTimer::AddTimer(IPollerEventHander* hander,int64_t timeout)
   map_[hander]=entry;
 }
 
-void net::PollTimer::DelTimer(IPollerEventHander* hander)
+void net::PollTimer::del_timer(IPollerEventHander* hander)
 {
   auto iter=map_.find(hander);
   if(iter!=map_.end())
     iter->second->hander_=NULL;
 }
 
-int64_t net::PollTimer::InvokeTimer()
+int64_t net::PollTimer::invoke_timer()
 {
   if(heap_.empty())
     return 0;
@@ -350,7 +350,7 @@ int64_t net::PollTimer::InvokeTimer()
     if(entry->fired_time_>cur)
       return entry->fired_time_-cur;
     if(entry->hander_)
-      entry->hander_->HandleTimer();
+      entry->hander_->handle_timer();
     heap_.pop();
     auto iter=map_.find(entry->hander_);
     if(iter!=map_.end())
@@ -359,7 +359,7 @@ int64_t net::PollTimer::InvokeTimer()
   return 0;
 }
 
-net::Poller* net::CreatePoller()
+net::Poller* net::create_poller()
 {
 #ifdef __linux__
   return new EpollPoller;

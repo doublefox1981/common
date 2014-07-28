@@ -11,7 +11,7 @@
 
 using namespace net;
 
-net::Connection::Connection(EventLoop* looper,ezClientFd* client,int tid,int64_t userdata):ezThreadEventHander(looper,tid)
+net::Connection::Connection(EventLoop* looper,ClientFd* client,int tid,int64_t userdata):ThreadEventHander(looper,tid)
   ,client_(client)
   ,gameObj_(nullptr)
   ,userdata_(userdata)
@@ -40,71 +40,71 @@ void net::Connection::dettach_game_object()
   }
 }
 
-void net::Connection::SendMsg(Msg& msg)
+void net::Connection::send_msg(Msg& msg)
 {
   if(client_)
   {
-    client_->SendMsg(msg);
-    ezThreadEvent ev;
-    ev.type_=ezThreadEvent::ENABLE_POLLOUT;
-    client_->OccurEvent(ev);
+    client_->send_msg(msg);
+    ThreadEvent ev;
+    ev.type_=ThreadEvent::ENABLE_POLLOUT;
+    client_->occur_event(ev);
   }
   else
     msg_free(&msg);
 }
 
-bool net::Connection::RecvMsg(Msg& msg)
+bool net::Connection::recv_msg(Msg& msg)
 {
   if(client_)
-    return client_->RecvMsg(msg);
+    return client_->recv_msg(msg);
   return 
     false;
 }
 
-void net::Connection::ActiveClose()
+void net::Connection::active_close()
 {
   Msg msg;
   msg_init_delimiter(&msg);
-  SendMsg(msg);
+  send_msg(msg);
 }
 
-void net::Connection::CloseClient()
+void net::Connection::close_client()
 {
   if(client_)
   {
-    ezThreadEvent ev;
-    ev.type_=ezThreadEvent::CLOSE_FD;
-    client_->OccurEvent(ev);
+    ThreadEvent ev;
+    ev.type_=ThreadEvent::CLOSE_FD;
+    client_->occur_event(ev);
     client_=nullptr;
   }
 }
 
-void net::Connection::ProcessEvent(ezThreadEvent& ev)
+void net::Connection::process_event(ThreadEvent& ev)
 {
-  IConnnectionHander* hander=GetLooper()->GetHander();
+  IConnnectionHander* hander=get_looper()->get_hander();
   Msg msg;
   switch(ev.type_)
   {
-  case ezThreadEvent::NEW_CONNECTION:
-    GetLooper()->AddConnection(this);
-    GetLooper()->GetHander()->on_open(this);
+  case ThreadEvent::NEW_CONNECTION:
+    get_looper()->add_connection(this);
+    get_looper()->get_hander()->on_open(this);
     break;
-  case ezThreadEvent::CLOSE_PASSIVE:
-  case ezThreadEvent::CLOSE_ACTIVE:
-    while(RecvMsg(msg))
+  case ThreadEvent::CLOSE_PASSIVE:
+  case ThreadEvent::CLOSE_ACTIVE:
+    while(recv_msg(msg))
     {
       hander->on_data(this,&msg);
       msg_free(&msg);
     }
-    CloseClient();
+    close_client();
     break;
-  case ezThreadEvent::CLOSE_CONNECTION:
-    GetLooper()->GetHander()->on_close(this);
-    GetLooper()->DelConnection(this);
+  case ThreadEvent::CLOSE_CONNECTION:
+    get_looper()->get_hander()->on_close(this);
+    get_looper()->del_connection(this);
     delete this;
     break;
-  case ezThreadEvent::NEW_MESSAGE:
-    while(RecvMsg(msg))
+  case ThreadEvent::NEW_MESSAGE:
+    while(recv_msg(msg))
     {
       hander->on_data(this,&msg);
       msg_free(&msg);
@@ -115,7 +115,7 @@ void net::Connection::ProcessEvent(ezThreadEvent& ev)
   }
 }
 
-int64_t net::Connection::GetUserdata()
+int64_t net::Connection::get_user_data()
 {
   return userdata_;
 }
@@ -138,11 +138,11 @@ void net::ServerHander::on_data(Connection* conn,Msg* msg)
   LOG_INFO("seq=%d,size=%d",seq,msg_size(msg));
 }
 
-void net::GameObject::Close()
+void net::GameObject::close()
 {
   if(conn_) 
   {
-    conn_->ActiveClose();
+    conn_->active_close();
     conn_->dettach_game_object();
   }
 }
@@ -150,7 +150,7 @@ void net::GameObject::Close()
 void net::GameObject::SendNetpack(Msg& msg)
 {
   if(conn_)
-    conn_->SendMsg(msg);
+    conn_->send_msg(msg);
   else
     msg_free(&msg);
 }
@@ -198,7 +198,7 @@ int net::MsgDecoder::decode(IMessagePusher* pusher,char* buf,size_t s)
     reader.read_buffer((char*)msg_data(&msg),msglen);
     retlen+=sizeof(uint16_t);
     retlen+=msglen;
-    pusher->PushMsg(&msg);
+    pusher->push_msg(&msg);
   }
   return retlen;
 }
@@ -206,7 +206,7 @@ int net::MsgDecoder::decode(IMessagePusher* pusher,char* buf,size_t s)
 bool net::MsgEncoder::encode(IMessagePuller* puller,Buffer* buffer)
 {
   Msg msg;
-  while(puller->PullMsg(&msg))
+  while(puller->pull_msg(&msg))
   {
     if(msg_is_delimiter(&msg))
       return false;
@@ -220,7 +220,7 @@ bool net::MsgEncoder::encode(IMessagePuller* puller,Buffer* buffer)
     }
     else
     {
-      puller->Rollback(&msg);
+      puller->rollback(&msg);
       break;
     }
   }

@@ -111,12 +111,12 @@ static int MakeSocketPair(fd_t& r,fd_t& w)
 #endif
 }
 
-fd_t base::ezSignaler::getfd()
+fd_t base::Signaler::getfd()
 {
   return r_;
 }
 
-void base::ezSignaler::send()
+void base::Signaler::send()
 {
 #if defined __linux__
 #if defined HAVE_EVENTFD
@@ -145,7 +145,7 @@ void base::ezSignaler::send()
 #endif
 }
 
-void base::ezSignaler::recv()
+void base::Signaler::recv()
 {
 #if defined __linux__
 #if defined HAVE_EVENTFD
@@ -180,7 +180,7 @@ void base::ezSignaler::recv()
 #endif
 }
 
-int base::ezSignaler::wait(int tms)
+int base::Signaler::wait(int tms)
 {
   fd_set fds;
   FD_ZERO (&fds);
@@ -210,14 +210,14 @@ int base::ezSignaler::wait(int tms)
   return 1;
 }
 
-base::ezSignaler::ezSignaler()
+base::Signaler::Signaler()
 {
   MakeSocketPair(r_,w_);
   UnblockSocket(r_);
   UnblockSocket(w_);
 }
 
-base::ezSignaler::~ezSignaler()
+base::Signaler::~Signaler()
 {
 #ifdef __linux__
   close(r_);

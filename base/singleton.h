@@ -4,7 +4,7 @@
 namespace base
 {
 template<typename T>
-class ezSingleTon
+class SingleTon
 {
 public:
 	static T* instance() 
@@ -15,11 +15,11 @@ public:
 	}
 protected: 
 	static T* pInstance;
-	ezSingleTon(){}
-	virtual ~ezSingleTon(){}
+	SingleTon(){}
+	virtual ~SingleTon(){}
 };
 
 template<typename T>
-T* ezSingleTon<T>::pInstance = nullptr;
+T* SingleTon<T>::pInstance = nullptr;
 }
 #endif
