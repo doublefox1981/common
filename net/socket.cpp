@@ -317,7 +317,7 @@ namespace net
       ezSocketError("accept fail");
       return INVALID_SOCKET;
     }
-    char on=1;
+    int on=1;
     int rc=setsockopt(connfd,IPPROTO_TCP,TCP_NODELAY,&on,sizeof(on));
     rc=setsockopt(connfd,IPPROTO_TCP,TCP_NODELAY,&on,sizeof(on));
     NonBlock(connfd);
