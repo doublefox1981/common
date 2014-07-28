@@ -263,9 +263,11 @@ namespace net
     SOCKET s=::socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
     if(s==INVALID_SOCKET)
       return INVALID_SOCKET;
-    int on=1;
-    if (setsockopt(s,SOL_SOCKET,SO_REUSEADDR, (char*)&on, sizeof(on))==-1) 
+    char on=1;
+    if(setsockopt(s,SOL_SOCKET,SO_REUSEADDR,&on,sizeof(on))==-1) 
       ezSocketError("setsockopt SO_REUSEADDR");
+    if(setsockopt(s,IPPROTO_TCP,TCP_NODELAY,&on,sizeof(on))==-1)
+      ezSocketError("setsockopt TCP_NODELAY");
     NonBlock(s);
     return s;
   }
@@ -283,12 +285,14 @@ namespace net
     if(Bind(s,so)==SOCKET_ERROR)
     {
       ezSocketError("bind fail");
-      return SOCKET_ERROR;
+      CloseSocket(s);
+      return INVALID_SOCKET;
     }
     if(Listen(s)==SOCKET_ERROR)
     {
       ezSocketError("listen error");
-      return SOCKET_ERROR;
+      CloseSocket(s);
+      return INVALID_SOCKET;
     }
     return s;
   }
@@ -312,6 +316,9 @@ namespace net
       ezSocketError("accept fail");
       return INVALID_SOCKET;
     }
+    char on=1;
+    int rc=setsockopt(connfd,IPPROTO_TCP,TCP_NODELAY,&on,sizeof(on));
+    rc=setsockopt(connfd,IPPROTO_TCP,TCP_NODELAY,&on,sizeof(on));
     NonBlock(connfd);
     return connfd;
   }
@@ -457,6 +464,12 @@ namespace net
     if (setsockopt(s,SOL_SOCKET,SO_REUSEADDR, (char*)&on, sizeof(on))==-1) 
     {
       ezSocketError("setsockopt SO_REUSEADDR");
+      CloseSocket(s);
+      return INVALID_SOCKET;
+    }
+    if (setsockopt(s,SOL_SOCKET,TCP_NODELAY, (char*)&on, sizeof(on))==-1) 
+    {
+      ezSocketError("setsockopt TCP_NODELAY");
       CloseSocket(s);
       return INVALID_SOCKET;
     }

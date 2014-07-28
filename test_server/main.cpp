@@ -104,12 +104,12 @@ struct SFuncArg
 };
 void func(const SFuncArg& a)
 {
- LOG_INFO("func,a=%d,s=%s",a.a,a.s.c_str());
+ //LOG_INFO("func,a=%d,s=%s",a.a,a.s.c_str());
 }
 
 void func1()
 {
-  LOG_INFO("func1");
+  //LOG_INFO("func1");
 }
 
 void stdfunc(std::function<void()>& func)

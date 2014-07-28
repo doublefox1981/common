@@ -15,11 +15,11 @@ namespace net{
   public:
     IoThread(EventLoop* loop,int tid);
     virtual ~IoThread();
-    ThreadEvQueue* GetEvQueue() {return evqueue_;}
-    Poller* GetPoller() {return poller_;}
+    ThreadEvQueue* get_ev_queue() {return evqueue_;}
+    Poller* get_poller() {return poller_;}
     int get_load(){return poller_->get_load();}
-    void AddFlashedFd(ezIFlashedFd* ffd);
-    void DelFlashedFd(ezIFlashedFd* ffd);
+    void add_flashed_fd(ezIFlashedFd* ffd);
+    void del_flashed_fd(ezIFlashedFd* ffd);
     virtual void handle_in_event();
     virtual void handle_out_event(){}
     virtual void handle_timer(){}

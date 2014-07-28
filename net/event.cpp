@@ -88,7 +88,7 @@ int net::EventLoop::initialize(IConnnectionHander* hander,IDecoder* decoder,IEnc
   evqueues_[0]=mainevqueue_;
   for(int i=1;i<=tnum;++i)
   {
-    evqueues_[i]=get_thread(i)->GetEvQueue();
+    evqueues_[i]=get_thread(i)->get_ev_queue();
   }
 	return 0;
 }

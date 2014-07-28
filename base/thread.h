@@ -16,8 +16,8 @@ namespace base
   {
   public:
     virtual ~MutexInterface(){}
-    virtual void Lock()=0;
-    virtual void Unlock()=0;
+    virtual void lock()=0;
+    virtual void unlock()=0;
   };
 #ifndef __linux__
 	class AtomicNumber
@@ -59,11 +59,11 @@ namespace base
 		{
 			DeleteCriticalSection(&mutex);
 		}
-		void Lock ()
+		void lock()
 		{
 			EnterCriticalSection(&mutex);
 		}
-		void Unlock ()
+		void unlock()
 		{
 			LeaveCriticalSection(&mutex);
 		}
@@ -142,11 +142,11 @@ namespace base
 			if(!--attr_refcount)
 				pthread_mutexattr_destroy (&attr);
 		}
-		void Lock ()
+		void lock()
 		{
 			pthread_mutex_lock (&mutex);
 		}
-		void Unlock ()
+		void unlock()
 		{
 			pthread_mutex_unlock (&mutex);
 		}
@@ -221,7 +221,7 @@ namespace base
   {
   public:
     SpinLock(){lock_.Set(FREE);}
-    virtual void Lock()
+    virtual void lock()
     {
       Sleeper sleeper;
       do 
@@ -229,7 +229,7 @@ namespace base
         sleeper.wait();
       } while(!lock_.Cas(FREE,LOCKED));
     }
-    virtual void Unlock()
+    virtual void unlock()
     {
       lock_.Set(FREE);
     }
@@ -241,11 +241,11 @@ namespace base
 	class SysEvent
 	{
 	public:
-		void Set()
+		void set()
 		{
 			mSema.PostSignal();
 		}
-		void Wait()
+		void wait()
 		{
 			mSema.WaitSignal();
 		}
@@ -256,8 +256,8 @@ namespace base
 	class Locker
 	{
 	public:
-		explicit Locker(MutexInterface *mutex){mutex_ = mutex;mutex_->Lock();}
-		~Locker(){mutex_->Unlock();}
+		explicit Locker(MutexInterface *mutex){mutex_ = mutex;mutex_->lock();}
+		~Locker(){mutex_->unlock();}
 	private:
 		MutexInterface* mutex_;
 	};

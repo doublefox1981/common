@@ -21,12 +21,12 @@ net::IoThread::~IoThread()
     delete evqueue_;
 }
 
-void net::IoThread::AddFlashedFd(ezIFlashedFd* ffd)
+void net::IoThread::add_flashed_fd(ezIFlashedFd* ffd)
 {
   flashedfd_.push_back(ffd);
 }
 
-void net::IoThread::DelFlashedFd(ezIFlashedFd* ffd)
+void net::IoThread::del_flashed_fd(ezIFlashedFd* ffd)
 {
   for(auto iter=flashedfd_.begin();iter!=flashedfd_.end();)
   {

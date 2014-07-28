@@ -40,9 +40,9 @@ void net::ezListenerFd::process_event(ThreadEvent& ev)
   {
   case ThreadEvent::NEW_SERVICE:
     {
-      io_->AddFlashedFd(this);
-      io_->GetPoller()->add_fd(fd_,this);
-      io_->GetPoller()->set_poll_in(fd_);
+      io_->add_flashed_fd(this);
+      io_->get_poller()->add_fd(fd_,this);
+      io_->get_poller()->set_poll_in(fd_);
     }
     break;
   default: break;
@@ -51,8 +51,8 @@ void net::ezListenerFd::process_event(ThreadEvent& ev)
 
 void net::ezListenerFd::close()
 {
-  io_->DelFlashedFd(this);
-  io_->GetPoller()->del_fd(fd_);
+  io_->del_flashed_fd(this);
+  io_->get_poller()->del_fd(fd_);
   CloseSocket(fd_);
   fd_=INVALID_SOCKET;
   delete this;
@@ -119,7 +119,7 @@ void net::ClientFd::handle_out_event()
     int s=outbuf_->readable(pbuf);
     if(s<=0)
     {
-      io_->GetPoller()->reset_poll_out(fd_);
+      io_->get_poller()->reset_poll_out(fd_);
       break;
     }
     else
@@ -136,7 +136,7 @@ void net::ClientFd::handle_out_event()
   }
   if(!encoderet)
   {
-    io_->GetPoller()->reset_poll_out(fd_);
+    io_->get_poller()->reset_poll_out(fd_);
     active_close();
     return;
   }
@@ -148,7 +148,7 @@ void net::ClientFd::process_event(ThreadEvent& ev)
   {
   case ThreadEvent::NEW_FD:
     {
-      Poller* poller=io_->GetPoller();
+      Poller* poller=io_->get_poller();
       if(!poller->add_fd(fd_,this))
       {
         delete this;
@@ -166,7 +166,7 @@ void net::ClientFd::process_event(ThreadEvent& ev)
     break;
   case ThreadEvent::CLOSE_FD:
     {
-      io_->GetPoller()->del_fd(fd_);
+      io_->get_poller()->del_fd(fd_);
       Msg msg;
       while(recvqueue_.try_dequeue(msg))
         msg_free(&msg);
@@ -180,7 +180,7 @@ void net::ClientFd::process_event(ThreadEvent& ev)
     break;
   case ThreadEvent::ENABLE_POLLOUT:
     {
-      io_->GetPoller()->set_poll_out(fd_);
+      io_->get_poller()->set_poll_out(fd_);
       handle_out_event();
     }
     break;
@@ -201,7 +201,7 @@ bool net::ClientFd::recv_msg(Msg& msg)
 
 void net::ClientFd::active_close()
 {
-  io_->GetPoller()->del_fd(fd_);
+  io_->get_poller()->del_fd(fd_);
   ThreadEvent ev;
   ev.type_=ThreadEvent::CLOSE_ACTIVE;
   conn_->occur_event(ev);
@@ -209,7 +209,7 @@ void net::ClientFd::active_close()
 
 void net::ClientFd::PassiveClose()
 {
-  io_->GetPoller()->del_fd(fd_);
+  io_->get_poller()->del_fd(fd_);
   ThreadEvent ev;
   ev.type_=ThreadEvent::CLOSE_PASSIVE;
   conn_->occur_event(ev);
@@ -247,17 +247,17 @@ void net::ezConnectToFd::connect_to()
   LOG_INFO("connecting %s:%d",ip_.c_str(),port_);
   if(retval==0)
   {
-    if(io_->GetPoller()->add_fd(fd_,this))
+    if(io_->get_poller()->add_fd(fd_,this))
       handle_out_event();
     else
       post_close_me();
   }
   else if(retval==-1&&errno==EINPROGRESS)
   {
-    if(io_->GetPoller()->add_fd(fd_,this))
+    if(io_->get_poller()->add_fd(fd_,this))
     {
-      io_->GetPoller()->set_poll_in(fd_);
-      io_->GetPoller()->set_poll_out(fd_);
+      io_->get_poller()->set_poll_in(fd_);
+      io_->get_poller()->set_poll_out(fd_);
     }
     else
       post_close_me();
@@ -279,7 +279,7 @@ void net::ezConnectToFd::process_event(ThreadEvent& ev)
   {
   case ThreadEvent::NEW_CONNECTTO:
     connect_to();
-    io_->AddFlashedFd(this);
+    io_->add_flashed_fd(this);
     break;
   case ThreadEvent::CLOSE_CONNECTTO:
     {
@@ -294,14 +294,14 @@ void net::ezConnectToFd::process_event(ThreadEvent& ev)
 
 void net::ezConnectToFd::close_me()
 {
-  io_->GetPoller()->del_timer(this);
+  io_->get_poller()->del_timer(this);
   if(fd_!=INVALID_SOCKET)
   {
-    io_->GetPoller()->del_fd(fd_);
+    io_->get_poller()->del_fd(fd_);
     CloseSocket(fd_);
     fd_=INVALID_SOCKET;
   }
-  io_->DelFlashedFd(this);
+  io_->del_flashed_fd(this);
   LOG_INFO("delete net::ezConnectToFd(%s:%d)",ip_.c_str(),port_);
   delete this;
 }
@@ -309,7 +309,7 @@ void net::ezConnectToFd::close_me()
 void net::ezConnectToFd::reconnect()
 {
   if(reconnect_>0)
-    io_->GetPoller()->add_timer(reconnect_,this);
+    io_->get_poller()->add_timer(reconnect_,this);
   else
     post_close_me();
 }
@@ -352,7 +352,7 @@ void net::ezConnectToFd::handle_in_event()
 void net::ezConnectToFd::handle_out_event()
 {
   int result=check_async_error();
-  io_->GetPoller()->del_fd(fd_);
+  io_->get_poller()->del_fd(fd_);
   fd_=INVALID_SOCKET;
   if(result==INVALID_SOCKET)
   {

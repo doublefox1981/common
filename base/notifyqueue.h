@@ -12,10 +12,10 @@ namespace base{
     fd_t get_fd(){return notify_.getfd();}
     void send(const T& t)
     {
-      mutex_.Lock();
+      mutex_.lock();
       pipe_.enqueue(t);
       notify_.send();
-      mutex_.Unlock();
+      mutex_.unlock();
     }
     bool recv(T& t)
     {

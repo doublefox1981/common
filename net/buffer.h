@@ -10,15 +10,15 @@ namespace net
 		explicit Buffer(size_t initSize=ezInitSize);
 		~Buffer();
 		void drain(size_t len);
-		int remove(void* data,size_t datlen);
+		int  remove(void* data,size_t datlen);
 		void align();
-		int maxadd();
-		int fastadd();
-		int expand(size_t datlen);
-		int add(const void* data,size_t datlen);
-		int readfd(int fd);
-		int writefd(int fd);
-		int readable(char*& pbuf);
+		int  maxadd();
+		int  fastadd();
+		int  expand(size_t datlen);
+		int  add(const void* data,size_t datlen);
+		int  readfd(int fd);
+		int  writefd(int fd);
+		int  readable(char*& pbuf);
 		size_t off() {return off_;}
 	private:
 		char *buffer_;
