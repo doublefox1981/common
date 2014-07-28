@@ -1,11 +1,12 @@
-#include "socket.h"
 #include "../base/portable.h"
 #include "../base/logging.h"
+#include "socket.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <signal.h>
+
 namespace net
 {
   void ezSocketError(const char* err)

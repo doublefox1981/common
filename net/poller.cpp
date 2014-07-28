@@ -317,7 +317,7 @@ void net::EpollPoller::add_timer(int64_t timeout,IPollerEventHander* hander)
 
 void net::EpollPoller::del_timer(IPollerEventHander* hander)
 {
-  timer_.del_timer(hander,timerid);
+  timer_.del_timer(hander);
 }
 #endif
 

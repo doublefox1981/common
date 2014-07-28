@@ -112,14 +112,9 @@ void func1()
   //LOG_INFO("func1");
 }
 
-void stdfunc(std::function<void()>& func)
-{
-  func();
-}
 
 int main()
 {
-  stdfunc(std::function<void()>(func1));
   Monster m;
   IdleState* idle=new IdleState;
   StandState* stand=new StandState;

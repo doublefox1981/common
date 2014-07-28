@@ -107,10 +107,6 @@ class A
 #include <type_traits>
 int main()
 {
-  __declspec(align(64))
-    int a; 
-  __declspec(align(64))
-    int a1;
   ProcessSignal();
   size_t s1=std::alignment_of<A>::value;
   moodycamel::ReaderWriterQueue<int> s;

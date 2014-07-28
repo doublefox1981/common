@@ -202,8 +202,8 @@ namespace base
     }
     C& operator[](std::ptrdiff_t i) const 
     {
-      assert(i >= 0);
-      assert(array_ != NULL);
+      //assert(i >= 0);
+      //assert(array_ != NULL);
       return array_[i];
     }
     C* get() const 

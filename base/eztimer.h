@@ -5,11 +5,11 @@
 #include <limits>
 #include <unordered_map>
 #include <functional>
-#include <stdint.h>
+#include <cstdint>
 
 namespace base
 {
-  static const int64_t TIMER_FOREVER=INT64_MAX;
+  static const int64_t TIMER_FOREVER=0x7fffffffffffffff;
   class TimerTask
   {
   public:
@@ -35,7 +35,7 @@ namespace base
   class FunctorTimerTask:public TimerTask
   {
   public:
-    typedef std::function<void(const ArgType&)> FUNC_TYPE;
+    typedef const std::function<void(const ArgType&)> FUNC_TYPE;
     FunctorTimerTask(int64_t tid,FUNC_TYPE& func,const ArgType& arg):TimerTask(tid),functor_(func),arg_(arg){}
     virtual void run(){functor_(arg_);}
   private:
@@ -46,7 +46,7 @@ namespace base
   class VoidFunctorTimerTask:public TimerTask
   {
   public:
-    typedef std::function<void()> FUNC_TYPE;
+    typedef const std::function<void()> FUNC_TYPE;
     VoidFunctorTimerTask(int64_t tid,FUNC_TYPE& func):TimerTask(tid),functor_(func){}
     virtual void run(){functor_();}
   private:
@@ -74,7 +74,7 @@ namespace base
     void del_timer_task(uint64_t id);
     void tick(int64_t now);
     int64_t gen_timer_uuid();
-    int64_t run_after(std::function<void()>& func,int64_t now,int later,int64_t repeat=TIMER_FOREVER)
+    int64_t run_after(const std::function<void()>& func,int64_t now,int later,int64_t repeat=TIMER_FOREVER)
     {    
       TimerTask* task=new VoidFunctorTimerTask(gen_timer_uuid(),func);
       task->config(now,later,repeat);
@@ -82,7 +82,7 @@ namespace base
       return task->id_;
     }
     template <typename ArgType>
-    int64_t run_after(std::function<void(const ArgType&)>& func,const ArgType& args,int64_t now,int later,int64_t repeat=TIMER_FOREVER)
+    int64_t run_after(const std::function<void(const ArgType&)>& func,const ArgType& args,int64_t now,int later,int64_t repeat=TIMER_FOREVER)
     {
       TimerTask* task=new FunctorTimerTask<ArgType>(gen_timer_uuid(),func,args);
       task->config(now,later,repeat);
