@@ -318,8 +318,8 @@ namespace net
       return INVALID_SOCKET;
     }
     int on=1;
-    int rc=setsockopt(connfd,IPPROTO_TCP,TCP_NODELAY,&on,sizeof(on));
-    rc=setsockopt(connfd,IPPROTO_TCP,TCP_NODELAY,&on,sizeof(on));
+    int rc=setsockopt(connfd,IPPROTO_TCP,TCP_NODELAY,(const char*)&on,sizeof(on));
+    rc=setsockopt(connfd,IPPROTO_TCP,TCP_NODELAY,(const char*)&on,sizeof(on));
     NonBlock(connfd);
     return connfd;
   }

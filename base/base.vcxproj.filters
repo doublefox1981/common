@@ -19,6 +19,7 @@
     <ClInclude Include="notifyqueue.h" />
     <ClInclude Include="likely.h" />
     <ClInclude Include="varint.h" />
+    <ClInclude Include="array.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="thread.cpp" />

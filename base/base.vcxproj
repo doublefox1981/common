@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="array.h" />
     <ClInclude Include="atomicops.h" />
     <ClInclude Include="bitset.h" />
     <ClInclude Include="cmdline.h" />

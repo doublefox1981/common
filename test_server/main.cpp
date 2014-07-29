@@ -6,6 +6,7 @@
 #include "../base/thread.h"
 #include "../base/util.h"
 #include "../base/logging.h"
+#include "../base/array.h"
 
 #include "../net/net_interface.h"
 #include "../net/netpack.h"
@@ -112,9 +113,18 @@ void func1()
   //LOG_INFO("func1");
 }
 
+class AAA:public base::ArrayEntry<>
+{
+public:  
+  int c;
+};
 
 int main()
 {
+  base::Array<AAA> a;
+  AAA* pa=new AAA;
+  a.push_back(pa);
+  a.erase(pa);
   Monster m;
   IdleState* idle=new IdleState;
   StandState* stand=new StandState;
