@@ -124,7 +124,7 @@ int main()
   LOG_INFO("%s",format.c_str());
 
   net::net_initialize();
-  std::string ip="192.168.96.4";
+  std::string ip="192.168.99.51";
   int port=10011;
   net::IConnnectionHander* hander=new TestClientHander;
   net::IDecoder* decoder=new net::MsgDecoder(20000);

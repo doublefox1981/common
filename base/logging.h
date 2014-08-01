@@ -20,7 +20,7 @@ namespace base
     virtual void run();
   private:
     void print(int type,const char* format,va_list args);
-    base::SpinLock mutex_;
+    base::Mutex mutex_;
     list_head lst_;
     int log_level_;
     AtomicNumber log_num_;

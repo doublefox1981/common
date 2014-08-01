@@ -26,7 +26,7 @@ namespace base{
     typedef moodycamel::ReaderWriterQueue<T> pipe_t;
     pipe_t pipe_;
     Signaler notify_;
-    base::SpinLock mutex_;
+    base::Mutex mutex_;
   };
 } 
 
