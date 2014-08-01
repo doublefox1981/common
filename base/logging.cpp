@@ -32,6 +32,8 @@ namespace base
 
 void base::Logger::print(int type,const char* format,va_list args)
 {
+  if(log_num_.Get()>4096)
+    return;
   LogMessage* msg=base::create_log_message();
   if(!msg)
     return;
@@ -40,6 +42,7 @@ void base::Logger::print(int type,const char* format,va_list args)
   base::string_printf_impl(msg->str_,format,args);
   base::Locker locker(&mutex_);
   list_add_tail(&msg->next_,&lst_);
+  log_num_.Inc();
 }
 
 void base::Logger::info(const char* format,...)
@@ -153,18 +156,16 @@ void base::Logger::run()
         localtime_s(&tm_time,&log->time_);
 #endif
         snprintf(timeprefix,sizeof(timeprefix),"%d-%02d-%02d %02d:%02d:%02d ",
-        1900+tm_time.tm_year,
-        1+tm_time.tm_mon,
-        tm_time.tm_mday,
-        tm_time.tm_hour,
-        tm_time.tm_min,
-        tm_time.tm_sec);
-        printf("%s",timeprefix);
-        colored_printf(color,"%s",prefix);
-        printf("%s\n",log->str_.c_str());
-        fflush(stdout);
+          1900+tm_time.tm_year,
+          1+tm_time.tm_mon,
+          tm_time.tm_mday,
+          tm_time.tm_hour,
+          tm_time.tm_min,
+          tm_time.tm_sec);
+        printf("%s%s%s\n",timeprefix,prefix,log->str_.c_str());
       }
       destroy_log_message(log);
+      log_num_.Dec();
     }
     base::sleep(20);
   }

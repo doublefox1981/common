@@ -130,7 +130,7 @@ int main()
   net::IDecoder* decoder=new net::MsgDecoder(20000);
   net::IEncoder* encoder=new net::MsgEncoder;
   EventLoop* ev=net::create_event_loop(hander,decoder,encoder,4);
-  for(int i=0;i<100;++i)
+  for(int i=0;i<40;++i)
   {
     net::connect(ev,ip.c_str(),port,i,10);
     ConnectToInfo info={i,ip.c_str(),port,ECTS_CONNECTING,nullptr};
@@ -143,24 +143,14 @@ int main()
   {
     net::event_process(ev);
     base::sleep(1);
-//     if((rand()%100)>95)
-//     {
-//       net::connect(ev,ip.c_str(),port,0,10);
-//       continue;
-//     }
     for(size_t s=0;s<gConnSet.size();++s)
     {
       Connection* conn=gConnSet[s].conn_;
       if(!conn)
         continue;
-//       if((rand()%100)>90)
-//       {
-//         net::close_connection(conn);
-//         continue;
-//       }
-      for(int i=0;i<4;++i)
+      for(int i=0;i<1;++i)
       {
-        int ss=(rand()%1500+4);
+        int ss=(rand()%10240+4);
         Msg msg;
         net::msg_init_size(&msg,ss);
         base::BufferWriter writer((char*)net::msg_data(&msg),net::msg_size(&msg));

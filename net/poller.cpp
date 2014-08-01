@@ -29,7 +29,7 @@ void net::SelectPoller::poll()
   {
     for(size_t j=0;j<fdarray_.size();++j)
     {
-      SelectFdEntry& entry=fdarray_[j];
+      const SelectFdEntry& entry=fdarray_[j];
       if(entry.fd_==INVALID_SOCKET)
         continue;
       if(FD_ISSET(entry.fd_,&urfds_))

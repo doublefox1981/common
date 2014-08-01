@@ -1,5 +1,6 @@
 #include "portable.h"
 #include "signal.h"
+#include "logging.h"
 #ifdef __linux__
 #define HAVE_EVENTFD
 #endif
@@ -135,11 +136,22 @@ void base::Signaler::send()
 #endif
 #else
   unsigned char dummy=0;
-  int n=::send(w_,(char*)&dummy,sizeof(dummy),0);
-  if(n<0)
+  int n=0;
+  while(n<sizeof(dummy))
   {
-    int err=WSAGetLastError();
-    errno=err;
+    int s=::send(w_,(char*)&dummy,sizeof(dummy),0);
+    if(s<0)
+    {
+      int err=WSAGetLastError();
+      if(err==EWOULDBLOCK)
+        continue;
+      else
+      {
+        LOG_ERROR("base::Signaler::send,WSAGetLastError=%d",err);
+        return;
+      }
+    }
+    n+=s;
   }
   assert(n==sizeof(dummy)); 
 #endif
@@ -166,8 +178,8 @@ void base::Signaler::recv()
 //   assert(dummy==0);
 #endif
 #else
-  unsigned char dummy=0;
-  int nbytes=::recv(r_,(char*)&dummy,sizeof(dummy),0);
+  char dummy[4096];
+  int nbytes=::recv(r_,dummy,sizeof(dummy),0);
   if(nbytes<0)
   {
     int err=WSAGetLastError();
@@ -176,7 +188,6 @@ void base::Signaler::recv()
       nbytes=1;
   }
   assert(nbytes!=SOCKET_ERROR);
-  assert(dummy==0);
 #endif
 }
 

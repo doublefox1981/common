@@ -59,6 +59,7 @@ bool ShouldUseColor(bool stdout_is_tty)
 #endif 
 }
 
+// 相对printf效率更低，慎用
 void base::colored_printf(EPrintColor color, const char* fmt, ...) 
 {
   va_list args;

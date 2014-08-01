@@ -23,6 +23,7 @@ namespace base
     base::SpinLock mutex_;
     list_head lst_;
     int log_level_;
+    AtomicNumber log_num_;
   };
 }
 
