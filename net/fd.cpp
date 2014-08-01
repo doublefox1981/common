@@ -79,7 +79,7 @@ net::ClientFd::~ClientFd()
   net::CloseSocket(fd_);
   if(pusher_) delete pusher_;
   if(puller_) delete puller_;
-  if(inbuf_) delete inbuf_;
+  if(inbuf_)  delete inbuf_;
   if(outbuf_) delete outbuf_;
   Msg msg;
   while(sendqueue_.try_dequeue(msg))

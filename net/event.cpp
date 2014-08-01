@@ -47,6 +47,7 @@ namespace net
 
 net::EventLoop::EventLoop()
 {
+  poller_=nullptr;
   shutdown_=false;
 	hander_=nullptr;
   closehander_=new ezCloseHander;
@@ -70,6 +71,7 @@ net::EventLoop::~EventLoop()
   delete [] evqueues_;
   delete [] threads_;
   if(mainevqueue_) delete mainevqueue_;
+  if(poller_) delete poller_;
 }
 
 int net::EventLoop::initialize(IConnnectionHander* hander,IDecoder* decoder,IEncoder* encoder,int tnum)
@@ -90,6 +92,9 @@ int net::EventLoop::initialize(IConnnectionHander* hander,IDecoder* decoder,IEnc
   {
     evqueues_[i]=get_thread(i)->get_ev_queue();
   }
+  poller_=create_poller();
+  poller_->add_fd(mainevqueue_->get_fd(),this);
+  poller_->set_poll_in(mainevqueue_->get_fd());
 	return 0;
 }
 
@@ -184,11 +189,7 @@ net::IoThread* net::EventLoop::choose_thread()
 
 void net::EventLoop::loop()
 {
-  ThreadEvent ev;
-  while(mainevqueue_->recv(ev))
-  {
-    ev.hander_->process_event(ev);
-  }
+  poller_->poll();
 }
 
 void net::EventLoop::add_connection(Connection* con)
@@ -219,6 +220,15 @@ int net::EventLoop::get_buffer_size()
 void net::EventLoop::set_buffer_size(int s)
 {
   buffersize_=s;
+}
+
+void net::EventLoop::handle_in_event()
+{
+  ThreadEvent ev;
+  while(mainevqueue_->recv(ev))
+  {
+    ev.hander_->process_event(ev);
+  }
 }
 
 net::ThreadEventHander::ThreadEventHander(EventLoop* loop,int tid):looper_(loop),tid_(tid)

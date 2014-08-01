@@ -9,6 +9,7 @@
 #include "../base/notifyqueue.h"
 #include "../base/singleton.h"
 #include "netpack.h"
+#include "poller.h"
 
 namespace net
 {
@@ -19,6 +20,8 @@ namespace net
   class IEncoder;
   class ThreadEventHander;
   class Poller;
+  class IPollerEventHander;
+
   struct ThreadEvent
   {
     enum ThreadEventType
@@ -41,7 +44,7 @@ namespace net
   };
 
   typedef base::NotifyQueue<ThreadEvent> ThreadEvQueue;
-  class EventLoop
+  class EventLoop:public IPollerEventHander
   {
   public:
     EventLoop();
@@ -63,16 +66,21 @@ namespace net
     int  get_connection_num();
     int  get_buffer_size();
     void set_buffer_size(int s);
+
+    virtual void handle_in_event();
+    virtual void handle_out_event(){}
+    virtual void handle_timer(){}
   private:
-    IConnnectionHander*             hander_;
-    IConnnectionHander*             closehander_;
-    IDecoder*                       decoder_;
-    IEncoder*                       encoder_;
-    IoThread**                      threads_;
+    Poller*                           poller_;
+    IConnnectionHander*               hander_;
+    IConnnectionHander*               closehander_;
+    IDecoder*                         decoder_;
+    IEncoder*                         encoder_;
+    IoThread**                        threads_;
     int                               threadnum_;
     ThreadEvQueue**                   evqueues_;
     ThreadEvQueue*                    mainevqueue_;
-    std::unordered_set<Connection*> conns_;
+    std::unordered_set<Connection*>   conns_;
     bool                              shutdown_;
     int                               buffersize_;
   };
