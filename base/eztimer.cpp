@@ -42,18 +42,19 @@ void base::Timer::add_timer_task(TimerTask* task)
 {
 	assert(task);
 	assert(task->fired_time_>=0);
-  assert(task->id_>0);
+	assert(task->id_>0);
 	min_heap_.push(task);
+	timer_map_[id]=task;
 }
 
 void base::Timer::del_timer_task(uint64_t id)
 {
-  auto iter=timer_map_.find(id);
-  if(iter!=timer_map_.end())
-  {
-    TimerTask* task=iter->second;
-    task->cancel();
-  }
+	auto iter=timer_map_.find(id);
+	if(iter!=timer_map_.end())
+	{
+		TimerTask* task=iter->second;
+		task->cancel();
+	}
 }
 
 void base::Timer::remove_timer_task(int64_t id)
