@@ -161,9 +161,11 @@ void base::Logger::run()
           tm_time.tm_mday,
           tm_time.tm_hour,
           tm_time.tm_min,
-          tm_time.tm_sec);
+          tm_time.tm_sec);
+
         printf("%s%s%s\n",timeprefix,prefix,log->str_.c_str());
       }
+      list_del(iter);
       destroy_log_message(log);
       log_num_.Dec();
     }
